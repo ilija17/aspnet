@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "FTfnyWVChdI=",
+  "dgSpecHash": "WdEKMGrA3ZA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\ibosnjak\\RiderProjects\\aspnet\\aspnet\\aspnet.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "/home/ilija/RiderProjects/aspnet/aspnet/aspnet.csproj",
+  "expectedPackageFiles": [
+    "/home/ilija/.nuget/packages/microsoft.aspnetcore.app.ref/10.0.4/microsoft.aspnetcore.app.ref.10.0.4.nupkg.sha512"
+  ],
   "logs": []
 }

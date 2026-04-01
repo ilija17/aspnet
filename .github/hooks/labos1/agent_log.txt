@@ -1,0 +1,1 @@
+{"session_id":"39cd1fe8-560e-4ac9-b59d-b6738cf3bc8d","transcript_path":"/home/ilija/.claude/projects/-home-ilija-RiderProjects-aspnet/39cd1fe8-560e-4ac9-b59d-b6738cf3bc8d.jsonl","cwd":"/home/ilija/RiderProjects/aspnet","permission_mode":"default","hook_event_name":"UserPromptSubmit","prompt":"Hello twin"}

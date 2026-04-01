@@ -1,4 +1,4 @@
-﻿{
+{
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -ExecutionPolicy Bypass -Command \"[Console]::In.ReadToEnd() | Add-Content -Path 'C:\\Users\\ibosnjak\\RiderProjects\\aspnet\\.github\\hooks\\labos1\\agent_log.txt'\""
+            "command": "cat >> /home/ilija/RiderProjects/aspnet/.github/hooks/labos1/agent_log.txt"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -ExecutionPolicy Bypass -Command \"[Console]::In.ReadToEnd() | Add-Content -Path 'C:\\Users\\ibosnjak\\RiderProjects\\aspnet\\.github\\hooks\\labos1\\agent_log.txt'\""
+            "command": "cat >> /home/ilija/RiderProjects/aspnet/.github/hooks/labos1/agent_log.txt"
           }
         ]
       }
