@@ -83,6 +83,10 @@ public static class SeedData
             }
         };
 
+        casino1.Tables.ForEach(t => t.Casino = casino1);
+        casino2.Tables.ForEach(t => t.Casino = casino2);
+        casino3.Tables.ForEach(t => t.Casino = casino3);
+
         // ── Transactions (attached to players) ────────────────────────────────
         player1.Transactions.AddRange(new[]
         {
