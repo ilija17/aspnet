@@ -3,8 +3,10 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
-# Claude Code
-.claude/
+# Claude Code — ignore everything except agent definitions (must be committed for grading)
+.claude/*
+!.claude/agents/
+!.claude/agents/**
 
 # dotenv files
 .env
