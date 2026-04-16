@@ -1,3 +1,4 @@
+// Handles /Player routes. Index lists all players; Details shows one player with transactions and reservations.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 

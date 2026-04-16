@@ -1,3 +1,4 @@
+// Contract for game data access. Returns in-memory seed data — no database.
 using aspnet.Models;
 
 namespace aspnet.Repositories;

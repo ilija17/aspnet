@@ -1,3 +1,5 @@
+// Mock implementation of ICasinoRepository. Serves static casino data from SeedData (Lab 1).
+// Registered as AddSingleton — data is built once at startup and reused.
 using aspnet.Data;
 using aspnet.Models;
 

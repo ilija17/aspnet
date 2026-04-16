@@ -1,3 +1,5 @@
+// Mock implementation of ITableRepository. Flattens tables from all casinos in SeedData.
+// Registered as AddSingleton — data is built once at startup and reused.
 using aspnet.Data;
 using aspnet.Models;
 

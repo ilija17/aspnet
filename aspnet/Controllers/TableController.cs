@@ -1,3 +1,4 @@
+// Handles /Table routes. Index lists all tables across all casinos; Details shows one table with its reservations.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 

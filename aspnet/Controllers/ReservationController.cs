@@ -1,3 +1,4 @@
+// Handles /Reservation routes. Index lists all reservations; Details shows one reservation with player and table info.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 

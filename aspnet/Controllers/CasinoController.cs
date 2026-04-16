@@ -1,3 +1,4 @@
+// Handles /Casino routes. Index lists all casinos; Details shows one casino with its tables and employees.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 

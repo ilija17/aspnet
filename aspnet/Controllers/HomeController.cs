@@ -1,3 +1,4 @@
+// Handles the root route. Index renders the Casino Floor custom page showing live table availability.
 using System.Diagnostics;
 using aspnet.Models;
 using aspnet.Repositories;

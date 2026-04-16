@@ -1,3 +1,4 @@
+// Handles /Game routes. Index lists all game types; Details shows one game with tables that use it.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 

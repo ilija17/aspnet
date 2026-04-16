@@ -1,3 +1,4 @@
+// Entry point. Builds seed data, registers 6 mock repositories as singletons, configures MVC pipeline.
 using aspnet.Data;
 using aspnet.Queries;
 using aspnet.Repositories;

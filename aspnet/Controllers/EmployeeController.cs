@@ -1,3 +1,4 @@
+// Handles /Employee routes. Index lists all employees across all casinos; Details shows one employee.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 

@@ -1,3 +1,6 @@
+// Mock implementation of IReservationRepository. Serves the reservation list from SeedData.
+// Player and Table navigation properties are already wired in SeedData.
+// Registered as AddSingleton — data is built once at startup and reused.
 using aspnet.Data;
 using aspnet.Models;
 

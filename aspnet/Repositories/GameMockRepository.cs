@@ -1,3 +1,6 @@
+// Mock implementation of IGameRepository. Extracts distinct games from table navigation
+// properties in SeedData (games are not stored top-level, only inside Tables).
+// Registered as AddSingleton — data is built once at startup and reused.
 using aspnet.Data;
 using aspnet.Models;
 

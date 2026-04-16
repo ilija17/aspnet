@@ -1,3 +1,6 @@
+// Mock implementation of IEmployeeRepository. Flattens employees from all casinos in SeedData.
+// BuildData() also wires the Casino back-reference on each employee (SeedData does not do this).
+// Registered as AddSingleton — data is built once at startup and reused.
 using aspnet.Data;
 using aspnet.Models;
 
