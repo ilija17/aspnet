@@ -1,5 +1,6 @@
 using aspnet.Data;
 using aspnet.Queries;
+using aspnet.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 // Build in-memory seed data (casinos, players, reservations …)
@@ -15,6 +16,14 @@ builder.Services.AddDbContext<CasinoDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllersWithViews();
+
+// ── Mock repositories (Lab 2) ─────────────────────────────────────────────────
+builder.Services.AddSingleton<ICasinoRepository,     CasinoMockRepository>();
+builder.Services.AddSingleton<IPlayerRepository,     PlayerMockRepository>();
+builder.Services.AddSingleton<ITableRepository,      TableMockRepository>();
+builder.Services.AddSingleton<IGameRepository,       GameMockRepository>();
+builder.Services.AddSingleton<IEmployeeRepository,   EmployeeMockRepository>();
+builder.Services.AddSingleton<IReservationRepository, ReservationMockRepository>();
 
 var app = builder.Build();
 

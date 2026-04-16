@@ -1,0 +1,40 @@
+@model List<aspnet.Models.Employee>
+@{
+    ViewData["Title"] = "Employees";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Employees</span>
+</div>
+
+<h1 class="page-title">Employees</h1>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>#ID</th>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Casino</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var employee in Model)
+        {
+            <tr>
+                <td><span class="mono">@employee.Id</span></td>
+                <td>@employee.FirstName @employee.LastName</td>
+                <td>@employee.Position</td>
+                <td>
+                    <a asp-controller="Casino" asp-action="Details" asp-route-id="@employee.Casino.Id">@employee.Casino.Name</a>
+                </td>
+                <td>
+                    <a class="btn btn-sm" asp-controller="Employee" asp-action="Details" asp-route-id="@employee.Id">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

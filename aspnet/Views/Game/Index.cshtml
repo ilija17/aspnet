@@ -1,0 +1,31 @@
+@model List<aspnet.Models.Game>
+@{
+    ViewData["Title"] = "Games";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Games</span>
+</div>
+
+<h1 class="page-title">Games</h1>
+
+<div class="entity-grid">
+    @foreach (var game in Model)
+    {
+        <a class="entity-card" asp-controller="Game" asp-action="Details" asp-route-id="@game.Id">
+            <div class="card-header">
+                <span class="card-title">@game.Name</span>
+            </div>
+            <div class="card-meta">
+                <div><span class="badge-purple">@game.Type</span></div>
+                <div>@game.Description</div>
+                <div>Bet range: <span class="mono">@game.MinBet–@game.MaxBet</span></div>
+            </div>
+            <div class="card-footer-bar">
+                @game.Tables.Count tables
+            </div>
+        </a>
+    }
+</div>

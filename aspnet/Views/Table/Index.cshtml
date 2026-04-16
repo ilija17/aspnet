@@ -1,0 +1,37 @@
+@model List<aspnet.Models.Table>
+@{
+    ViewData["Title"] = "Tables";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Tables</span>
+</div>
+
+<h1 class="page-title">Tables</h1>
+
+<div class="entity-grid">
+    @foreach (var table in Model)
+    {
+        <a class="entity-card" asp-controller="Table" asp-action="Details" asp-route-id="@table.Id">
+            <div class="card-header">
+                <span class="card-title">Table #@table.TableNumber — @table.Game.Name</span>
+            </div>
+            <div class="card-meta">
+                <div>@table.Casino.Name</div>
+                <div>Bet range: <span class="mono">@table.MinBet–@table.MaxBet</span></div>
+            </div>
+            <div class="card-footer-bar">
+                @if (table.IsAvailable)
+                {
+                    <span class="badge-available">Available</span>
+                }
+                else
+                {
+                    <span class="badge-unavailable">In Use</span>
+                }
+            </div>
+        </a>
+    }
+</div>

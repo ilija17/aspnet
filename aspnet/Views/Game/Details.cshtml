@@ -1,0 +1,86 @@
+@model aspnet.Models.Game
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a asp-controller="Game" asp-action="Index">Games</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>@Model.Name</span>
+</div>
+
+<h1 class="page-title">@Model.Name</h1>
+
+<div class="detail-grid">
+    <div class="detail-section">
+        <div class="detail-row">
+            <span class="detail-label">Name</span>
+            <span class="detail-value">@Model.Name</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Type</span>
+            <span class="detail-value"><span class="badge-purple">@Model.Type</span></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Description</span>
+            <span class="detail-value">@Model.Description</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Min Bet</span>
+            <span class="detail-value mono">@Model.MinBet</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Max Bet</span>
+            <span class="detail-value mono">@Model.MaxBet</span>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <h2 class="section-title">Tables Using This Game</h2>
+        @if (Model.Tables.Any())
+        {
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Table</th>
+                        <th>Casino</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var table in Model.Tables)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-controller="Table" asp-action="Details" asp-route-id="@table.Id">
+                                    #@table.TableNumber
+                                </a>
+                            </td>
+                            <td>@table.Casino.Name</td>
+                            <td>
+                                @if (table.IsAvailable)
+                                {
+                                    <span class="badge-available">Available</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-unavailable">In Use</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No tables are using this game.</p>
+        }
+    </div>
+</div>
+
+<div class="panel">
+    <a class="btn btn-back" asp-controller="Game" asp-action="Index">Back to Games</a>
+</div>

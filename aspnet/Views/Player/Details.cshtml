@@ -1,0 +1,124 @@
+@model aspnet.Models.Player
+@{
+    ViewData["Title"] = Model.FirstName + " " + Model.LastName;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a asp-controller="Player" asp-action="Index">Players</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>@Model.FirstName @Model.LastName</span>
+</div>
+
+<h1 class="page-title">@Model.FirstName @Model.LastName</h1>
+
+<div class="detail-grid">
+    <div class="detail-section">
+        <div class="detail-row">
+            <span class="detail-label">First name</span>
+            <span class="detail-value">@Model.FirstName</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Last name</span>
+            <span class="detail-value">@Model.LastName</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">@Model.Email</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Date of birth</span>
+            <span class="detail-value mono">@Model.DateOfBirth.ToString("dd MMM yyyy")</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Balance</span>
+            <span class="detail-value">
+                <span class="mono" style="color: var(--color-lime, #84cc16)">@Model.Balance.ToString("C")</span>
+                @if (Model.Balance > 1000)
+                {
+                    <span class="badge-purple">High Roller</span>
+                }
+            </span>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <h2 class="section-title">Reservations</h2>
+        @if (!Model.Reservations.Any())
+        {
+            <p class="text-muted">No reservations.</p>
+        }
+        else
+        {
+            @foreach (var reservation in Model.Reservations)
+            {
+                <div class="panel" style="margin-bottom: 0.5rem;">
+                    <div class="detail-row">
+                        <span class="detail-label">Reserved at</span>
+                        <span class="detail-value mono">@reservation.ReservedAt.ToString("dd MMM yyyy HH:mm")</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Table</span>
+                        <span class="detail-value">Table #@reservation.Table.TableNumber</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Casino</span>
+                        <span class="detail-value">@reservation.Table.Casino.Name</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Game</span>
+                        <span class="detail-value">@reservation.Table.Game.Name</span>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="panel" style="margin-top: 2rem;">
+    <h2 class="section-title">Transactions</h2>
+    @if (!Model.Transactions.Any())
+    {
+        <p class="text-muted">No transactions.</p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tx in Model.Transactions)
+                {
+                    <tr>
+                        <td><span class="mono">@tx.Amount.ToString("C")</span></td>
+                        <td>
+                            @if (tx.Type == aspnet.Models.TransactionType.Win)
+                            {
+                                <span class="badge-purple">Win</span>
+                            }
+                            else if (tx.Type == aspnet.Models.TransactionType.Deposit)
+                            {
+                                <span class="badge-available">Deposit</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">@tx.Type</span>
+                            }
+                        </td>
+                        <td><span class="mono">@tx.CreatedAt.ToString("dd MMM yyyy HH:mm")</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div style="margin-top: 1.5rem;">
+    <a class="btn btn-back" asp-controller="Player" asp-action="Index">Back to Players</a>
+</div>

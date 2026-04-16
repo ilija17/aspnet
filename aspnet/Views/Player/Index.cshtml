@@ -1,0 +1,35 @@
+@model List<aspnet.Models.Player>
+@{
+    ViewData["Title"] = "Players";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Players</span>
+</div>
+
+<h1 class="page-title">Players</h1>
+
+<div class="entity-grid">
+    @foreach (var player in Model)
+    {
+        <a class="entity-card" asp-controller="Player" asp-action="Details" asp-route-id="@player.Id">
+            <div class="card-header">
+                <span class="card-title">@player.FirstName @player.LastName</span>
+                @if (player.Balance > 1000)
+                {
+                    <span class="badge-purple">High Roller</span>
+                }
+            </div>
+            <div class="card-meta">
+                <div>@player.Email</div>
+                <div>DOB: <span class="mono">@player.DateOfBirth.ToString("dd MMM yyyy")</span></div>
+                <div>Balance: <span class="mono">@player.Balance.ToString("C")</span></div>
+            </div>
+            <div class="card-footer-bar">
+                @player.Reservations.Count reservations · @player.Transactions.Count transactions
+            </div>
+        </a>
+    }
+</div>

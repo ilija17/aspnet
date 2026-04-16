@@ -1,0 +1,37 @@
+@model List<aspnet.Models.Casino>
+@{
+    ViewData["Title"] = "Casinos";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Casinos</span>
+</div>
+
+<h1 class="page-title">Casinos</h1>
+
+<div class="entity-grid">
+    @foreach (var casino in Model)
+    {
+        var availableCount = casino.Tables.Count(t => t.IsAvailable);
+
+        <a class="entity-card" asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">
+            <div class="card-header">
+                <span class="card-title">@casino.Name</span>
+                @if (availableCount > 0)
+                {
+                    <span class="badge-available">@availableCount available</span>
+                }
+            </div>
+            <div class="card-meta">
+                <div>@casino.Address</div>
+                <div>License: <span class="mono">@casino.LicenseNumber</span></div>
+                <div>Founded: @casino.FoundedDate.ToString("MMM yyyy")</div>
+            </div>
+            <div class="card-footer-bar">
+                @casino.Tables.Count tables · @casino.Employees.Count staff
+            </div>
+        </a>
+    }
+</div>

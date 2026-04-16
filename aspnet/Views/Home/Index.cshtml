@@ -1,8 +1,49 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model List<aspnet.Models.Casino>
+@{
+    ViewData["Title"] = "Casino Floor";
+
+    var totalCasinos = Model.Count;
+    var totalTables = Model.Sum(c => c.Tables.Count);
+    var availableTables = Model.Sum(c => c.Tables.Count(t => t.IsAvailable));
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="page-header">
+    <h1 class="page-title">Casino Floor</h1>
+    <p class="text-muted">Live overview of all venues and table availability</p>
+</div>
+
+<div style="display: inline-flex; gap: 1rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <span class="badge-purple">Casinos</span>
+        <span class="mono" style="color: var(--color-lime, #84cc16)">@totalCasinos</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <span class="badge-purple">Total Tables</span>
+        <span class="mono" style="color: var(--color-lime, #84cc16)">@totalTables</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <span class="badge-purple">Available</span>
+        <span class="mono" style="color: var(--color-lime, #84cc16)">@availableTables</span>
+    </div>
+</div>
+
+<div class="floor-grid">
+    @foreach (var casino in Model)
+    {
+        <div class="floor-card">
+            <div class="casino-name">
+                <a asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">@casino.Name</a>
+            </div>
+            <div class="casino-address">@casino.Address</div>
+            <div class="table-chips">
+                @foreach (var table in casino.Tables)
+                {
+                    <span class="table-chip @(table.IsAvailable ? "available" : "unavailable")">
+                        T@(table.TableNumber) &middot; @table.Game.Name
+                    </span>
+                }
+            </div>
+            <a class="view-link" asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">View details &rarr;</a>
+        </div>
+    }
 </div>

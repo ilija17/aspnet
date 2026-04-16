@@ -1,0 +1,87 @@
+@model aspnet.Models.Reservation
+@{
+    ViewData["Title"] = "Reservation #" + Model.Id;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a asp-controller="Reservation" asp-action="Index">Reservations</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Reservation #@Model.Id</span>
+</div>
+
+<h1 class="page-title">Reservation #@Model.Id</h1>
+
+<div class="detail-grid">
+
+    <div class="detail-section">
+        <h2 class="section-title">Reservation Info</h2>
+        <div class="detail-row">
+            <span class="detail-label">Reservation ID</span>
+            <span class="detail-value mono">@Model.Id</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Reserved At</span>
+            <span class="detail-value mono">@Model.ReservedAt.ToString("dd MMM yyyy HH:mm")</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Player</span>
+            <span class="detail-value">
+                <a asp-controller="Player" asp-action="Details" asp-route-id="@Model.Player.Id">
+                    @Model.Player.FirstName @Model.Player.LastName
+                </a>
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Player Email</span>
+            <span class="detail-value">@Model.Player.Email</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Player Balance</span>
+            <span class="detail-value mono">@Model.Player.Balance.ToString("C")</span>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <h2 class="section-title">Table Info</h2>
+        <div class="detail-row">
+            <span class="detail-label">Table Number</span>
+            <span class="detail-value mono">@Model.Table.TableNumber</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Game</span>
+            <span class="detail-value">
+                <a asp-controller="Game" asp-action="Details" asp-route-id="@Model.Table.Game.Id">@Model.Table.Game.Name</a>
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Casino</span>
+            <span class="detail-value">
+                <a asp-controller="Casino" asp-action="Details" asp-route-id="@Model.Table.Casino.Id">@Model.Table.Casino.Name</a>
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Casino Address</span>
+            <span class="detail-value">@Model.Table.Casino.Address</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="detail-value">
+                @if (Model.Table.IsAvailable)
+                {
+                    <span class="badge-available">Available</span>
+                }
+                else
+                {
+                    <span class="badge-unavailable">Unavailable</span>
+                }
+            </span>
+        </div>
+    </div>
+
+</div>
+
+<div style="margin-top: 1.5rem;">
+    <a class="btn btn-back" asp-controller="Reservation" asp-action="Index">Back to Reservations</a>
+</div>

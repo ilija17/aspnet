@@ -1,0 +1,123 @@
+@model aspnet.Models.Casino
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a asp-controller="Casino" asp-action="Index">Casinos</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>@Model.Name</span>
+</div>
+
+<h1 class="page-title">@Model.Name</h1>
+
+<div class="detail-grid">
+
+    <div class="detail-section">
+        <h2 class="section-title">Casino Info</h2>
+        <div class="detail-row">
+            <span class="detail-label">Name</span>
+            <span class="detail-value">@Model.Name</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Address</span>
+            <span class="detail-value">@Model.Address</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">License Number</span>
+            <span class="detail-value mono">@Model.LicenseNumber</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Founded</span>
+            <span class="detail-value">@Model.FoundedDate.ToString("MMMM d, yyyy")</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Tables</span>
+            <span class="detail-value">@Model.Tables.Count</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Employees</span>
+            <span class="detail-value">@Model.Employees.Count</span>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <h2 class="section-title">Tables</h2>
+        @if (Model.Tables.Any())
+        {
+            @foreach (var table in Model.Tables)
+            {
+                <div class="panel" style="margin-bottom: 0.75rem;">
+                    <div class="detail-row">
+                        <span class="detail-label">Table #</span>
+                        <span class="detail-value mono">@table.TableNumber</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Game</span>
+                        <span class="detail-value">@(table.Game?.Name ?? "—")</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Bet Range</span>
+                        <span class="detail-value mono">@table.MinBet.ToString("C0") – @table.MaxBet.ToString("C0")</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">
+                            @if (table.IsAvailable)
+                            {
+                                <span class="badge-available">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge-unavailable">Unavailable</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="empty-state">No tables assigned.</p>
+        }
+    </div>
+
+</div>
+
+<div class="detail-section" style="margin-top: 2rem;">
+    <h2 class="section-title">Employees</h2>
+    @if (Model.Employees.Any())
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in Model.Employees)
+                {
+                    <tr>
+                        <td>@emp.FirstName @emp.LastName</td>
+                        <td>@emp.Position</td>
+                        <td>
+                            <a class="btn btn-sm" asp-controller="Employee" asp-action="Details" asp-route-id="@emp.Id">View</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="empty-state">No employees on record.</p>
+    }
+</div>
+
+<div style="margin-top: 2rem;">
+    <a class="btn btn-back" asp-controller="Casino" asp-action="Index">Back to Casinos</a>
+</div>

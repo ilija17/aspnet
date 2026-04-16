@@ -1,0 +1,45 @@
+@model aspnet.Models.Employee
+@{
+    ViewData["Title"] = Model.FirstName + " " + Model.LastName;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a asp-controller="Employee" asp-action="Index">Employees</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>@Model.FirstName @Model.LastName</span>
+</div>
+
+<h1 class="page-title">@Model.FirstName @Model.LastName</h1>
+
+<div class="detail-section">
+    <div class="detail-row">
+        <span class="detail-label">ID</span>
+        <span class="detail-value mono">@Model.Id</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">First name</span>
+        <span class="detail-value">@Model.FirstName</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Last name</span>
+        <span class="detail-value">@Model.LastName</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Position</span>
+        <span class="detail-value">
+            <span class="badge-purple">@Model.Position</span>
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Casino</span>
+        <span class="detail-value">
+            <a asp-controller="Casino" asp-action="Details" asp-route-id="@Model.Casino.Id">@Model.Casino.Name</a>
+        </span>
+    </div>
+</div>
+
+<div style="margin-top: 1.5rem;">
+    <a class="btn btn-back" asp-controller="Employee" asp-action="Index">Back to Employees</a>
+</div>

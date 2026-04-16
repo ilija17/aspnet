@@ -1,0 +1,46 @@
+@model List<aspnet.Models.Reservation>
+@{
+    ViewData["Title"] = "Reservations";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Reservations</span>
+</div>
+
+<h1 class="page-title">Reservations</h1>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>#ID</th>
+            <th>Player</th>
+            <th>Casino</th>
+            <th>Game</th>
+            <th>Table #</th>
+            <th>Reserved At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var reservation in Model)
+        {
+            <tr>
+                <td><span class="mono">@reservation.Id</span></td>
+                <td>
+                    <a asp-controller="Player" asp-action="Details" asp-route-id="@reservation.Player.Id">
+                        @reservation.Player.FirstName @reservation.Player.LastName
+                    </a>
+                </td>
+                <td>@reservation.Table.Casino.Name</td>
+                <td>@reservation.Table.Game.Name</td>
+                <td><span class="mono">@reservation.Table.TableNumber</span></td>
+                <td><span class="mono">@reservation.ReservedAt.ToString("dd MMM yyyy HH:mm")</span></td>
+                <td>
+                    <a class="btn btn-sm" asp-controller="Reservation" asp-action="Details" asp-route-id="@reservation.Id">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
