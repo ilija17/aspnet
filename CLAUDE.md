@@ -14,6 +14,7 @@
 - The shared layout (`aspnet/Views/Shared/_Layout.cshtml`)
 - CSS (`aspnet/wwwroot/css/**`)
 - JavaScript (`aspnet/wwwroot/js/**`)
+- Blackjack game (`aspnet/wwwroot/kocka/**`)
 
 ## Rule
 
@@ -23,6 +24,17 @@
 > sub-agent using the Agent tool before writing any such file itself.
 > The main agent must not write `.cshtml`, `.css`, or front-end `.js`
 > files directly.
+
+**CRITICAL:** Every Agent tool call for UI work MUST include `subagent_type: "ux-designer"` explicitly. Omitting this parameter causes the spawn to use a generic agent instead of the defined `ux-designer` agent, which defeats the delegation boundary. A description alone (e.g. "ux-designer role") is not sufficient.
+
+Correct form:
+```
+Agent({
+  subagent_type: "ux-designer",
+  description: "...",
+  prompt: "..."
+})
+```
 
 The main agent may read view files for context (to wire up
 `@model` types, check tag helper usage, etc.) but must not edit them.

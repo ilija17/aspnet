@@ -5,25 +5,30 @@
     var totalCasinos = Model.Count;
     var totalTables = Model.Sum(c => c.Tables.Count);
     var availableTables = Model.Sum(c => c.Tables.Count(t => t.IsAvailable));
+    var inUseTables = totalTables - availableTables;
 }
 
 <div class="page-header">
     <h1 class="page-title">Casino Floor</h1>
-    <p class="text-muted">Live overview of all venues and table availability</p>
+    <p style="color: var(--lime); margin-bottom: 1rem; font-size: 0.9rem; letter-spacing: 0.03em;">Live overview of all venues and table availability</p>
 </div>
 
-<div style="display: inline-flex; gap: 1rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
-    <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <span class="badge-purple">Casinos</span>
-        <span class="mono" style="color: var(--color-lime, #84cc16)">@totalCasinos</span>
+<div class="stat-bar">
+    <div class="stat-pill">
+        <span class="stat-label">Casinos</span>
+        <span class="stat-value">@totalCasinos</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <span class="badge-purple">Total Tables</span>
-        <span class="mono" style="color: var(--color-lime, #84cc16)">@totalTables</span>
+    <div class="stat-pill">
+        <span class="stat-label">Total Tables</span>
+        <span class="stat-value">@totalTables</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <span class="badge-purple">Available</span>
-        <span class="mono" style="color: var(--color-lime, #84cc16)">@availableTables</span>
+    <div class="stat-pill">
+        <span class="stat-label">Available</span>
+        <span class="stat-value">@availableTables</span>
+    </div>
+    <div class="stat-pill stat-pill-danger">
+        <span class="stat-label">In Use</span>
+        <span class="stat-value stat-in-use">@inUseTables</span>
     </div>
 </div>
 
