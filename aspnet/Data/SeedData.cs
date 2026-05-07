@@ -83,38 +83,35 @@ public static class SeedData
             }
         };
 
-        casino1.Tables.ForEach(t => t.Casino = casino1);
-        casino2.Tables.ForEach(t => t.Casino = casino2);
-        casino3.Tables.ForEach(t => t.Casino = casino3);
+        foreach (var t in casino1.Tables) t.Casino = casino1;
+        foreach (var t in casino2.Tables) t.Casino = casino2;
+        foreach (var t in casino3.Tables) t.Casino = casino3;
 
         // ── Transactions (attached to players) ────────────────────────────────
-        player1.Transactions.AddRange(new[]
-        {
-            new Transaction { Id = 1, Amount = 500,  Type = TransactionType.Deposit,    CreatedAt = new DateTime(2024, 1, 10), PlayerId = 1, Player = player1 },
-            new Transaction { Id = 2, Amount = 200,  Type = TransactionType.Bet,        CreatedAt = new DateTime(2024, 1, 10), PlayerId = 1, Player = player1 },
-            new Transaction { Id = 3, Amount = 450,  Type = TransactionType.Win,        CreatedAt = new DateTime(2024, 1, 10), PlayerId = 1, Player = player1 },
-        });
-        player2.Transactions.AddRange(new[]
-        {
-            new Transaction { Id = 4, Amount = 300,  Type = TransactionType.Deposit,    CreatedAt = new DateTime(2024, 2, 5),  PlayerId = 2, Player = player2 },
-            new Transaction { Id = 5, Amount = 150,  Type = TransactionType.Bet,        CreatedAt = new DateTime(2024, 2, 5),  PlayerId = 2, Player = player2 },
-            new Transaction { Id = 6, Amount = 100,  Type = TransactionType.Withdrawal, CreatedAt = new DateTime(2024, 2, 6),  PlayerId = 2, Player = player2 },
-        });
-        player3.Transactions.AddRange(new[]
-        {
-            new Transaction { Id = 7, Amount = 1000, Type = TransactionType.Deposit,    CreatedAt = new DateTime(2024, 3, 1),  PlayerId = 3, Player = player3 },
-            new Transaction { Id = 8, Amount = 500,  Type = TransactionType.Bet,        CreatedAt = new DateTime(2024, 3, 1),  PlayerId = 3, Player = player3 },
-            new Transaction { Id = 9, Amount = 800,  Type = TransactionType.Win,        CreatedAt = new DateTime(2024, 3, 1),  PlayerId = 3, Player = player3 },
-        });
+        player1.Transactions.Add(new Transaction { Id = 1, Amount = 500,  Type = TransactionType.Deposit,    CreatedAt = new DateTime(2024, 1, 10), PlayerId = 1, Player = player1 });
+        player1.Transactions.Add(new Transaction { Id = 2, Amount = 200,  Type = TransactionType.Bet,        CreatedAt = new DateTime(2024, 1, 10), PlayerId = 1, Player = player1 });
+        player1.Transactions.Add(new Transaction { Id = 3, Amount = 450,  Type = TransactionType.Win,        CreatedAt = new DateTime(2024, 1, 10), PlayerId = 1, Player = player1 });
+
+        player2.Transactions.Add(new Transaction { Id = 4, Amount = 300,  Type = TransactionType.Deposit,    CreatedAt = new DateTime(2024, 2, 5),  PlayerId = 2, Player = player2 });
+        player2.Transactions.Add(new Transaction { Id = 5, Amount = 150,  Type = TransactionType.Bet,        CreatedAt = new DateTime(2024, 2, 5),  PlayerId = 2, Player = player2 });
+        player2.Transactions.Add(new Transaction { Id = 6, Amount = 100,  Type = TransactionType.Withdrawal, CreatedAt = new DateTime(2024, 2, 6),  PlayerId = 2, Player = player2 });
+
+        player3.Transactions.Add(new Transaction { Id = 7, Amount = 1000, Type = TransactionType.Deposit,    CreatedAt = new DateTime(2024, 3, 1),  PlayerId = 3, Player = player3 });
+        player3.Transactions.Add(new Transaction { Id = 8, Amount = 500,  Type = TransactionType.Bet,        CreatedAt = new DateTime(2024, 3, 1),  PlayerId = 3, Player = player3 });
+        player3.Transactions.Add(new Transaction { Id = 9, Amount = 800,  Type = TransactionType.Win,        CreatedAt = new DateTime(2024, 3, 1),  PlayerId = 3, Player = player3 });
 
         // ── Reservations – N-N between Player and Table ───────────────────────
+        var c1Tables = casino1.Tables.ToList();
+        var c2Tables = casino2.Tables.ToList();
+        var c3Tables = casino3.Tables.ToList();
+
         var reservations = new List<Reservation>
         {
-            new() { Id = 1, ReservedAt = new DateTime(2024, 4, 10, 20, 0, 0), PlayerId = 1, Player = player1, TableId = 1, Table = casino1.Tables[0] },
-            new() { Id = 2, ReservedAt = new DateTime(2024, 4, 10, 21, 0, 0), PlayerId = 2, Player = player2, TableId = 4, Table = casino2.Tables[0] },
-            new() { Id = 3, ReservedAt = new DateTime(2024, 4, 11, 18, 0, 0), PlayerId = 3, Player = player3, TableId = 7, Table = casino3.Tables[0] },
-            new() { Id = 4, ReservedAt = new DateTime(2024, 4, 12, 19, 0, 0), PlayerId = 1, Player = player1, TableId = 5, Table = casino2.Tables[1] },
-            new() { Id = 5, ReservedAt = new DateTime(2024, 4, 12, 22, 0, 0), PlayerId = 5, Player = player5, TableId = 2, Table = casino1.Tables[1] },
+            new() { Id = 1, ReservedAt = new DateTime(2024, 4, 10, 20, 0, 0), PlayerId = 1, Player = player1, TableId = 1, Table = c1Tables[0] },
+            new() { Id = 2, ReservedAt = new DateTime(2024, 4, 10, 21, 0, 0), PlayerId = 2, Player = player2, TableId = 4, Table = c2Tables[0] },
+            new() { Id = 3, ReservedAt = new DateTime(2024, 4, 11, 18, 0, 0), PlayerId = 3, Player = player3, TableId = 7, Table = c3Tables[0] },
+            new() { Id = 4, ReservedAt = new DateTime(2024, 4, 12, 19, 0, 0), PlayerId = 1, Player = player1, TableId = 5, Table = c2Tables[1] },
+            new() { Id = 5, ReservedAt = new DateTime(2024, 4, 12, 22, 0, 0), PlayerId = 5, Player = player5, TableId = 2, Table = c1Tables[1] },
         };
 
         // Wire reservations back onto players (the N side of N-N)

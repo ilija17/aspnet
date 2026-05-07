@@ -1,0 +1,68 @@
+@* Lists all transactions in a styled data table. Type badges: green for Deposit/Win, red for Withdrawal/Bet. *@
+@model List<aspnet.Models.Transaction>
+@{
+    ViewData["Title"] = "Transakcije";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Transakcije</span>
+</div>
+
+<h1 class="page-title">Sve transakcije</h1>
+
+<div class="panel">
+    @if (!Model.Any())
+    {
+        <p class="text-muted" style="color: var(--muted); padding: 1rem 0;">Nema transakcija.</p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Igrač</th>
+                    <th>Vrsta</th>
+                    <th>Iznos</th>
+                    <th>Datum</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tx in Model)
+                {
+                    <tr>
+                        <td>
+                            <a asp-controller="Player" asp-action="Details" asp-route-id="@tx.PlayerId"
+                               style="color: var(--purple-hi); text-decoration: none;">
+                                @tx.Player.FirstName @tx.Player.LastName
+                            </a>
+                        </td>
+                        <td>
+                            @if (tx.Type == aspnet.Models.TransactionType.Deposit)
+                            {
+                                <span class="badge badge-available">Uplata</span>
+                            }
+                            else if (tx.Type == aspnet.Models.TransactionType.Win)
+                            {
+                                <span class="badge badge-available">Dobitak</span>
+                            }
+                            else if (tx.Type == aspnet.Models.TransactionType.Withdrawal)
+                            {
+                                <span class="badge badge-tx-danger">Isplata</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-tx-danger">Ulog</span>
+                            }
+                        </td>
+                        <td><span class="mono">@tx.Amount.ToString("C")</span></td>
+                        <td><span class="mono">@tx.CreatedAt.ToString("dd MMM yyyy HH:mm")</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@section Scripts {}

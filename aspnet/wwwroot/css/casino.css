@@ -530,6 +530,75 @@ h3 { color: var(--text); letter-spacing: 0.04em; margin: 0 0 0.5rem; }
   100% { transform: scale(1);    opacity: 1; }
 }
 
+/* ── Transaction danger badge (Withdrawal / Bet) ────────────── */
+.badge-tx-danger {
+  background: rgba(255,90,127,0.15);
+  border: 1px solid rgba(255,90,127,0.5);
+  color: var(--danger);
+}
+
+/* ── Edit / create form ─────────────────────────────────────── */
+.edit-form-wrap {
+  max-width: 520px;
+  background: linear-gradient(145deg, #1a1230, #261540 35%, #1d1030 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(139,212,80,0.22);
+  box-shadow: var(--shadow), 0 0 40px rgba(115,79,154,0.2);
+  padding: 1.75rem 2rem;
+  margin-top: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1.1rem;
+}
+
+.form-label {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.form-input {
+  background: rgba(10,9,20,0.7);
+  border: 1px solid rgba(139,212,80,0.25);
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: rgba(139,212,80,0.6);
+  box-shadow: 0 0 0 3px rgba(139,212,80,0.1);
+}
+
+.form-input[type="date"] {
+  color-scheme: dark;
+}
+
+.form-validation {
+  color: var(--danger);
+  font-size: 0.8rem;
+  min-height: 1.1em;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .detail-grid { grid-template-columns: 1fr; }

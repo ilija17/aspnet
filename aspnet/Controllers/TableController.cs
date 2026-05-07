@@ -1,17 +1,19 @@
-// Handles /Table routes. Index lists all tables across all casinos; Details shows one table with its reservations.
 using aspnet.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace aspnet.Controllers;
 
+[Route("stolovi")]
 public class TableController : Controller
 {
     private readonly ITableRepository _repo;
 
     public TableController(ITableRepository repo) => _repo = repo;
 
+    [Route("")]
     public IActionResult Index() => View(_repo.GetAll());
 
+    [Route("{id:int}")]
     public IActionResult Details(int id)
     {
         var table = _repo.GetById(id);

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aspnet.Data;
 
@@ -11,9 +12,11 @@ using aspnet.Data;
 namespace aspnet.Migrations
 {
     [DbContext(typeof(CasinoDbContext))]
-    partial class CasinoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260507150648_SeedData")]
+    partial class SeedData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -193,11 +196,9 @@ namespace aspnet.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("MaxBet")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("MinBet")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Name")
@@ -259,7 +260,6 @@ namespace aspnet.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("DateOfBirth")
@@ -410,11 +410,9 @@ namespace aspnet.Migrations
                         .HasColumnType("bit");
 
                     b.Property<decimal>("MaxBet")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("MinBet")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("TableNumber")
@@ -530,7 +528,6 @@ namespace aspnet.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")

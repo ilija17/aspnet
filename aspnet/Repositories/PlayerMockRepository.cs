@@ -12,4 +12,10 @@ public class PlayerMockRepository : IPlayerRepository
     public List<Player> GetAll() => _data;
 
     public Player? GetById(int id) => _data.FirstOrDefault(p => p.Id == id);
+
+    public void Update(Player player)
+    {
+        var index = _data.FindIndex(p => p.Id == player.Id);
+        if (index >= 0) _data[index] = player;
+    }
 }
