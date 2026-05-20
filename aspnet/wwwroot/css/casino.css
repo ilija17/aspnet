@@ -914,3 +914,348 @@ h3 { color: var(--text); letter-spacing: 0.04em; margin: 0 0 0.5rem; }
   transition: background 120ms, border-color 120ms;
 }
 .dp-clear:hover { background: rgba(255,90,127,0.1); border-color: rgba(255,90,127,0.7); }
+
+/* ============================================================
+   NERV / Evangelion Animation Layer
+   ============================================================ */
+
+/* ── Eva color tokens ───────────────────────────────────────── */
+:root {
+  --eva-red:    #cc1100;
+  --eva-orange: #e85d00;
+  --eva-amber:  #f5a623;
+  --eva-nerv:   #1a0a00;
+  --eva-green:  #00cc44;
+  --eva-blue:   #0077cc;
+  --eva-scan:   rgba(139,212,80,0.07);
+}
+
+/* ── 1. NERV Boot overlay ───────────────────────────────────── */
+#nerv-boot {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #050305;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  transition: opacity 0.4s ease;
+}
+
+.nerv-boot-inner {
+  text-align: center;
+  border: 1px solid rgba(204,17,0,0.6);
+  padding: 3rem 4rem;
+  position: relative;
+  box-shadow: 0 0 60px rgba(204,17,0,0.25), inset 0 0 40px rgba(204,17,0,0.05);
+}
+
+.nerv-boot-inner::before,
+.nerv-boot-inner::after {
+  content: ''; position: absolute;
+  border: 1px solid rgba(204,17,0,0.35);
+  border-radius: 2px;
+}
+.nerv-boot-inner::before { inset: 6px; }
+.nerv-boot-inner::after  { inset: 12px; }
+
+.nerv-logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 4rem; font-weight: 700; letter-spacing: 0.4em;
+  color: #cc1100;
+  text-shadow: 0 0 20px rgba(204,17,0,0.8), 0 0 60px rgba(204,17,0,0.4);
+  animation: nerv-logo-pulse 1.4s ease-in-out infinite;
+  margin-bottom: 0.25rem;
+}
+
+.nerv-subtitle {
+  color: rgba(204,17,0,0.6); font-size: 0.7rem; letter-spacing: 0.3em;
+  text-transform: uppercase; margin-bottom: 2rem;
+}
+
+.magi-status {
+  color: #00cc44; font-size: 0.78rem; line-height: 2;
+  min-height: 4.5rem; text-align: left; margin-bottom: 1.5rem;
+}
+
+.nerv-sync-wrap {
+  display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;
+}
+
+.nerv-sync-label {
+  color: rgba(204,17,0,0.7); font-size: 0.68rem; letter-spacing: 0.12em; white-space: nowrap;
+}
+
+.nerv-sync-bar {
+  flex: 1; height: 4px; background: rgba(204,17,0,0.15); border-radius: 2px; overflow: hidden;
+}
+
+.nerv-sync-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #cc1100, #ff4400);
+  border-radius: 2px; box-shadow: 0 0 8px rgba(204,17,0,0.7); transition: none;
+}
+
+.nerv-sync-pct {
+  color: #cc1100; font-size: 0.78rem; min-width: 3ch;
+}
+
+.nerv-launch-text {
+  color: #8bd450; font-size: 0.75rem; letter-spacing: 0.15em; min-height: 1.2em;
+}
+
+@keyframes nerv-logo-pulse {
+  0%,100% { text-shadow: 0 0 20px rgba(204,17,0,0.8), 0 0 60px rgba(204,17,0,0.4); }
+  50%      { text-shadow: 0 0 30px rgba(204,17,0,1),   0 0 80px rgba(204,17,0,0.7); }
+}
+
+/* ── 2. Entity card entrance ────────────────────────────────── */
+@keyframes eva-launch-flash {
+  0%   { box-shadow: 0 0 0 2px rgba(139,212,80,0.9), 0 0 30px rgba(139,212,80,0.5); }
+  100% { box-shadow: var(--shadow), 0 0 40px rgba(115,79,154,0.2); }
+}
+
+.eva-launch-flash {
+  animation: eva-launch-flash 600ms ease-out forwards;
+}
+
+/* ── 3. AT Field hex hover on entity cards ──────────────────── */
+.entity-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.entity-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='46'%3E%3Cpolygon points='20,2 38,12 38,34 20,44 2,34 2,12' fill='none' stroke='rgba(139%2C212%2C80%2C0.18)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 40px 46px;
+  opacity: 0;
+  transform: scale(1.3);
+  transition: opacity 280ms ease, transform 350ms ease;
+  pointer-events: none;
+  border-radius: 14px;
+}
+
+.entity-card:hover::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@keyframes at-field-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(245,166,35,0.5); }
+  50%  { box-shadow: 0 0 0 8px rgba(245,166,35,0.15); }
+  100% { box-shadow: 0 0 0 14px rgba(245,166,35,0); }
+}
+
+.at-field-active {
+  animation: at-field-pulse 500ms ease-out forwards;
+}
+
+/* ── 4. NERV Delete Confirmation Modal ──────────────────────── */
+#nerv-modal {
+  position: fixed; inset: 0; z-index: 8000;
+  background: rgba(5,0,3,0.88);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+  animation: nerv-modal-in 200ms ease;
+}
+
+@keyframes nerv-modal-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.nerv-modal-box {
+  font-family: 'JetBrains Mono', monospace;
+  border: 2px solid #cc1100;
+  border-radius: 4px;
+  padding: 0;
+  min-width: 360px;
+  background: #0d0303;
+  box-shadow: 0 0 0 1px rgba(204,17,0,0.3), 0 0 60px rgba(204,17,0,0.4);
+  animation: nerv-modal-box-in 200ms ease;
+  overflow: hidden;
+}
+
+@keyframes nerv-modal-box-in {
+  from { transform: scale(0.92) translateY(-10px); }
+  to   { transform: scale(1)    translateY(0); }
+}
+
+.nerv-modal-header {
+  background: #cc1100;
+  padding: 0.6rem 1.2rem;
+  text-align: center;
+}
+
+.nerv-modal-alert {
+  color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.2em;
+  animation: nerv-alert-flash 0.7s step-end infinite;
+}
+
+@keyframes nerv-alert-flash {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.4; }
+}
+
+.nerv-modal-body { padding: 1.5rem 1.5rem 1rem; text-align: center; }
+
+.nerv-modal-msg {
+  color: #cc1100; font-size: 0.9rem; letter-spacing: 0.12em; margin-bottom: 0.5rem;
+}
+
+.nerv-modal-sub {
+  color: rgba(204,17,0,0.6); font-size: 0.72rem; letter-spacing: 0.1em; margin-bottom: 1rem;
+}
+
+.nerv-modal-countdown {
+  font-size: 2.5rem; font-weight: 700; color: #cc1100;
+  letter-spacing: 0.05em; min-height: 3rem;
+  text-shadow: 0 0 20px rgba(204,17,0,0.8);
+  animation: nerv-count-pulse 1s ease-in-out infinite;
+}
+
+@keyframes nerv-count-pulse {
+  0%,100% { text-shadow: 0 0 20px rgba(204,17,0,0.8); }
+  50%     { text-shadow: 0 0 40px rgba(204,17,0,1), 0 0 60px rgba(204,17,0,0.5); }
+}
+
+.nerv-modal-footer {
+  display: flex; gap: 0; border-top: 1px solid rgba(204,17,0,0.3);
+}
+
+.nerv-btn-cancel, .nerv-btn-confirm {
+  flex: 1; padding: 0.85rem; border: none; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700;
+  letter-spacing: 0.15em; transition: background 120ms;
+}
+
+.nerv-btn-cancel {
+  background: #1a0303; color: rgba(204,17,0,0.7);
+  border-right: 1px solid rgba(204,17,0,0.3);
+}
+
+.nerv-btn-cancel:hover  { background: rgba(204,17,0,0.12); color: #cc1100; }
+
+.nerv-btn-confirm { background: #1a0303; color: #cc1100; }
+
+.nerv-btn-confirm:hover:not(:disabled) { background: rgba(204,17,0,0.2); }
+
+.nerv-btn-confirm:disabled { color: rgba(204,17,0,0.3); cursor: not-allowed; }
+
+/* ── 5. Validation — Pattern Red / Sync OK ──────────────────── */
+@keyframes nerv-pattern-red {
+  0%   { background: rgba(204,17,0,0.18); border-color: rgba(204,17,0,0.8); }
+  100% { background: transparent; border-color: inherit; }
+}
+
+.nerv-pattern-red .form-input {
+  animation: nerv-pattern-red 800ms ease-out forwards;
+}
+
+.nerv-pattern-red .form-validation {
+  animation: eva-launch-flash 300ms ease-out;
+}
+
+@keyframes nerv-sync-ok {
+  0%   { border-color: rgba(139,212,80,0.9); box-shadow: 0 0 0 3px rgba(139,212,80,0.25); }
+  100% { border-color: rgba(139,212,80,0.25); box-shadow: none; }
+}
+
+.nerv-sync-ok {
+  animation: nerv-sync-ok 500ms ease-out forwards;
+}
+
+/* ── 6. MAGI Search Scanner ─────────────────────────────────── */
+.search-bar { position: relative; overflow: visible; }
+
+.search-bar.magi-scanning .form-input {
+  position: relative;
+}
+
+.search-bar.magi-scanning::after {
+  content: '';
+  position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139,212,80,0.12), transparent);
+  animation: magi-scan-sweep 600ms linear infinite;
+  pointer-events: none;
+  border-radius: 8px;
+}
+
+@keyframes magi-scan-sweep {
+  from { left: -60%; }
+  to   { left: 110%; }
+}
+
+.magi-status-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; color: #00cc44; letter-spacing: 0.18em;
+  padding: 0.2rem 0; opacity: 0;
+  animation: magi-label-in 200ms forwards;
+}
+
+@keyframes magi-label-in { to { opacity: 1; } }
+
+/* ── 7. Brand Logo Glitch ───────────────────────────────────── */
+@keyframes eva-glitch-1 {
+  0%,100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+  10%     { clip-path: inset(20% 0 60% 0); transform: translate(-4px, 0); color: #cc1100; }
+  20%     { clip-path: inset(55% 0 30% 0); transform: translate(3px, 0);  color: #0077cc; }
+  30%     { clip-path: inset(0 0 100% 0);  transform: translate(0); }
+}
+
+@keyframes eva-glitch-2 {
+  0%,100% { transform: translate(0); opacity: 1; }
+  10%     { transform: translate(3px, -1px); opacity: 0.8; }
+  20%     { transform: translate(-3px, 1px); opacity: 0.9; }
+  30%     { transform: translate(0); opacity: 1; }
+}
+
+.brand-glitch {
+  animation: eva-glitch-2 300ms steps(1) forwards;
+}
+
+/* ── 8. Synchronization Complete flash ──────────────────────── */
+#nerv-sync-complete {
+  position: fixed; inset: 0; z-index: 7000;
+  background: rgba(5,20,5,0.92);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  opacity: 0; pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+#nerv-sync-complete.active {
+  opacity: 1; pointer-events: all;
+}
+
+.nerv-complete-text {
+  color: #8bd450; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(139,212,80,0.8);
+  animation: nerv-complete-in 300ms ease;
+}
+
+@keyframes nerv-complete-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── 9. SEELE Toast (Easter Egg) ────────────────────────────── */
+.seele-toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 5000;
+  background: #0d0b1a; border: 1px solid rgba(204,17,0,0.5);
+  border-radius: 4px; padding: 0.6rem 1rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  color: rgba(204,17,0,0.8); letter-spacing: 0.12em;
+  display: flex; align-items: center; gap: 0.5rem;
+  box-shadow: 0 0 20px rgba(204,17,0,0.2);
+  opacity: 0; transform: translateX(20px);
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+.seele-toast.show {
+  opacity: 1; transform: translateX(0);
+}
+
+.seele-toast-icon {
+  color: #cc1100;
+  animation: nerv-alert-flash 1s step-end infinite;
+}
