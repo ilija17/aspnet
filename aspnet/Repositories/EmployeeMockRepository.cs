@@ -1,6 +1,3 @@
-// Mock implementation of IEmployeeRepository. Flattens employees from all casinos in SeedData.
-// BuildData() also wires the Casino back-reference on each employee (SeedData does not do this).
-// Registered as AddSingleton — data is built once at startup and reused.
 using aspnet.Data;
 using aspnet.Models;
 
@@ -20,6 +17,9 @@ public class EmployeeMockRepository : IEmployeeRepository
     }
 
     public List<Employee> GetAll() => _data;
-
     public Employee? GetById(int id) => _data.FirstOrDefault(e => e.Id == id);
+    public void Create(Employee employee) { employee.Id = _data.Max(e => e.Id) + 1; _data.Add(employee); }
+    public void Update(Employee employee) { var i = _data.FindIndex(e => e.Id == employee.Id); if (i >= 0) _data[i] = employee; }
+    public void Delete(int id) { var e = _data.FirstOrDefault(e => e.Id == id); if (e is not null) _data.Remove(e); }
+    public List<Employee> Search(string q) => _data.Where(e => e.FirstName.Contains(q, StringComparison.OrdinalIgnoreCase) || e.LastName.Contains(q, StringComparison.OrdinalIgnoreCase) || e.Position.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(20).ToList();
 }

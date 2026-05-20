@@ -1,4 +1,4 @@
-@* Lists all reservations in a table with player, casino, game, table number, and timestamp. *@
+@* Lists all reservations in a table with player, casino, game, table number, timestamp, search, and CRUD actions. *@
 @model List<aspnet.Models.Reservation>
 @{
     ViewData["Title"] = "Reservations";
@@ -7,41 +7,97 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Reservations</span>
+    <span class="current">Reservations</span>
 </div>
 
-<h1 class="page-title">Reservations</h1>
+<div class="index-action-bar">
+    <h1 class="page-title" style="margin:0">Reservations</h1>
+    <a class="btn btn-primary" href="/rezervacije/nova">Nova rezervacija</a>
+</div>
 
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>#ID</th>
-            <th>Player</th>
-            <th>Casino</th>
-            <th>Game</th>
-            <th>Table #</th>
-            <th>Reserved At</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var reservation in Model)
-        {
+<div class="search-bar">
+    <input type="text" id="searchInput" class="form-input" placeholder="Pretraga rezervacija..." autocomplete="off" />
+</div>
+
+<div class="panel">
+    <table class="data-table">
+        <thead>
             <tr>
-                <td><span class="mono">@reservation.Id</span></td>
-                <td>
-                    <a asp-controller="Player" asp-action="Details" asp-route-id="@reservation.Player.Id">
-                        @reservation.Player.FirstName @reservation.Player.LastName
-                    </a>
-                </td>
-                <td>@reservation.Table.Casino.Name</td>
-                <td>@reservation.Table.Game.Name</td>
-                <td><span class="mono">@reservation.Table.TableNumber</span></td>
-                <td><span class="mono">@reservation.ReservedAt.ToString("dd MMM yyyy HH:mm")</span></td>
-                <td>
-                    <a class="btn btn-sm" asp-controller="Reservation" asp-action="Details" asp-route-id="@reservation.Id">Details</a>
-                </td>
+                <th>#ID</th>
+                <th>Igrač</th>
+                <th>Casino</th>
+                <th>Igra</th>
+                <th>Stol #</th>
+                <th>Datum</th>
+                <th>Akcije</th>
             </tr>
+        </thead>
+        <tbody id="reservationBody">
+            @foreach (var reservation in Model)
+            {
+                <tr>
+                    <td><span class="mono">@reservation.Id</span></td>
+                    <td>
+                        <a href="/igraci/@reservation.Player.Id" style="color:var(--purple-hi);text-decoration:none;">
+                            @reservation.Player.FirstName @reservation.Player.LastName
+                        </a>
+                    </td>
+                    <td>@reservation.Table.Casino.Name</td>
+                    <td>@reservation.Table.Game.Name</td>
+                    <td><span class="mono">@reservation.Table.TableNumber</span></td>
+                    <td><span class="mono">@reservation.ReservedAt.ToString("dd MMM yyyy HH:mm")</span></td>
+                    <td style="white-space:nowrap;">
+                        <a class="btn btn-sm" href="/rezervacije/@reservation.Id">Detalji</a>
+                        <form method="post" action="/rezervacije/@reservation.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovu rezervaciju?')">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    var debounceTimer;
+    var $body = $('#reservationBody');
+    var antiForgeryToken = $('input[name="__RequestVerificationToken"]').first().val();
+
+    function renderReservations(reservations) {
+        if (!reservations || reservations.length === 0) {
+            $body.html('<tr><td colspan="7" class="empty-state" style="padding:1rem;">Nema rezultata.</td></tr>');
+            return;
         }
-    </tbody>
-</table>
+        var html = '';
+        $.each(reservations, function (i, r) {
+            html += '<tr>' +
+                '<td><span class="mono">' + r.id + '</span></td>' +
+                '<td><a href="/igraci/' + (r.playerId || '') + '" style="color:var(--purple-hi);text-decoration:none;">' + (r.playerName || '') + '</a></td>' +
+                '<td>' + (r.casinoName || '') + '</td>' +
+                '<td>' + (r.gameName || '') + '</td>' +
+                '<td><span class="mono">' + (r.tableNumber || '') + '</span></td>' +
+                '<td><span class="mono">' + (r.reservedAt || '') + '</span></td>' +
+                '<td style="white-space:nowrap;">' +
+                '<a class="btn btn-sm" href="/rezervacije/' + r.id + '">Detalji</a> ' +
+                '<form method="post" action="/rezervacije/' + r.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
+                '<input name="__RequestVerificationToken" type="hidden" value="' + antiForgeryToken + '" />' +
+                '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
+                '</form></td></tr>';
+        });
+        $body.html(html);
+    }
+
+    $('#searchInput').on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        if (!q) { location.reload(); return; }
+        debounceTimer = setTimeout(function () {
+            $.getJSON('/rezervacije/pretraga', { q: q }, function (data) { renderReservations(data); });
+        }, 300);
+    });
+});
+</script>
+}

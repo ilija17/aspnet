@@ -1,23 +1,24 @@
-@* Edit form for a single Player. Includes client-side validation via _ValidationScriptsPartial. *@
-@model aspnet.Models.Player
+@* Edit form for an existing Employee. Pre-fills autocomplete for Casino. *@
+@model aspnet.Models.Employee
 @{
-    ViewData["Title"] = "Uredi igrača";
+    ViewData["Title"] = "Uredi djelatnika";
 }
 
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <a href="/igraci">Players</a>
+    <a href="/djelatnici">Employees</a>
     <span class="breadcrumb-sep">›</span>
-    <a href="/igraci/@Model.Id">@Model.FirstName @Model.LastName</a>
+    <a href="/djelatnici/@Model.Id">@Model.FirstName @Model.LastName</a>
     <span class="breadcrumb-sep">›</span>
     <span class="current">Uredi</span>
 </div>
 
-<h1 class="page-title">Uredi igrača</h1>
+<h1 class="page-title">Uredi djelatnika</h1>
 
 <div class="edit-form-wrap">
-    <form method="post" action="/igraci/@Model.Id/uredi" novalidate>
+    <form method="post" action="/djelatnici/@Model.Id/uredi" novalidate>
+        @Html.AntiForgeryToken()
         <input asp-for="Id" type="hidden" />
 
         <div class="form-field">
@@ -33,27 +34,22 @@
         </div>
 
         <div class="form-field">
-            <label asp-for="Email" class="form-label">E-mail</label>
-            <input asp-for="Email" class="form-input" type="email" />
-            <span asp-validation-for="Email" class="form-validation"></span>
+            <label asp-for="Position" class="form-label">Pozicija</label>
+            <input asp-for="Position" class="form-input" />
+            <span asp-validation-for="Position" class="form-validation"></span>
         </div>
 
-        @await Html.PartialAsync("_DatePicker", (object)null, new ViewDataDictionary(ViewData) {
-            { "FieldId", "DateOfBirth" },
-            { "FieldLabel", "Datum rođenja" },
-            { "Mode", "date" },
-            { "CurrentValue", Model.DateOfBirth }
+        @await Html.PartialAsync("_Autocomplete", (object)null, new ViewDataDictionary(ViewData) {
+            { "FieldId", "CasinoId" },
+            { "FieldLabel", "Casino" },
+            { "EndpointUrl", "/kasina/autocomplete" },
+            { "CurrentText", Model.Casino != null ? Model.Casino.Name : "" },
+            { "CurrentId", Model.CasinoId.ToString() }
         })
-
-        <div class="form-field">
-            <label asp-for="Balance" class="form-label">Saldo</label>
-            <input asp-for="Balance" class="form-input" type="number" step="0.01" />
-            <span asp-validation-for="Balance" class="form-validation"></span>
-        </div>
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Spremi</button>
-            <a class="btn btn-back" href="/igraci/@Model.Id">Odustani</a>
+            <a class="btn btn-back" href="/djelatnici/@Model.Id">Odustani</a>
         </div>
     </form>
 </div>

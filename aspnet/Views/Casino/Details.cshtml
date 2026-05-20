@@ -7,7 +7,7 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <a asp-controller="Casino" asp-action="Index">Casinos</a>
+    <a href="/kasina">Casinos</a>
     <span class="breadcrumb-sep">›</span>
     <span>@Model.Name</span>
 </div>
@@ -119,6 +119,13 @@
     }
 </div>
 
-<div style="margin-top: 2rem;">
-    <a class="btn btn-back" asp-controller="Casino" asp-action="Index">Back to Casinos</a>
+<div class="detail-actions">
+    <a class="btn btn-back" href="/kasina">Back to Casinos</a>
+    <a class="btn btn-accent" href="/kasina/@Model.Id/uredi">Uredi</a>
+    <form method="post" action="/kasina/@Model.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovaj casino?')">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+    </form>
 </div>
+
+@section Scripts {}

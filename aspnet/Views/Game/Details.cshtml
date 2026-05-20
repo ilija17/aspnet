@@ -7,7 +7,7 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <a asp-controller="Game" asp-action="Index">Games</a>
+    <a href="/igre">Games</a>
     <span class="breadcrumb-sep">›</span>
     <span>@Model.Name</span>
 </div>
@@ -82,6 +82,13 @@
     </div>
 </div>
 
-<div class="panel">
-    <a class="btn btn-back" asp-controller="Game" asp-action="Index">Back to Games</a>
+<div class="detail-actions">
+    <a class="btn btn-back" href="/igre">Back to Games</a>
+    <a class="btn btn-accent" href="/igre/@Model.Id/uredi">Uredi</a>
+    <form method="post" action="/igre/@Model.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovu igru?')">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+    </form>
 </div>
+
+@section Scripts {}

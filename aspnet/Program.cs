@@ -9,7 +9,8 @@ builder.Services.AddDbContext<CasinoDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
 // ── EF repositories (Lab 3) ──────────────────────────────────────────────────
 builder.Services.AddScoped<ICasinoRepository,      CasinoEfRepository>();

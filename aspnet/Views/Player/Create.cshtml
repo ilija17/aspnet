@@ -1,7 +1,7 @@
-@* Edit form for a single Player. Includes client-side validation via _ValidationScriptsPartial. *@
+@* Create form for a new Player. *@
 @model aspnet.Models.Player
 @{
-    ViewData["Title"] = "Uredi igrača";
+    ViewData["Title"] = "Novi igrač";
 }
 
 <div class="breadcrumb-bar">
@@ -9,16 +9,14 @@
     <span class="breadcrumb-sep">›</span>
     <a href="/igraci">Players</a>
     <span class="breadcrumb-sep">›</span>
-    <a href="/igraci/@Model.Id">@Model.FirstName @Model.LastName</a>
-    <span class="breadcrumb-sep">›</span>
-    <span class="current">Uredi</span>
+    <span class="current">Novi igrač</span>
 </div>
 
-<h1 class="page-title">Uredi igrača</h1>
+<h1 class="page-title">Novi igrač</h1>
 
 <div class="edit-form-wrap">
-    <form method="post" action="/igraci/@Model.Id/uredi" novalidate>
-        <input asp-for="Id" type="hidden" />
+    <form method="post" action="/igraci/novi" novalidate>
+        @Html.AntiForgeryToken()
 
         <div class="form-field">
             <label asp-for="FirstName" class="form-label">Ime</label>
@@ -47,13 +45,13 @@
 
         <div class="form-field">
             <label asp-for="Balance" class="form-label">Saldo</label>
-            <input asp-for="Balance" class="form-input" type="number" step="0.01" />
+            <input asp-for="Balance" class="form-input" type="number" step="0.01" min="0" />
             <span asp-validation-for="Balance" class="form-validation"></span>
         </div>
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Spremi</button>
-            <a class="btn btn-back" href="/igraci/@Model.Id">Odustani</a>
+            <a class="btn btn-back" href="/igraci">Odustani</a>
         </div>
     </form>
 </div>

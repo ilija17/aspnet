@@ -1,4 +1,4 @@
-@* Lists all tables across all casinos with game name, bet range, and availability badge. *@
+@* Lists all tables across all casinos with game name, bet range, availability badge, search, and CRUD actions. *@
 @model List<aspnet.Models.Table>
 @{
     ViewData["Title"] = "Tables";
@@ -7,32 +7,95 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Tables</span>
+    <span class="current">Tables</span>
 </div>
 
-<h1 class="page-title">Tables</h1>
+<div class="index-action-bar">
+    <h1 class="page-title" style="margin:0">Tables</h1>
+    <a class="btn btn-primary" href="/stolovi/novi">Dodaj novi stol</a>
+</div>
 
-<div class="entity-grid">
+<div class="search-bar">
+    <input type="text" id="searchInput" class="form-input" placeholder="Pretraga stolova..." autocomplete="off" />
+</div>
+
+<div class="entity-grid" id="entityGrid">
     @foreach (var table in Model)
     {
-        <a class="entity-card" asp-controller="Table" asp-action="Details" asp-route-id="@table.Id">
-            <div class="card-header">
-                <span class="card-title">Table #@table.TableNumber — @table.Game.Name</span>
+        <div class="entity-card-wrap">
+            <a class="entity-card" href="/stolovi/@table.Id">
+                <div class="card-header">
+                    <span class="card-title">Stol #@table.TableNumber — @table.Game.Name</span>
+                </div>
+                <div class="card-meta">
+                    <div>@table.Casino.Name</div>
+                    <div>Bet range: <span class="mono">@table.MinBet–@table.MaxBet</span></div>
+                </div>
+                <div class="card-footer-bar">
+                    @if (table.IsAvailable)
+                    {
+                        <span class="badge badge-available">Slobodan</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-unavailable">Zauzet</span>
+                    }
+                </div>
+            </a>
+            <div class="card-actions">
+                <a class="btn btn-sm btn-accent" href="/stolovi/@table.Id/uredi">Uredi</a>
+                <form method="post" action="/stolovi/@table.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovaj stol?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                </form>
             </div>
-            <div class="card-meta">
-                <div>@table.Casino.Name</div>
-                <div>Bet range: <span class="mono">@table.MinBet–@table.MaxBet</span></div>
-            </div>
-            <div class="card-footer-bar">
-                @if (table.IsAvailable)
-                {
-                    <span class="badge-available">Available</span>
-                }
-                else
-                {
-                    <span class="badge-unavailable">In Use</span>
-                }
-            </div>
-        </a>
+        </div>
     }
 </div>
+
+@section Scripts {
+<script>
+$(function () {
+    var debounceTimer;
+    var $grid = $('#entityGrid');
+
+    function renderTables(tables) {
+        if (!tables || tables.length === 0) {
+            $grid.html('<p class="empty-state">Nema rezultata.</p>');
+            return;
+        }
+        var html = '';
+        $.each(tables, function (i, t) {
+            var badge = t.isAvailable
+                ? '<span class="badge badge-available">Slobodan</span>'
+                : '<span class="badge badge-unavailable">Zauzet</span>';
+            html += '<div class="entity-card-wrap">' +
+                '<a class="entity-card" href="/stolovi/' + t.id + '">' +
+                '<div class="card-header"><span class="card-title">Stol #' + t.tableNumber + ' — ' + (t.gameName || '') + '</span></div>' +
+                '<div class="card-meta">' +
+                '<div>' + (t.casinoName || '') + '</div>' +
+                '<div>Bet range: <span class="mono">' + (t.minBet || 0) + '–' + (t.maxBet || 0) + '</span></div>' +
+                '</div>' +
+                '<div class="card-footer-bar">' + badge + '</div>' +
+                '</a>' +
+                '<div class="card-actions">' +
+                '<a class="btn btn-sm btn-accent" href="/stolovi/' + t.id + '/uredi">Uredi</a>' +
+                '<form method="post" action="/stolovi/' + t.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
+                '<input name="__RequestVerificationToken" type="hidden" value="' + $('input[name="__RequestVerificationToken"]').first().val() + '" />' +
+                '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
+                '</form></div></div>';
+        });
+        $grid.html(html);
+    }
+
+    $('#searchInput').on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        if (!q) { location.reload(); return; }
+        debounceTimer = setTimeout(function () {
+            $.getJSON('/stolovi/pretraga', { q: q }, function (data) { renderTables(data); });
+        }, 300);
+    });
+});
+</script>
+}

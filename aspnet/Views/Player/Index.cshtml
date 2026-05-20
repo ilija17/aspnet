@@ -1,4 +1,4 @@
-@* Lists all players as cards with email, DOB, balance, and High Roller badge for balance > 1000. *@
+@* Lists all players as cards with email, DOB, balance, High Roller badge, search, and CRUD actions. *@
 @model List<aspnet.Models.Player>
 @{
     ViewData["Title"] = "Players";
@@ -7,30 +7,91 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Players</span>
+    <span class="current">Players</span>
 </div>
 
-<h1 class="page-title">Players</h1>
+<div class="index-action-bar">
+    <h1 class="page-title" style="margin:0">Players</h1>
+    <a class="btn btn-primary" href="/igraci/novi">Dodaj novog igrača</a>
+</div>
 
-<div class="entity-grid">
+<div class="search-bar">
+    <input type="text" id="searchInput" class="form-input" placeholder="Pretraga igrača..." autocomplete="off" />
+</div>
+
+<div class="entity-grid" id="entityGrid">
     @foreach (var player in Model)
     {
-        <a class="entity-card" asp-controller="Player" asp-action="Details" asp-route-id="@player.Id">
-            <div class="card-header">
-                <span class="card-title">@player.FirstName @player.LastName</span>
-                @if (player.Balance > 1000)
-                {
-                    <span class="badge-purple">High Roller</span>
-                }
+        <div class="entity-card-wrap" data-id="@player.Id">
+            <a class="entity-card" href="/igraci/@player.Id">
+                <div class="card-header">
+                    <span class="card-title">@player.FirstName @player.LastName</span>
+                    @if (player.Balance > 1000)
+                    {
+                        <span class="badge badge-purple">High Roller</span>
+                    }
+                </div>
+                <div class="card-meta">
+                    <div>@player.Email</div>
+                    <div>DOB: <span class="mono">@player.DateOfBirth.ToString("dd MMM yyyy")</span></div>
+                    <div>Balance: <span class="mono">@player.Balance.ToString("C")</span></div>
+                </div>
+                <div class="card-footer-bar">
+                    @player.Reservations.Count rezervacija · @player.Transactions.Count transakcija
+                </div>
+            </a>
+            <div class="card-actions">
+                <a class="btn btn-sm btn-accent" href="/igraci/@player.Id/uredi">Uredi</a>
+                <form method="post" action="/igraci/@player.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovog igrača?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                </form>
             </div>
-            <div class="card-meta">
-                <div>@player.Email</div>
-                <div>DOB: <span class="mono">@player.DateOfBirth.ToString("dd MMM yyyy")</span></div>
-                <div>Balance: <span class="mono">@player.Balance.ToString("C")</span></div>
-            </div>
-            <div class="card-footer-bar">
-                @player.Reservations.Count reservations · @player.Transactions.Count transactions
-            </div>
-        </a>
+        </div>
     }
 </div>
+
+@section Scripts {
+<script>
+$(function () {
+    var debounceTimer;
+    var $grid = $('#entityGrid');
+
+    function renderPlayers(players) {
+        if (!players || players.length === 0) {
+            $grid.html('<p class="empty-state">Nema rezultata.</p>');
+            return;
+        }
+        var html = '';
+        $.each(players, function (i, p) {
+            var badge = p.balance > 1000 ? '<span class="badge badge-purple">High Roller</span>' : '';
+            html += '<div class="entity-card-wrap">' +
+                '<a class="entity-card" href="/igraci/' + p.id + '">' +
+                '<div class="card-header"><span class="card-title">' + p.firstName + ' ' + p.lastName + '</span>' + badge + '</div>' +
+                '<div class="card-meta">' +
+                '<div>' + p.email + '</div>' +
+                '<div>Balance: <span class="mono">' + p.balance + '</span></div>' +
+                '</div>' +
+                '<div class="card-footer-bar">' + (p.reservationCount || 0) + ' rezervacija · ' + (p.transactionCount || 0) + ' transakcija</div>' +
+                '</a>' +
+                '<div class="card-actions">' +
+                '<a class="btn btn-sm btn-accent" href="/igraci/' + p.id + '/uredi">Uredi</a>' +
+                '<form method="post" action="/igraci/' + p.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
+                '<input name="__RequestVerificationToken" type="hidden" value="' + $('input[name="__RequestVerificationToken"]').first().val() + '" />' +
+                '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
+                '</form></div></div>';
+        });
+        $grid.html(html);
+    }
+
+    $('#searchInput').on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        if (!q) { location.reload(); return; }
+        debounceTimer = setTimeout(function () {
+            $.getJSON('/igraci/pretraga', { q: q }, function (data) { renderPlayers(data); });
+        }, 300);
+    });
+});
+</script>
+}

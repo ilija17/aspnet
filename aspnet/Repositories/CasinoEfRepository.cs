@@ -21,4 +21,30 @@ public class CasinoEfRepository : ICasinoRepository
            .Include(c => c.Tables).ThenInclude(t => t.Game)
            .Include(c => c.Employees)
            .FirstOrDefault(c => c.Id == id);
+
+    public void Create(Casino casino)
+    {
+        _db.Casinos.Add(casino);
+        _db.SaveChanges();
+    }
+
+    public void Update(Casino casino)
+    {
+        _db.Entry(casino).State = EntityState.Modified;
+        _db.SaveChanges();
+    }
+
+    public void Delete(int id)
+    {
+        var casino = _db.Casinos.Find(id);
+        if (casino is null) return;
+        _db.Casinos.Remove(casino);
+        _db.SaveChanges();
+    }
+
+    public List<Casino> Search(string q) =>
+        _db.Casinos
+           .Where(c => c.Name.Contains(q) || c.Address.Contains(q))
+           .Take(20)
+           .ToList();
 }

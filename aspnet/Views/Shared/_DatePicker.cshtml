@@ -1,0 +1,40 @@
+@{
+    var fieldId    = (string)(ViewData["FieldId"]    ?? "");
+    var fieldLabel = (string)(ViewData["FieldLabel"] ?? "");
+    var mode       = (string)(ViewData["Mode"]       ?? "date");
+    var raw        = ViewData["CurrentValue"];
+    var currentIso = "";
+    if (raw is DateTime dt && dt > DateTime.MinValue) {
+        currentIso = mode == "datetime"
+            ? dt.ToString("yyyy-MM-ddTHH:mm")
+            : dt.ToString("yyyy-MM-dd");
+    }
+    var placeholder = mode == "datetime" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy";
+}
+
+<div class="form-field">
+    <label class="form-label" for="@(fieldId)_display">@fieldLabel</label>
+    <div class="datepicker-wrap" id="@(fieldId)_wrap">
+        <input type="hidden" name="@fieldId" id="@fieldId"
+               value="@currentIso"
+               data-val="true"
+               data-val-required="@fieldLabel je obavezan/a" />
+        <input type="text" id="@(fieldId)_display"
+               class="form-input datepicker-display"
+               placeholder="@placeholder"
+               readonly autocomplete="off" />
+        <div class="datepicker-popup" id="@(fieldId)_cal" style="display:none"></div>
+    </div>
+    @Html.ValidationMessage(fieldId, null, new { @class = "form-validation" })
+</div>
+
+<script>
+$(function() {
+    new CasinoPicker({
+        fieldId:    '@fieldId',
+        mode:       '@mode',
+        currentIso: '@currentIso'
+    });
+    $.validator.setDefaults({ ignore: ':hidden:not([data-val-required])' });
+});
+</script>

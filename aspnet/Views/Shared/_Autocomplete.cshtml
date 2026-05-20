@@ -1,0 +1,84 @@
+@* Reusable autocomplete input for picking a related entity.
+   Required ViewData keys: FieldId, FieldLabel, EndpointUrl, CurrentText, CurrentId *@
+@{
+    var fieldId      = (string)ViewData["FieldId"]      ?? "";
+    var fieldLabel   = (string)ViewData["FieldLabel"]   ?? "";
+    var endpointUrl  = (string)ViewData["EndpointUrl"]  ?? "";
+    var currentText  = (string)ViewData["CurrentText"]  ?? "";
+    var currentId    = (string)ViewData["CurrentId"]    ?? "";
+    var textInputId  = fieldId + "_text";
+    var listId       = fieldId + "_list";
+    var errorId      = fieldId + "_error";
+}
+
+<div class="form-field">
+    <label class="form-label" for="@textInputId">@fieldLabel</label>
+    <div class="autocomplete-wrap">
+        <input type="hidden" name="@fieldId" id="@fieldId" value="@currentId" />
+        <input type="text"
+               id="@textInputId"
+               class="form-input"
+               placeholder="Pretraži @fieldLabel..."
+               value="@currentText"
+               autocomplete="off" />
+        <div class="autocomplete-list" id="@listId"></div>
+    </div>
+    <div class="autocomplete-error" id="@errorId"></div>
+</div>
+
+<script>
+(function () {
+    var fieldId     = '@fieldId';
+    var textInputId = '@textInputId';
+    var listId      = '@listId';
+    var errorId     = '@errorId';
+    var endpoint    = '@endpointUrl';
+    var debounceTimer;
+
+    var $textInput = $('#' + textInputId);
+    var $hidden    = $('#' + fieldId);
+    var $list      = $('#' + listId);
+    var $error     = $('#' + errorId);
+
+    $textInput.on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        $hidden.val('');
+        if (!q) { $list.hide().empty(); return; }
+        debounceTimer = setTimeout(function () { fetchSuggestions(q); }, 300);
+    });
+
+    $textInput.on('blur', function () {
+        setTimeout(function () { $list.hide(); }, 200);
+        if (!$hidden.val()) {
+            $error.text('@fieldLabel je obavezan.');
+        }
+    });
+
+    $textInput.on('focus', function () {
+        $error.text('');
+    });
+
+    function fetchSuggestions(q) {
+        $.getJSON(endpoint, { q: q }, function (data) {
+            $list.empty();
+            if (!data || !data.length) {
+                $list.append('<div class="autocomplete-item" style="color:var(--muted);">Nema rezultata</div>');
+            } else {
+                $.each(data, function (i, item) {
+                    var $item = $('<div class="autocomplete-item"></div>').text(item.label);
+                    $item.on('mousedown', function (e) {
+                        e.preventDefault();
+                        $hidden.val(item.id);
+                        $textInput.val(item.label);
+                        $error.text('');
+                        $list.hide().empty();
+                    });
+                    $list.append($item);
+                });
+            }
+            $list.show();
+        });
+    }
+})();
+</script>

@@ -20,4 +20,18 @@ public class TransactionEfRepository : ITransactionRepository
         _db.Transactions
            .Include(t => t.Player)
            .FirstOrDefault(t => t.Id == id);
+
+    public void Create(Transaction transaction)
+    {
+        _db.Transactions.Add(transaction);
+        _db.SaveChanges();
+    }
+
+    public List<Transaction> Search(string q) =>
+        _db.Transactions
+           .Include(t => t.Player)
+           .Where(t => t.Player.FirstName.Contains(q) || t.Player.LastName.Contains(q))
+           .OrderByDescending(t => t.CreatedAt)
+           .Take(20)
+           .ToList();
 }

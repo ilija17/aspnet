@@ -1,0 +1,60 @@
+@* Create form for a new Casino. *@
+@model aspnet.Models.Casino
+@{
+    ViewData["Title"] = "Novi casino";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="/kasina">Casinos</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Novi casino</span>
+</div>
+
+<h1 class="page-title">Novi casino</h1>
+
+<div class="edit-form-wrap">
+    <form method="post" action="/kasina/novi" novalidate>
+        @Html.AntiForgeryToken()
+
+        <div class="form-field">
+            <label asp-for="Name" class="form-label">Naziv</label>
+            <input asp-for="Name" class="form-input" />
+            <span asp-validation-for="Name" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Address" class="form-label">Adresa</label>
+            <input asp-for="Address" class="form-input" />
+            <span asp-validation-for="Address" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="LicenseNumber" class="form-label">Broj licence</label>
+            <input asp-for="LicenseNumber" class="form-input" />
+            <span asp-validation-for="LicenseNumber" class="form-validation"></span>
+        </div>
+
+        @await Html.PartialAsync("_DatePicker", (object)null, new ViewDataDictionary(ViewData) {
+            { "FieldId", "FoundedDate" },
+            { "FieldLabel", "Datum osnivanja" },
+            { "Mode", "date" },
+            { "CurrentValue", Model.FoundedDate }
+        })
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Spremi</button>
+            <a class="btn btn-back" href="/kasina">Odustani</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            $('form').validate({ onfocusout: function (el) { this.element(el); } });
+        });
+    </script>
+}

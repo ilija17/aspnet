@@ -1,4 +1,4 @@
-@* Lists all casinos as cards with address, license, founded date, and table/staff counts. *@
+@* Lists all casinos as cards with address, license, founded date, table/staff counts, search, and CRUD actions. *@
 @model List<aspnet.Models.Casino>
 @{
     ViewData["Title"] = "Casinos";
@@ -7,32 +7,91 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Casinos</span>
+    <span class="current">Casinos</span>
 </div>
 
-<h1 class="page-title">Casinos</h1>
+<div class="index-action-bar">
+    <h1 class="page-title" style="margin:0">Casinos</h1>
+    <a class="btn btn-primary" href="/kasina/novi">Dodaj novi casino</a>
+</div>
 
-<div class="entity-grid">
+<div class="search-bar">
+    <input type="text" id="searchInput" class="form-input" placeholder="Pretraga casina..." autocomplete="off" />
+</div>
+
+<div class="entity-grid" id="entityGrid">
     @foreach (var casino in Model)
     {
         var availableCount = casino.Tables.Count(t => t.IsAvailable);
-
-        <a class="entity-card" asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">
-            <div class="card-header">
-                <span class="card-title">@casino.Name</span>
-                @if (availableCount > 0)
-                {
-                    <span class="badge-available">@availableCount available</span>
-                }
+        <div class="entity-card-wrap">
+            <a class="entity-card" href="/kasina/@casino.Id">
+                <div class="card-header">
+                    <span class="card-title">@casino.Name</span>
+                    @if (availableCount > 0)
+                    {
+                        <span class="badge badge-available">@availableCount slobodnih</span>
+                    }
+                </div>
+                <div class="card-meta">
+                    <div>@casino.Address</div>
+                    <div>Licenca: <span class="mono">@casino.LicenseNumber</span></div>
+                    <div>Osnovano: @casino.FoundedDate.ToString("MMM yyyy")</div>
+                </div>
+                <div class="card-footer-bar">
+                    @casino.Tables.Count stolova · @casino.Employees.Count djelatnika
+                </div>
+            </a>
+            <div class="card-actions">
+                <a class="btn btn-sm btn-accent" href="/kasina/@casino.Id/uredi">Uredi</a>
+                <form method="post" action="/kasina/@casino.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovaj casino?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                </form>
             </div>
-            <div class="card-meta">
-                <div>@casino.Address</div>
-                <div>License: <span class="mono">@casino.LicenseNumber</span></div>
-                <div>Founded: @casino.FoundedDate.ToString("MMM yyyy")</div>
-            </div>
-            <div class="card-footer-bar">
-                @casino.Tables.Count tables · @casino.Employees.Count staff
-            </div>
-        </a>
+        </div>
     }
 </div>
+
+@section Scripts {
+<script>
+$(function () {
+    var debounceTimer;
+    var $grid = $('#entityGrid');
+
+    function renderCasinos(casinos) {
+        if (!casinos || casinos.length === 0) {
+            $grid.html('<p class="empty-state">Nema rezultata.</p>');
+            return;
+        }
+        var html = '';
+        $.each(casinos, function (i, c) {
+            html += '<div class="entity-card-wrap">' +
+                '<a class="entity-card" href="/kasina/' + c.id + '">' +
+                '<div class="card-header"><span class="card-title">' + c.name + '</span></div>' +
+                '<div class="card-meta">' +
+                '<div>' + (c.address || '') + '</div>' +
+                '<div>Licenca: <span class="mono">' + (c.licenseNumber || '') + '</span></div>' +
+                '</div>' +
+                '<div class="card-footer-bar">' + (c.tableCount || 0) + ' stolova · ' + (c.employeeCount || 0) + ' djelatnika</div>' +
+                '</a>' +
+                '<div class="card-actions">' +
+                '<a class="btn btn-sm btn-accent" href="/kasina/' + c.id + '/uredi">Uredi</a>' +
+                '<form method="post" action="/kasina/' + c.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
+                '<input name="__RequestVerificationToken" type="hidden" value="' + $('input[name="__RequestVerificationToken"]').first().val() + '" />' +
+                '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
+                '</form></div></div>';
+        });
+        $grid.html(html);
+    }
+
+    $('#searchInput').on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        if (!q) { location.reload(); return; }
+        debounceTimer = setTimeout(function () {
+            $.getJSON('/kasina/pretraga', { q: q }, function (data) { renderCasinos(data); });
+        }, 300);
+    });
+});
+</script>
+}

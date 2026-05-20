@@ -1,0 +1,71 @@
+@* Create form for a new Game. *@
+@model aspnet.Models.Game
+@{
+    ViewData["Title"] = "Nova igra";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="/igre">Games</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Nova igra</span>
+</div>
+
+<h1 class="page-title">Nova igra</h1>
+
+<div class="edit-form-wrap">
+    <form method="post" action="/igre/nova" novalidate>
+        @Html.AntiForgeryToken()
+
+        <div class="form-field">
+            <label asp-for="Name" class="form-label">Naziv</label>
+            <input asp-for="Name" class="form-input" />
+            <span asp-validation-for="Name" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Type" class="form-label">Vrsta igre</label>
+            <select asp-for="Type" class="form-select">
+                <option value="">-- Odaberi vrstu --</option>
+                @foreach (var val in Enum.GetValues(typeof(aspnet.Models.GameType)))
+                {
+                    <option value="@val">@val</option>
+                }
+            </select>
+            <span asp-validation-for="Type" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="MinBet" class="form-label">Minimalni ulog</label>
+            <input asp-for="MinBet" class="form-input" type="number" step="0.01" min="0" />
+            <span asp-validation-for="MinBet" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="MaxBet" class="form-label">Maksimalni ulog</label>
+            <input asp-for="MaxBet" class="form-input" type="number" step="0.01" min="0" />
+            <span asp-validation-for="MaxBet" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Description" class="form-label">Opis</label>
+            <textarea asp-for="Description" class="form-textarea" rows="4"></textarea>
+            <span asp-validation-for="Description" class="form-validation"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Spremi</button>
+            <a class="btn btn-back" href="/igre">Odustani</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            $('form').validate({ onfocusout: function (el) { this.element(el); } });
+        });
+    </script>
+}

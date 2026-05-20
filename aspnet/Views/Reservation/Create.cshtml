@@ -1,0 +1,58 @@
+@* Create form for a new Reservation. Uses autocomplete for Player and Table selection. *@
+@model aspnet.Models.Reservation
+@{
+    ViewData["Title"] = "Nova rezervacija";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="/rezervacije">Reservations</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Nova rezervacija</span>
+</div>
+
+<h1 class="page-title">Nova rezervacija</h1>
+
+<div class="edit-form-wrap">
+    <form method="post" action="/rezervacije/nova" novalidate>
+        @Html.AntiForgeryToken()
+
+        @await Html.PartialAsync("_DatePicker", (object)null, new ViewDataDictionary(ViewData) {
+            { "FieldId", "ReservedAt" },
+            { "FieldLabel", "Datum i vrijeme" },
+            { "Mode", "datetime" },
+            { "CurrentValue", Model.ReservedAt }
+        })
+
+        @await Html.PartialAsync("_Autocomplete", (object)null, new ViewDataDictionary(ViewData) {
+            { "FieldId", "PlayerId" },
+            { "FieldLabel", "Igrač" },
+            { "EndpointUrl", "/igraci/autocomplete" },
+            { "CurrentText", "" },
+            { "CurrentId", "" }
+        })
+
+        @await Html.PartialAsync("_Autocomplete", (object)null, new ViewDataDictionary(ViewData) {
+            { "FieldId", "TableId" },
+            { "FieldLabel", "Stol" },
+            { "EndpointUrl", "/stolovi/autocomplete" },
+            { "CurrentText", "" },
+            { "CurrentId", "" }
+        })
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Spremi</button>
+            <a class="btn btn-back" href="/rezervacije">Odustani</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            $('form').validate({ onfocusout: function (el) { this.element(el); } });
+        });
+    </script>
+}

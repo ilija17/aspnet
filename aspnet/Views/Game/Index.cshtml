@@ -1,4 +1,4 @@
-@* Lists all game types (Blackjack, Poker, etc.) with type badge, description, and bet range. *@
+@* Lists all game types as cards with type badge, description, bet range, search, and CRUD actions. *@
 @model List<aspnet.Models.Game>
 @{
     ViewData["Title"] = "Games";
@@ -7,26 +7,87 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Games</span>
+    <span class="current">Games</span>
 </div>
 
-<h1 class="page-title">Games</h1>
+<div class="index-action-bar">
+    <h1 class="page-title" style="margin:0">Games</h1>
+    <a class="btn btn-primary" href="/igre/nova">Dodaj novu igru</a>
+</div>
 
-<div class="entity-grid">
+<div class="search-bar">
+    <input type="text" id="searchInput" class="form-input" placeholder="Pretraga igara..." autocomplete="off" />
+</div>
+
+<div class="entity-grid" id="entityGrid">
     @foreach (var game in Model)
     {
-        <a class="entity-card" asp-controller="Game" asp-action="Details" asp-route-id="@game.Id">
-            <div class="card-header">
-                <span class="card-title">@game.Name</span>
+        <div class="entity-card-wrap">
+            <a class="entity-card" href="/igre/@game.Id">
+                <div class="card-header">
+                    <span class="card-title">@game.Name</span>
+                </div>
+                <div class="card-meta">
+                    <div><span class="badge badge-purple">@game.Type</span></div>
+                    <div>@game.Description</div>
+                    <div>Bet range: <span class="mono">@game.MinBet–@game.MaxBet</span></div>
+                </div>
+                <div class="card-footer-bar">
+                    @game.Tables.Count stolova
+                </div>
+            </a>
+            <div class="card-actions">
+                <a class="btn btn-sm btn-accent" href="/igre/@game.Id/uredi">Uredi</a>
+                <form method="post" action="/igre/@game.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovu igru?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                </form>
             </div>
-            <div class="card-meta">
-                <div><span class="badge-purple">@game.Type</span></div>
-                <div>@game.Description</div>
-                <div>Bet range: <span class="mono">@game.MinBet–@game.MaxBet</span></div>
-            </div>
-            <div class="card-footer-bar">
-                @game.Tables.Count tables
-            </div>
-        </a>
+        </div>
     }
 </div>
+
+@section Scripts {
+<script>
+$(function () {
+    var debounceTimer;
+    var $grid = $('#entityGrid');
+
+    function renderGames(games) {
+        if (!games || games.length === 0) {
+            $grid.html('<p class="empty-state">Nema rezultata.</p>');
+            return;
+        }
+        var html = '';
+        $.each(games, function (i, g) {
+            html += '<div class="entity-card-wrap">' +
+                '<a class="entity-card" href="/igre/' + g.id + '">' +
+                '<div class="card-header"><span class="card-title">' + g.name + '</span></div>' +
+                '<div class="card-meta">' +
+                '<div><span class="badge badge-purple">' + (g.type || '') + '</span></div>' +
+                '<div>' + (g.description || '') + '</div>' +
+                '<div>Bet range: <span class="mono">' + (g.minBet || 0) + '–' + (g.maxBet || 0) + '</span></div>' +
+                '</div>' +
+                '<div class="card-footer-bar">' + (g.tableCount || 0) + ' stolova</div>' +
+                '</a>' +
+                '<div class="card-actions">' +
+                '<a class="btn btn-sm btn-accent" href="/igre/' + g.id + '/uredi">Uredi</a>' +
+                '<form method="post" action="/igre/' + g.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
+                '<input name="__RequestVerificationToken" type="hidden" value="' + $('input[name="__RequestVerificationToken"]').first().val() + '" />' +
+                '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
+                '</form></div></div>';
+        });
+        $grid.html(html);
+    }
+
+    $('#searchInput').on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        if (!q) { location.reload(); return; }
+        debounceTimer = setTimeout(function () {
+            $.getJSON('/igre/pretraga', { q: q }, function (data) { renderGames(data); });
+        }, 300);
+    });
+});
+</script>
+}

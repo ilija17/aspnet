@@ -1,4 +1,4 @@
-@* Lists all employees across all casinos in a table with name, position, and casino link. *@
+@* Lists all employees in a table with name, position, casino link, search, and CRUD actions. *@
 @model List<aspnet.Models.Employee>
 @{
     ViewData["Title"] = "Employees";
@@ -7,35 +7,91 @@
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Employees</span>
+    <span class="current">Employees</span>
 </div>
 
-<h1 class="page-title">Employees</h1>
+<div class="index-action-bar">
+    <h1 class="page-title" style="margin:0">Employees</h1>
+    <a class="btn btn-primary" href="/djelatnici/novi">Dodaj novog djelatnika</a>
+</div>
 
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>#ID</th>
-            <th>Name</th>
-            <th>Position</th>
-            <th>Casino</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var employee in Model)
-        {
+<div class="search-bar">
+    <input type="text" id="searchInput" class="form-input" placeholder="Pretraga djelatnika..." autocomplete="off" />
+</div>
+
+<div class="panel">
+    <table class="data-table" id="employeeTable">
+        <thead>
             <tr>
-                <td><span class="mono">@employee.Id</span></td>
-                <td>@employee.FirstName @employee.LastName</td>
-                <td>@employee.Position</td>
-                <td>
-                    <a asp-controller="Casino" asp-action="Details" asp-route-id="@employee.Casino.Id">@employee.Casino.Name</a>
-                </td>
-                <td>
-                    <a class="btn btn-sm" asp-controller="Employee" asp-action="Details" asp-route-id="@employee.Id">Details</a>
-                </td>
+                <th>#ID</th>
+                <th>Ime i prezime</th>
+                <th>Pozicija</th>
+                <th>Casino</th>
+                <th>Akcije</th>
             </tr>
+        </thead>
+        <tbody id="employeeBody">
+            @foreach (var employee in Model)
+            {
+                <tr>
+                    <td><span class="mono">@employee.Id</span></td>
+                    <td>@employee.FirstName @employee.LastName</td>
+                    <td><span class="badge badge-purple">@employee.Position</span></td>
+                    <td>
+                        <a href="/kasina/@employee.Casino.Id" style="color:var(--purple-hi);text-decoration:none;">@employee.Casino.Name</a>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <a class="btn btn-sm" href="/djelatnici/@employee.Id">Detalji</a>
+                        <a class="btn btn-sm btn-accent" href="/djelatnici/@employee.Id/uredi">Uredi</a>
+                        <form method="post" action="/djelatnici/@employee.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovog djelatnika?')">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    var debounceTimer;
+    var $body = $('#employeeBody');
+    var antiForgeryToken = $('input[name="__RequestVerificationToken"]').first().val();
+
+    function renderEmployees(employees) {
+        if (!employees || employees.length === 0) {
+            $body.html('<tr><td colspan="5" class="empty-state" style="padding:1rem;">Nema rezultata.</td></tr>');
+            return;
         }
-    </tbody>
-</table>
+        var html = '';
+        $.each(employees, function (i, e) {
+            html += '<tr>' +
+                '<td><span class="mono">' + e.id + '</span></td>' +
+                '<td>' + e.firstName + ' ' + e.lastName + '</td>' +
+                '<td><span class="badge badge-purple">' + (e.position || '') + '</span></td>' +
+                '<td><a href="/kasina/' + (e.casinoId || '') + '" style="color:var(--purple-hi);text-decoration:none;">' + (e.casinoName || '') + '</a></td>' +
+                '<td style="white-space:nowrap;">' +
+                '<a class="btn btn-sm" href="/djelatnici/' + e.id + '">Detalji</a> ' +
+                '<a class="btn btn-sm btn-accent" href="/djelatnici/' + e.id + '/uredi">Uredi</a> ' +
+                '<form method="post" action="/djelatnici/' + e.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
+                '<input name="__RequestVerificationToken" type="hidden" value="' + antiForgeryToken + '" />' +
+                '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
+                '</form></td></tr>';
+        });
+        $body.html(html);
+    }
+
+    $('#searchInput').on('input', function () {
+        clearTimeout(debounceTimer);
+        var q = $(this).val().trim();
+        if (!q) { location.reload(); return; }
+        debounceTimer = setTimeout(function () {
+            $.getJSON('/djelatnici/pretraga', { q: q }, function (data) { renderEmployees(data); });
+        }, 300);
+    });
+});
+</script>
+}
