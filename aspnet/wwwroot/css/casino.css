@@ -1259,3 +1259,119 @@ h3 { color: var(--text); letter-spacing: 0.04em; margin: 0 0 0.5rem; }
   color: #cc1100;
   animation: nerv-alert-flash 1s step-end infinite;
 }
+
+/* ── Typewriter cursor ──────────────────────────────────── */
+h1.page-title.typing-cursor::after {
+  content: '▮';
+  color: var(--lime);
+  margin-left: 3px;
+  animation: cursor-blink 600ms step-end infinite;
+  font-size: 0.85em;
+  vertical-align: baseline;
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── NERV Ticker ────────────────────────────────────────── */
+#nerv-ticker {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 4000;
+  height: 26px;
+  background: rgba(5, 0, 3, 0.92);
+  border-top: 1px solid rgba(204, 17, 0, 0.5);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.nerv-ticker-label {
+  flex-shrink: 0;
+  padding: 0 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #cc1100;
+  border-right: 1px solid rgba(204, 17, 0, 0.4);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: rgba(204, 17, 0, 0.08);
+  white-space: nowrap;
+}
+
+.nerv-ticker-track {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.nerv-ticker-inner {
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: rgba(204, 17, 0, 0.75);
+  letter-spacing: 0.1em;
+  will-change: transform;
+  /* animation duration set by JS */
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); } /* -50% because text is doubled */
+}
+
+/* push footer above ticker */
+.site-footer { margin-bottom: 26px; }
+
+/* ── Navbar Sync HUD ───────────────────────────────────── */
+.nerv-sync-hud {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(139, 212, 80, 0.25);
+  border-radius: 6px;
+  background: rgba(10, 9, 20, 0.5);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+
+.nerv-sync-hud-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+#nerv-hud-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--lime);
+  text-shadow: 0 0 8px rgba(139, 212, 80, 0.5);
+  transition: color 300ms ease;
+  min-width: 3.2ch;
+  text-align: right;
+}
+
+.nerv-sync-hud-pct {
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+
+#nerv-hud-value.sync-warn {
+  color: var(--eva-orange, #e85d00) !important;
+  text-shadow: 0 0 10px rgba(232, 93, 0, 0.7) !important;
+  animation: sync-warn-pulse 400ms ease-in-out 3;
+}
+@keyframes sync-warn-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}

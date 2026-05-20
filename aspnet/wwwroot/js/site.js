@@ -655,3 +655,108 @@ const NervSystem = (() => {
 })();
 
 $(function() { NervSystem.init(); });
+
+/* ============================================================
+   Animation 1 — Page Title Typewriter
+   ============================================================ */
+function initTitleTypewriter() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var $h1 = $('h1.page-title').first();
+  if (!$h1.length) return;
+  var full = $h1.text().trim();
+  $h1.text('').addClass('typing-cursor');
+  var i = 0;
+  var iv = setInterval(function() {
+    i++;
+    $h1.text(full.slice(0, i));
+    if (i >= full.length) {
+      clearInterval(iv);
+      setTimeout(function() { $h1.removeClass('typing-cursor'); }, 1500);
+    }
+  }, 35);
+}
+$(function() { initTitleTypewriter(); });
+
+/* ============================================================
+   Animation 2 — NERV Scrolling Ticker
+   ============================================================ */
+function initNervTicker() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var messages = [
+    'NERV CENTRAL DOGMA — SYSTEM STATUS: NOMINAL',
+    'MAGI CONSENSUS: CASPER ◈ BALTHASAR ◈ MELCHIOR — ALL ONLINE',
+    'EVANGELION UNIT-01: STANDBY',
+    'SYNCHRONIZATION RATIO: 87.3%',
+    'ANGEL THREAT LEVEL: PATTERN BLUE — MONITORING',
+    'ABSOLUTE TERROR FIELD: CONTAINED',
+    'THIRD IMPACT CONTINGENCY: PROBABILITY 0.00%',
+    'DUMMY SYSTEM: OFFLINE',
+    'S² ENGINE OUTPUT: NOMINAL',
+    'CASINO MANAGEMENT SYSTEM v3.0 — AUTHORISED USERS ONLY',
+    'EMERGENCY PROTOCOL 17: INACTIVE',
+    'HUMAN INSTRUMENTALITY PROJECT: [CLASSIFIED]',
+    'SEELE COUNCIL: SESSION PENDING',
+    'ENTRY PLUG INSERTION SEQUENCE: COMPLETE',
+    'AT FIELD NEUTRALISED — PROCEED WITH CAUTION'
+  ];
+  // shuffle
+  messages.sort(function() { return Math.random() - 0.5; });
+  var sep = '   ◈   ';
+  var full = messages.join(sep) + sep;
+  // double for seamless loop
+  var doubled = full + full;
+
+  var $ticker = $('<div id="nerv-ticker"><span class="nerv-ticker-label">◈ NERV</span><div class="nerv-ticker-track"><div class="nerv-ticker-inner" id="nerv-ticker-inner"></div></div></div>');
+  $('body').append($ticker);
+  $('#nerv-ticker-inner').text(doubled);
+
+  // duration: ~0.065s per char of the single-copy text
+  var duration = Math.round(full.length * 0.065);
+  $('#nerv-ticker-inner').css('animation', 'ticker-scroll ' + duration + 's linear infinite');
+}
+$(function() { initNervTicker(); });
+
+/* ============================================================
+   Animation 3 — Navbar SYNC RATIO indicator
+   ============================================================ */
+function initSyncHud() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // inject HUD next to brand
+  var $hud = $('<div class="nerv-sync-hud"><span class="nerv-sync-hud-label">SYNC</span><span id="nerv-hud-value">--.-</span><span class="nerv-sync-hud-pct">%</span></div>');
+  $('.brand').after($hud);
+
+  var base = 72 + Math.random() * 10;  // base ratio 72-82%
+  var t = 0;
+  var warnTimeout = null;
+
+  function tick() {
+    t += 0.018;
+    // slow sine oscillation ± 8%, with a smaller faster wobble
+    var ratio = base + Math.sin(t) * 8 + Math.sin(t * 3.7) * 2.5;
+    ratio = Math.max(55, Math.min(99, ratio));
+
+    var $val = $('#nerv-hud-value');
+    $val.text(ratio.toFixed(1));
+
+    // warning state if ratio drops below 65 or spikes above 95
+    if ((ratio < 65 || ratio > 95) && !warnTimeout) {
+      $val.addClass('sync-warn');
+      warnTimeout = setTimeout(function() {
+        $val.removeClass('sync-warn');
+        warnTimeout = null;
+      }, 1500);
+    }
+
+    // occasionally force a dramatic spike/drop every ~30s
+    if (Math.random() < 0.0004) {
+      base = (Math.random() > 0.5) ? 88 + Math.random() * 10 : 52 + Math.random() * 10;
+      setTimeout(function() { base = 72 + Math.random() * 10; }, 4000);
+    }
+
+    setTimeout(tick, 80);
+  }
+
+  // small delay before starting so it doesn't interfere with boot
+  setTimeout(tick, 2200);
+}
+$(function() { initSyncHud(); });
