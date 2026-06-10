@@ -1,0 +1,23 @@
+@* 403 — shown when a signed-in user lacks the required role. *@
+@{
+    ViewData["Title"] = "Pristup odbijen";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Pristup odbijen</span>
+</div>
+
+<div class="access-denied panel">
+    <div class="access-denied-code">403</div>
+    <h1 class="page-title">Pristup odbijen</h1>
+    <p class="access-denied-text">
+        Nemaš ovlasti za pristup ovoj stranici. Ako misliš da je riječ o pogrešci,
+        obrati se administratoru sustava.
+    </p>
+    <a class="btn btn-back" asp-controller="Home" asp-action="Index">Natrag na početnu</a>
+</div>
+
+@section Scripts {
+}

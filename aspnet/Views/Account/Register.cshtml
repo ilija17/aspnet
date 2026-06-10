@@ -1,0 +1,63 @@
+@* Local account registration form. *@
+@model aspnet.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Registracija";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Registracija</span>
+</div>
+
+<h1 class="page-title">Registracija</h1>
+
+<div class="edit-form-wrap auth-wrap">
+    <form asp-controller="Account" asp-action="Register" asp-route-returnUrl="@returnUrl" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <div class="form-field">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-input" autocomplete="username" />
+            <span asp-validation-for="Email" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="OIB" class="form-label"></label>
+            <input asp-for="OIB" class="form-input" maxlength="11" inputmode="numeric" />
+            <span asp-validation-for="OIB" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="JMBG" class="form-label"></label>
+            <input asp-for="JMBG" class="form-input" maxlength="13" inputmode="numeric" />
+            <span asp-validation-for="JMBG" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-input" autocomplete="new-password" />
+            <span asp-validation-for="Password" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="ConfirmPassword" class="form-label"></label>
+            <input asp-for="ConfirmPassword" class="form-input" autocomplete="new-password" />
+            <span asp-validation-for="ConfirmPassword" class="form-validation"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Registriraj se</button>
+        </div>
+    </form>
+
+    <p class="auth-alt-link">
+        Već imaš račun?
+        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">Prijavi se</a>
+    </p>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

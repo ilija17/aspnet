@@ -1375,3 +1375,272 @@ h1.page-title.typing-cursor::after {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
 }
+
+/* ============================================================
+   Lab 5 — Identity (auth pages, login partial) & attachments
+   ============================================================ */
+
+/* ── Auth pages (Login / Register / ExternalLogin) ──────────── */
+.auth-wrap {
+  max-width: 440px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.auth-intro {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+}
+.auth-intro strong { color: var(--lime); }
+
+.validation-summary ul,
+.validation-summary-errors ul {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem 0.65rem 2rem;
+  list-style: square;
+  color: var(--danger);
+  font-size: 0.85rem;
+  background: rgba(255,90,127,0.08);
+  border: 1px solid rgba(255,90,127,0.4);
+  border-radius: 8px;
+}
+.validation-summary-valid ul { display: none; }
+
+.form-check-field {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-checkbox {
+  appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1px solid rgba(139,212,80,0.45);
+  border-radius: 4px;
+  background: rgba(10,9,20,0.7);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.form-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139,212,80,0.15);
+}
+.form-checkbox::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  background: var(--lime);
+  box-shadow: 0 0 8px rgba(139,212,80,0.6);
+  transform: scale(0);
+  transition: transform 100ms ease;
+}
+.form-checkbox:checked::before { transform: scale(1); }
+
+.form-check-label {
+  color: var(--text);
+  font-size: 0.88rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 1rem;
+  color: var(--purple-hi);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(150,95,212,0.45), transparent);
+}
+
+.btn-google {
+  width: 100%;
+  text-align: center;
+  border-color: rgba(150,95,212,0.75);
+  background: linear-gradient(165deg, #3a1f5a, #1e0f30);
+  box-shadow: 0 0 16px rgba(150,95,212,0.28);
+}
+.btn-google:hover { box-shadow: 0 0 26px rgba(150,95,212,0.5); }
+
+.btn-google-mark {
+  display: inline-grid;
+  place-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: rgba(214,222,255,0.92);
+  color: #3a1f5a;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  vertical-align: -0.3em;
+}
+
+.auth-alt-link {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.auth-alt-link a {
+  color: var(--purple-hi);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-alt-link a:hover { color: var(--lime); }
+
+/* ── Access denied (403) ────────────────────────────────────── */
+.access-denied {
+  max-width: 520px;
+  margin: 2.5rem auto 0;
+  text-align: center;
+  padding: 2.25rem 2rem;
+  border-color: rgba(255,90,127,0.4);
+  box-shadow: var(--shadow), 0 0 40px rgba(255,90,127,0.12);
+}
+
+.access-denied-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 3.4rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--danger);
+  text-shadow: 0 0 18px rgba(255,90,127,0.55);
+  margin-bottom: 0.5rem;
+}
+
+.access-denied .page-title { justify-content: center; }
+
+.access-denied-text {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0.75rem 0 1.5rem;
+}
+
+/* ── Login partial (navbar) ─────────────────────────────────── */
+.login-partial {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.login-user {
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+.login-user strong { color: var(--lime); font-weight: 600; }
+
+.logout-form { margin: 0; display: inline; }
+
+.btn-logout {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.74rem;
+  border-color: rgba(255,90,127,0.45);
+  color: var(--danger);
+  background: linear-gradient(165deg, #2a1228, #160a18);
+}
+.btn-logout:hover {
+  color: #ff8aa5;
+  border-color: rgba(255,90,127,0.75);
+  box-shadow: 0 0 14px rgba(255,90,127,0.25);
+}
+
+.auth-link-accent {
+  color: var(--purple-hi) !important;
+  border: 1px solid rgba(150,95,212,0.35);
+  border-radius: 6px;
+}
+.auth-link-accent:hover {
+  color: var(--lime) !important;
+  border-color: rgba(139,212,80,0.45);
+}
+
+/* ── Attachments (Dropzone + list) ──────────────────────────── */
+.attachment-section { margin-top: 1.5rem; max-width: 720px; }
+
+.dropzone#attachmentDz {
+  background: rgba(10,9,20,0.55);
+  border: 2px dashed rgba(139,212,80,0.35);
+  border-radius: 12px;
+  min-height: 120px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.dropzone#attachmentDz:hover,
+.dropzone#attachmentDz.dz-drag-hover {
+  border-color: rgba(139,212,80,0.7);
+  box-shadow: 0 0 22px rgba(139,212,80,0.18);
+}
+
+.dropzone#attachmentDz .dz-message {
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  margin: 1.5em 0;
+}
+
+.dropzone#attachmentDz .dz-preview .dz-image {
+  border-radius: 10px;
+  background: linear-gradient(145deg, #1a1230, #261540);
+}
+
+.dropzone#attachmentDz .dz-preview .dz-details {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.attachment-empty {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-style: italic;
+  margin: 0.25rem 0;
+}
+
+.attachment-link {
+  color: var(--purple-hi);
+  text-decoration: none;
+  font-weight: 600;
+}
+.attachment-link:hover { color: var(--lime); text-shadow: 0 0 8px rgba(139,212,80,0.3); }
+
+.attachment-actions { text-align: right; }
+
+.btn-attachment-delete {
+  border: 1px solid rgba(255,90,127,0.45);
+  border-radius: 8px;
+  padding: 0.28rem 0.7rem;
+  background: rgba(255,90,127,0.08);
+  color: var(--danger);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 120ms ease, box-shadow 120ms ease;
+}
+.btn-attachment-delete:hover {
+  filter: brightness(1.2);
+  box-shadow: 0 0 12px rgba(255,90,127,0.3);
+}

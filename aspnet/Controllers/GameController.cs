@@ -1,5 +1,6 @@
 using aspnet.Models;
 using aspnet.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace aspnet.Controllers;
@@ -12,9 +13,11 @@ public class GameController : Controller
     public GameController(IGameRepository repo) => _repo = repo;
 
     [Route("")]
+    [AllowAnonymous]
     public IActionResult Index() => View(_repo.GetAll());
 
     [Route("{id:int}")]
+    [Authorize]
     public IActionResult Details(int id)
     {
         var game = _repo.GetById(id);
@@ -23,10 +26,12 @@ public class GameController : Controller
     }
 
     [Route("nova")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Create() => View(new Game());
 
     [HttpPost]
     [Route("nova")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Create(Game game)
     {
         if (!ModelState.IsValid) return View(game);
@@ -35,6 +40,7 @@ public class GameController : Controller
     }
 
     [Route("{id:int}/uredi")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Edit(int id)
     {
         var game = _repo.GetById(id);
@@ -44,6 +50,7 @@ public class GameController : Controller
 
     [HttpPost]
     [Route("{id:int}/uredi")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Edit(int id, Game game)
     {
         if (!ModelState.IsValid) return View(game);
@@ -53,6 +60,7 @@ public class GameController : Controller
 
     [HttpPost]
     [Route("{id:int}/obrisi")]
+    [Authorize(Roles = "Admin")]
     public IActionResult Delete(int id)
     {
         _repo.Delete(id);
@@ -60,6 +68,7 @@ public class GameController : Controller
     }
 
     [Route("pretraga")]
+    [AllowAnonymous]
     public IActionResult Search(string q)
     {
         if (string.IsNullOrWhiteSpace(q)) return Json(new List<object>());
@@ -75,6 +84,7 @@ public class GameController : Controller
     }
 
     [Route("autocomplete")]
+    [AllowAnonymous]
     public IActionResult Autocomplete(string q)
     {
         if (string.IsNullOrWhiteSpace(q)) return Json(new List<object>());

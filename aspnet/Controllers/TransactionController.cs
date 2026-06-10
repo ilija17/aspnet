@@ -1,5 +1,6 @@
 using aspnet.Models;
 using aspnet.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace aspnet.Controllers;
@@ -17,13 +18,16 @@ public class TransactionController : Controller
     }
 
     [Route("")]
+    [AllowAnonymous]
     public IActionResult Index() => View(_repo.GetAll());
 
     [Route("nova")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Create() => View(new Transaction { CreatedAt = DateTime.Now });
 
     [HttpPost]
     [Route("nova")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Create(Transaction transaction)
     {
         if (!ModelState.IsValid) return View(transaction);
@@ -32,6 +36,7 @@ public class TransactionController : Controller
     }
 
     [Route("pretraga")]
+    [AllowAnonymous]
     public IActionResult Search(string q)
     {
         if (string.IsNullOrWhiteSpace(q)) return Json(new List<object>());

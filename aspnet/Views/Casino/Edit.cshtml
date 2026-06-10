@@ -53,11 +53,60 @@
     </form>
 </div>
 
+@* ── Dokumenti (privitci) — Dropzone upload + AJAX list ────── *@
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" />
+
+<div class="detail-section attachment-section">
+    <h2 class="section-title">Dokumenti</h2>
+
+    <form id="attachmentDz" class="dropzone" method="post" enctype="multipart/form-data"
+          action="@Url.Action("UploadAttachment", "Casino", new { casinoId = Model.Id })">
+        <div class="dz-message" data-dz-message>
+            <span>Povuci dokument ovdje ili klikni za odabir</span>
+        </div>
+    </form>
+
+    <div id="attachmentList" class="attachment-list"></div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
         $(function () {
-            $('form').validate({ onfocusout: function (el) { this.element(el); } });
+            $('.edit-form-wrap form').validate({ onfocusout: function (el) { this.element(el); } });
         });
+    </script>
+
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <script>
+        var attachmentListUrl = '@Url.Action("GetAttachments", "Casino", new { casinoId = Model.Id })';
+
+        function loadAttachments() {
+            $('#attachmentList').load(attachmentListUrl);
+        }
+
+        function deleteAttachment(id) {
+            $.ajax({
+                url: '@Url.Content("~/kasina/privitci/")' + id + '/obrisi',
+                type: 'POST',
+                success: loadAttachments
+            });
+        }
+
+        Dropzone.options.attachmentDz = {
+            paramName: "file",
+            maxFilesize: 50, // MB
+            success: function (file) {
+                var dz = this;
+                setTimeout(function () { dz.removeFile(file); }, 1200);
+                loadAttachments();
+            },
+            error: function (file, message) {
+                var text = (message && message.message) ? message.message : message;
+                $(file.previewElement).addClass('dz-error').find('.dz-error-message span').text(text);
+            }
+        };
+
+        $(loadAttachments);
     </script>
 }

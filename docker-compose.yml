@@ -1,0 +1,49 @@
+# Stack za Portainer (Stacks -> Add stack -> Repository).
+# Compose path: docker-compose.yml (default).
+#
+# Environment varijable koje se mogu postaviti u Portaineru:
+#   MSSQL_SA_PASSWORD      - SA lozinka za SQL Server (default: CasinoPass123!)
+#   GOOGLE_CLIENT_ID       - Google OAuth client id (bez toga je Google login isključen)
+#   GOOGLE_CLIENT_SECRET   - Google OAuth client secret
+#   HTTP_BIND              - host bind za app (default: 127.0.0.1:5209, za nginx na istom hostu)
+#   CONNECTION_STRING      - override za vanjsku bazu umjesto db servisa
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: aspnet/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING:-Server=db,1433;Database=CasinoDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-CasinoPass123!};TrustServerCertificate=True;}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
+    ports:
+      - "${HTTP_BIND:-127.0.0.1:5209}:8080"
+    volumes:
+      - uploads:/app/wwwroot/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-CasinoPass123!}
+      - MSSQL_PID=Express
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mssql-data:
+  uploads:

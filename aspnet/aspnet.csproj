@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -6,7 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
-    </PropertyGroup>
+      <UserSecretsId>3956955a-5872-4968-b229-8815e6d7569c</UserSecretsId>
+  </PropertyGroup>
 
     <ItemGroup>
       <Content Include="..\.dockerignore">
@@ -15,6 +16,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.5" />
+      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.5" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.5">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

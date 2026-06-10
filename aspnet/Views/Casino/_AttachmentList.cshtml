@@ -1,0 +1,45 @@
+@* Partial: attachment table for a casino, loaded via AJAX into #attachmentList. *@
+@model List<aspnet.Models.Attachment>
+
+@if (Model == null || Model.Count == 0)
+{
+    <p class="attachment-empty">Nema priloženih dokumenata.</p>
+}
+else
+{
+    <table class="data-table attachment-table">
+        <thead>
+        <tr>
+            <th>Dokument</th>
+            <th>Veličina</th>
+            <th>Dodano</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var a in Model)
+        {
+            <tr>
+                <td>
+                    <a class="attachment-link" href="@a.FilePath" target="_blank" rel="noopener">@a.FileName</a>
+                </td>
+                <td class="mono">@FormatSize(a.FileSize)</td>
+                <td class="mono">@a.CreatedAt.ToString("dd.MM.yyyy. HH:mm")</td>
+                <td class="attachment-actions">
+                    <button type="button" class="btn-attachment-delete" onclick="deleteAttachment(@a.Id)">Obriši</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@functions {
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024 * 1024):0.#} GB";
+        if (bytes >= 1024L * 1024) return $"{bytes / (1024.0 * 1024):0.#} MB";
+        if (bytes >= 1024L) return $"{bytes / 1024.0:0.#} KB";
+        return $"{bytes} B";
+    }
+}

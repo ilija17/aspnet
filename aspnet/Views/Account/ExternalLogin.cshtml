@@ -1,0 +1,53 @@
+@* Completes registration after a first external (Google) sign-in. *@
+@model aspnet.Models.ExternalLoginViewModel
+@{
+    ViewData["Title"] = "Dovrši registraciju";
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Dovrši registraciju</span>
+</div>
+
+<h1 class="page-title">Dovrši registraciju (@Model.ProviderDisplayName)</h1>
+
+<div class="edit-form-wrap auth-wrap">
+    <p class="auth-intro">
+        Uspješno si se prijavio putem računa <strong>@Model.ProviderDisplayName</strong>.
+        Za dovršetak registracije upiši preostale podatke.
+    </p>
+
+    <form asp-controller="Account" asp-action="ExternalLoginConfirmation" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <input asp-for="ReturnUrl" type="hidden" />
+        <input asp-for="ProviderDisplayName" type="hidden" />
+
+        <div class="form-field">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-input" autocomplete="username" />
+            <span asp-validation-for="Email" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="OIB" class="form-label"></label>
+            <input asp-for="OIB" class="form-input" maxlength="11" inputmode="numeric" />
+            <span asp-validation-for="OIB" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="JMBG" class="form-label"></label>
+            <input asp-for="JMBG" class="form-input" maxlength="13" inputmode="numeric" />
+            <span asp-validation-for="JMBG" class="form-validation"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Dovrši registraciju</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

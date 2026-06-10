@@ -24,4 +24,5 @@ public class Casino
 
     public virtual ICollection<Table> Tables { get; set; } = new List<Table>();
     public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
+    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 }

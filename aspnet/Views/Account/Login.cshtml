@@ -1,0 +1,59 @@
+@* Local login form + external (Google) login. *@
+@model aspnet.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Prijava";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<div class="breadcrumb-bar">
+    <a asp-controller="Home" asp-action="Index">Home</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="current">Prijava</span>
+</div>
+
+<h1 class="page-title">Prijava</h1>
+
+<div class="edit-form-wrap auth-wrap">
+    <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <div class="form-field">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-input" autocomplete="username" />
+            <span asp-validation-for="Email" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-input" autocomplete="current-password" />
+            <span asp-validation-for="Password" class="form-validation"></span>
+        </div>
+
+        <div class="form-check-field">
+            <input asp-for="RememberMe" class="form-checkbox" />
+            <label asp-for="RememberMe" class="form-check-label"></label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Prijavi se</button>
+        </div>
+    </form>
+
+    <div class="auth-divider"><span>Vanjska prijava</span></div>
+
+    <form asp-controller="Account" asp-action="ExternalLogin"
+          asp-route-provider="Google" asp-route-returnUrl="@returnUrl" method="post">
+        <button type="submit" class="btn btn-google">
+            <span class="btn-google-mark">G</span> Prijava putem Googlea
+        </button>
+    </form>
+
+    <p class="auth-alt-link">
+        Nemaš račun?
+        <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@returnUrl">Registriraj se</a>
+    </p>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -20,4 +20,9 @@ RUN dotnet publish "./aspnet.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Mapa za uploade mora postojati i biti zapisiva za non-root app korisnika;
+# named volume preuzima ovo vlasništvo pri prvom mountu
+USER root
+RUN mkdir -p /app/wwwroot/uploads && chown -R $APP_UID /app/wwwroot/uploads
+USER $APP_UID
 ENTRYPOINT ["dotnet", "aspnet.dll"]

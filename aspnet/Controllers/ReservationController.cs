@@ -1,5 +1,6 @@
 using aspnet.Models;
 using aspnet.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace aspnet.Controllers;
@@ -12,9 +13,11 @@ public class ReservationController : Controller
     public ReservationController(IReservationRepository repo) => _repo = repo;
 
     [Route("")]
+    [AllowAnonymous]
     public IActionResult Index() => View(_repo.GetAll());
 
     [Route("{id:int}")]
+    [Authorize]
     public IActionResult Details(int id)
     {
         var reservation = _repo.GetById(id);
@@ -23,10 +26,12 @@ public class ReservationController : Controller
     }
 
     [Route("nova")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Create() => View(new Reservation { ReservedAt = DateTime.Now });
 
     [HttpPost]
     [Route("nova")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult Create(Reservation reservation)
     {
         if (!ModelState.IsValid) return View(reservation);
@@ -36,6 +41,7 @@ public class ReservationController : Controller
 
     [HttpPost]
     [Route("{id:int}/obrisi")]
+    [Authorize(Roles = "Admin")]
     public IActionResult Delete(int id)
     {
         _repo.Delete(id);
@@ -43,6 +49,7 @@ public class ReservationController : Controller
     }
 
     [Route("pretraga")]
+    [AllowAnonymous]
     public IActionResult Search(string q)
     {
         if (string.IsNullOrWhiteSpace(q)) return Json(new List<object>());
