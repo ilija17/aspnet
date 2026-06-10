@@ -26,7 +26,11 @@ else
                 <td class="mono">@FormatSize(a.FileSize)</td>
                 <td class="mono">@a.CreatedAt.ToString("dd.MM.yyyy. HH:mm")</td>
                 <td class="attachment-actions">
-                    <button type="button" class="btn-attachment-delete" onclick="deleteAttachment(@a.Id)">Obriši</button>
+                    <a class="btn-attachment-download" href="@Url.Action("DownloadAttachment", "Casino", new { id = a.Id })">Preuzmi</a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                    {
+                        <button type="button" class="btn-attachment-delete" onclick="deleteAttachment(@a.Id)">Obriši</button>
+                    }
                 </td>
             </tr>
         }

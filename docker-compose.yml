@@ -13,6 +13,9 @@
 #   GOOGLE_CLIENT_SECRET   - Google OAuth client secret
 #   ADMIN_EMAIL            - email/username seedanog admin racuna (default: admin@casino.local)
 #   ADMIN_PASSWORD         - lozinka seedanog admin racuna (default: Admin123$)
+#   DEEPSEEK_API_KEY       - API kljuc za DeepSeek AI chat (bez njega je chat iskljucen);
+#                            moze stajati i u .env datoteci uz docker-compose.yml
+#   DEEPSEEK_MODEL         - DeepSeek model (default: deepseek-chat)
 #   HTTP_BIND              - host bind za app (default: 127.0.0.1:5209, za nginx na istom hostu)
 
 services:
@@ -28,6 +31,8 @@ services:
       - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
       - SeedAdmin__Email=${ADMIN_EMAIL:-admin@casino.local}
       - SeedAdmin__Password=${ADMIN_PASSWORD:-Admin123$$}
+      - DeepSeek__ApiKey=${DEEPSEEK_API_KEY:-}
+      - DeepSeek__Model=${DEEPSEEK_MODEL:-deepseek-chat}
     ports:
       - "${HTTP_BIND:-127.0.0.1:5209}:8080"
     extra_hosts:

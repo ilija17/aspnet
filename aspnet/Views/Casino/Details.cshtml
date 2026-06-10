@@ -125,6 +125,12 @@
     }
 </div>
 
+@* ── Dokumenti (privitci) — read-only AJAX list, upload je na Uredi ── *@
+<div class="detail-section attachment-section">
+    <h2 class="section-title">Dokumenti</h2>
+    <div id="attachmentList" class="attachment-list"></div>
+</div>
+
 <div class="detail-actions">
     <a class="btn btn-back" href="/kasina">Back to Casinos</a>
     <a class="btn btn-accent" href="/kasina/@Model.Id/uredi">Uredi</a>
@@ -134,4 +140,22 @@
     </form>
 </div>
 
-@section Scripts {}
+@section Scripts {
+    <script>
+        var attachmentListUrl = '@Url.Action("GetAttachments", "Casino", new { casinoId = Model.Id })';
+
+        function loadAttachments() {
+            $('#attachmentList').load(attachmentListUrl);
+        }
+
+        function deleteAttachment(id) {
+            $.ajax({
+                url: '@Url.Content("~/kasina/privitci/")' + id + '/obrisi',
+                type: 'POST',
+                success: loadAttachments
+            });
+        }
+
+        $(loadAttachments);
+    </script>
+}

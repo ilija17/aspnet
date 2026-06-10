@@ -1102,6 +1102,27 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
   border-color: rgba(129, 140, 248, 0.4);
 }
 
+.chat-msg-typing {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: max-content;
+  padding: 0.7rem 0.8rem;
+}
+.chat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: chat-dot-bounce 1.2s ease-in-out infinite;
+}
+.chat-dot:nth-child(2) { animation-delay: 0.15s; }
+.chat-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes chat-dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30%           { transform: translateY(-4px); opacity: 1; }
+}
+
 .chat-input-row {
   display: flex;
   gap: 0.5rem;
@@ -1706,7 +1727,29 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
 }
 .attachment-link:hover { color: var(--cyan); }
 
-.attachment-actions { text-align: right; }
+.attachment-actions { text-align: right; white-space: nowrap; }
+.attachment-actions > * + * { margin-left: 0.45rem; }
+
+.btn-attachment-download {
+  display: inline-block;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  border-radius: 999px;
+  padding: 0.28rem 0.75rem;
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 140ms ease, box-shadow 140ms ease;
+}
+.btn-attachment-download:hover {
+  color: var(--success);
+  filter: brightness(1.2);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
+}
 
 .btn-attachment-delete {
   border: 1px solid rgba(251, 113, 133, 0.45);

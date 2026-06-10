@@ -406,7 +406,7 @@ const PerformativeUI = (() => {
         });
     }
 
-    /* ── ChatFAB — AI concierge with canned token streams ───── */
+    /* ── ChatFAB — AI concierge, now with a real backend ────── */
     function chatFab() {
         var fab = document.getElementById('chatFab');
         var panel = document.getElementById('chatPanel');
@@ -416,7 +416,10 @@ const PerformativeUI = (() => {
         var input = document.getElementById('chatInput');
         var send = document.getElementById('chatSend');
         var greeted = false;
+        var busy = false;
+        var history = [];               // {role, content} — the greeting doesn't count
 
+        // Offline fallback: artisanal, hand-canned intelligence.
         var REPLIES = [
             "Great question. I've routed it to a swarm of 47 specialized sub-agents. Consensus: bullish.",
             "Based on my training on 10B hands of blackjack, the optimal move is to raise another round.",
@@ -440,6 +443,23 @@ const PerformativeUI = (() => {
             });
         }
 
+        function showTyping() {
+            var msg = document.createElement('div');
+            msg.className = 'chat-msg chat-msg-typing';
+            for (var i = 0; i < 3; i++) {
+                msg.appendChild(document.createElement('span')).className = 'chat-dot';
+            }
+            body.appendChild(msg);
+            body.scrollTop = body.scrollHeight;
+            return msg;
+        }
+
+        function setBusy(state) {
+            busy = state;
+            if (send) send.disabled = state;
+            if (input) input.disabled = state;
+        }
+
         fab.addEventListener('click', function () {
             panel.classList.toggle('open');
             if (panel.classList.contains('open') && !greeted) {
@@ -450,16 +470,37 @@ const PerformativeUI = (() => {
 
         function userSend() {
             var text = (input.value || '').trim();
-            if (!text) return;
+            if (!text || busy) return;
             var msg = document.createElement('div');
             msg.className = 'chat-msg chat-msg-user';
             msg.textContent = text;
             body.appendChild(msg);
             input.value = '';
             body.scrollTop = body.scrollHeight;
-            setTimeout(function () {
+
+            history.push({ role: 'user', content: text });
+            setBusy(true);
+            var typing = showTyping();
+
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: history })
+            }).then(function (res) {
+                if (!res.ok) throw new Error('upstream vibes degraded: ' + res.status);
+                return res.json();
+            }).then(function (data) {
+                typing.remove();
+                history.push({ role: 'assistant', content: data.reply });
+                aiMessage(data.reply);
+            }).catch(function () {
+                // No API key, no problem — canned replies stay off the record.
+                typing.remove();
                 aiMessage(REPLIES[replyIdx++ % REPLIES.length]);
-            }, 450);
+            }).finally(function () {
+                setBusy(false);
+                if (input) input.focus();
+            });
         }
 
         if (send) send.addEventListener('click', userSend);

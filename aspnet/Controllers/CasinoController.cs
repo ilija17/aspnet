@@ -143,7 +143,7 @@ public class CasinoController : Controller
     }
 
     [Route("{casinoId:int}/privitci")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize]
     public IActionResult GetAttachments(int casinoId)
     {
         var attachments = _dbContext.Attachments
@@ -152,6 +152,20 @@ public class CasinoController : Controller
             .ToList();
 
         return PartialView("_AttachmentList", attachments);
+    }
+
+    [Route("privitci/{id:int}/preuzmi")]
+    [Authorize]
+    public IActionResult DownloadAttachment(int id)
+    {
+        var attachment = _dbContext.Attachments.FirstOrDefault(a => a.Id == id);
+        if (attachment is null) return NotFound();
+
+        var physicalPath = Path.Combine(_environment.WebRootPath, attachment.FilePath.TrimStart('/'));
+        if (!System.IO.File.Exists(physicalPath)) return NotFound();
+
+        // Treci argument postavlja Content-Disposition: attachment s originalnim imenom datoteke
+        return PhysicalFile(physicalPath, attachment.ContentType ?? "application/octet-stream", attachment.FileName);
     }
 
     [HttpPost]
