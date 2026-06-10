@@ -532,17 +532,42 @@ const PerformativeUI = (() => {
             var msg = document.createElement('div');
             msg.className = 'chat-msg';
             var span = document.createElement('span');
-            span.className = 'token-stream';
+            span.className = 'token-stream chat-md';
             msg.appendChild(span);
             body.appendChild(msg);
             body.scrollTop = body.scrollHeight;
-            streamTokens(span, text, { delay: 250 }).then(function () {
-                // Stream done — swap plain text for rendered markdown.
+
+            if (!motionOk()) {
+                // Reduced motion — render the full markdown instantly.
                 // renderMarkdown escapes all HTML first, so this is safe.
                 span.innerHTML = renderMarkdown(text);
-                span.classList.add('chat-md');
                 body.scrollTop = body.scrollHeight;
-            });
+                return;
+            }
+
+            // Chat gets its own stream loop (streamTokens is plain-text
+            // and shared with tokenStreams) — re-render the markdown of
+            // everything received so far on each tick, so bold/lists/etc.
+            // format progressively while the reply is still typing.
+            var caret = document.createElement('span');
+            caret.className = 'token-caret';
+            span.after(caret);
+
+            var tokens = text.match(/\S+\s*/g) || [text];
+            var i = 0;
+            var soFar = '';
+            function next() {
+                if (i >= tokens.length) {
+                    caret.remove();
+                    body.scrollTop = body.scrollHeight;
+                    return;
+                }
+                soFar += tokens[i++];
+                span.innerHTML = renderMarkdown(soFar);
+                body.scrollTop = body.scrollHeight;
+                setTimeout(next, 30 + Math.random() * 90); // variable latency = authenticity
+            }
+            setTimeout(next, 250);
         }
 
         function showTyping() {
