@@ -406,6 +406,104 @@ const PerformativeUI = (() => {
         });
     }
 
+    /* ── MarkdownLite — hand-rolled, escape-first renderer ──── */
+    // HTML is escaped before any markdown is parsed, so model output
+    // can never inject markup. Supports: pipe tables, - / * lists,
+    // **bold**, *italic*, `code`. Headings and hrs are stripped.
+    function escapeHtml(s) {
+        return s
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function inlineMd(s) {
+        return s
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    }
+
+    function renderMarkdown(text) {
+        var lines = escapeHtml(String(text)).split(/\r?\n/);
+        var html = [];
+        var i = 0;
+
+        function isDivider(line) {
+            // |---|:---:| style separator row (dashes, pipes, colons only)
+            return /-/.test(line) && /^[\s|:\-]+$/.test(line);
+        }
+
+        function isTableStart(idx) {
+            return lines[idx].indexOf('|') !== -1 &&
+                idx + 1 < lines.length &&
+                lines[idx + 1].indexOf('|') !== -1 &&
+                isDivider(lines[idx + 1]);
+        }
+
+        function cells(line) {
+            var t = line.trim();
+            if (t.charAt(0) === '|') t = t.slice(1);
+            if (t.charAt(t.length - 1) === '|') t = t.slice(0, -1);
+            return t.split('|').map(function (c) { return inlineMd(c.trim()); });
+        }
+
+        while (i < lines.length) {
+            var line = lines[i];
+
+            if (!line.trim()) { i++; continue; }
+
+            // GitHub-style pipe table: header row + dashed separator row
+            if (isTableStart(i)) {
+                var head = cells(line);
+                i += 2;
+                var rows = [];
+                while (i < lines.length && lines[i].indexOf('|') !== -1) {
+                    rows.push(cells(lines[i++]));
+                }
+                var t = '<div class="chat-md-table-wrap"><table class="chat-md-table"><thead><tr>';
+                head.forEach(function (c) { t += '<th>' + c + '</th>'; });
+                t += '</tr></thead><tbody>';
+                rows.forEach(function (r) {
+                    t += '<tr>';
+                    r.forEach(function (c) { t += '<td>' + c + '</td>'; });
+                    t += '</tr>';
+                });
+                t += '</tbody></table></div>';
+                html.push(t);
+                continue;
+            }
+
+            // Unordered list: lines starting with "- " or "* "
+            if (/^\s*[-*]\s+\S/.test(line)) {
+                var items = [];
+                while (i < lines.length && /^\s*[-*]\s+\S/.test(lines[i])) {
+                    items.push('<li>' + inlineMd(lines[i].replace(/^\s*[-*]\s+/, '').trim()) + '</li>');
+                    i++;
+                }
+                html.push('<ul>' + items.join('') + '</ul>');
+                continue;
+            }
+
+            // Horizontal rule — strip entirely
+            if (/^\s*([-*_])\s*(\1\s*){2,}$/.test(line)) { i++; continue; }
+
+            // Paragraph — heading markers demoted to plain text,
+            // single newlines inside become <br>
+            var para = [];
+            while (i < lines.length && lines[i].trim() &&
+                   !/^\s*[-*]\s+\S/.test(lines[i]) &&
+                   !/^\s*([-*_])\s*(\1\s*){2,}$/.test(lines[i]) &&
+                   !isTableStart(i)) {
+                para.push(inlineMd(lines[i].replace(/^\s*#{1,6}\s+/, '').trim()));
+                i++;
+            }
+            html.push('<p>' + para.join('<br>') + '</p>');
+        }
+        return html.join('');
+    }
+
     /* ── ChatFAB — AI concierge, now with a real backend ────── */
     function chatFab() {
         var fab = document.getElementById('chatFab');
@@ -439,6 +537,10 @@ const PerformativeUI = (() => {
             body.appendChild(msg);
             body.scrollTop = body.scrollHeight;
             streamTokens(span, text, { delay: 250 }).then(function () {
+                // Stream done — swap plain text for rendered markdown.
+                // renderMarkdown escapes all HTML first, so this is safe.
+                span.innerHTML = renderMarkdown(text);
+                span.classList.add('chat-md');
                 body.scrollTop = body.scrollHeight;
             });
         }

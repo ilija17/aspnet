@@ -15,6 +15,9 @@ public class ChatApiController : ControllerBase
         "the user writes in. Keep the playful casino-concierge tone, but give real answers. " +
         "Use the provided tools to look up real data instead of guessing; if a tool returns " +
         "an error, tell the user what you can't access and why. " +
+        "Your replies render in a narrow chat bubble. Keep them short. You may use simple " +
+        "Markdown: **bold**, *italics*, `code`, bullet lists and small tables (3 columns max). " +
+        "No headings, no horizontal rules. " +
         "Never give gambling, financial or legal advice beyond general information.";
 
     // Više rundi tool-callinga: model smije lančano pozivati alate prije odgovora
