@@ -636,6 +636,41 @@ const PerformativeUI = (() => {
         });
     }
 
+    /* ── Nav dropdowns — touch support only ─────────────────────
+       Hover/focus-within is handled in CSS. On touch devices (no
+       hover), the first tap on a dropdown trigger opens the menu
+       instead of navigating; a second tap follows the link.
+       Tapping outside closes any open dropdown. ───────────────── */
+    function navDropdowns() {
+        var touchOnly = window.matchMedia('(hover: none)');
+        var dropdowns = document.querySelectorAll('.nav-dropdown');
+        if (!dropdowns.length) return;
+
+        function closeAll(except) {
+            dropdowns.forEach(function (dd) {
+                if (dd !== except) dd.classList.remove('open');
+            });
+        }
+
+        dropdowns.forEach(function (dd) {
+            var trigger = dd.querySelector('.nav-dropdown-trigger');
+            if (!trigger) return;
+            trigger.addEventListener('click', function (e) {
+                if (!touchOnly.matches) return;        // mouse/keyboard: CSS handles it
+                if (!dd.classList.contains('open')) {
+                    e.preventDefault();                 // first tap: open, don't navigate
+                    closeAll(dd);
+                    dd.classList.add('open');
+                }                                       // second tap: navigate normally
+            });
+        });
+
+        document.addEventListener('click', function (e) {
+            var inside = e.target.closest && e.target.closest('.nav-dropdown');
+            closeAll(inside || null);
+        });
+    }
+
     /* ── Card entrance — staggered rise on grids ────────────── */
     function cardEntrance() {
         if (!motionOk()) return;
@@ -653,6 +688,7 @@ const PerformativeUI = (() => {
             wordRolls();
             waitlist();
             chatFab();
+            navDropdowns();
             cardEntrance();
         }
     };

@@ -27,22 +27,31 @@
     🎉 Our $420M Series C was oversubscribed 14x — <a href="/#waitlist">Join the waitlist</a> ✨
 </div>
 
+@{
+    var currentPath = Context.Request.Path.Value ?? "";
+    string NavClass(string prefix) =>
+        currentPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "nav-link active" : "nav-link";
+}
 <div class="app-shell">
   <nav class="top-bar">
     <div class="brand-group">
       <a class="brand" asp-controller="Home" asp-action="Index">CMS✨</a>
-      <span class="eyebrow-pill">Series C 🚀</span>
-      <span class="status-dot-wrap"><span class="status-dot"></span> All systems agentic</span>
+      <span class="status-dot-wrap" title="All systems agentic"><span class="status-dot"></span></span>
     </div>
     <ul class="nav-links">
-      <li><a class="nav-link" href="/kasina">Casinos</a></li>
-      <li><a class="nav-link" href="/igraci">Players</a></li>
-      <li><a class="nav-link" href="/stolovi">Tables</a></li>
-      <li><a class="nav-link" href="/igre">Games</a></li>
-      <li><a class="nav-link" href="/djelatnici">Employees</a></li>
-      <li><a class="nav-link" href="/rezervacije">Reservations</a></li>
-      <li><a class="nav-link" href="/transakcije">Transactions</a></li>
-      <li><a class="nav-link nav-link-game" href="/kocka/index.html" target="_blank" rel="noopener">Blackjack ↗</a></li>
+      <li><a class="@NavClass("/kasina")" href="/kasina">Casinos</a></li>
+      <li><a class="@NavClass("/igraci")" href="/igraci">Players</a></li>
+      <li><a class="@NavClass("/stolovi")" href="/stolovi">Tables</a></li>
+      <li class="nav-dropdown">
+        <a class="@NavClass("/igre") nav-dropdown-trigger" href="/igre" aria-haspopup="true">Games <span class="nav-caret" aria-hidden="true">▾</span></a>
+        <ul class="nav-dropdown-menu" aria-label="Games">
+          <li><a class="nav-dropdown-item" href="/igre">All games</a></li>
+          <li><a class="nav-dropdown-item nav-dropdown-item-game" href="/kocka/index.html" target="_blank" rel="noopener">Blackjack ↗</a></li>
+        </ul>
+      </li>
+      <li><a class="@NavClass("/djelatnici")" href="/djelatnici">Employees</a></li>
+      <li><a class="@NavClass("/rezervacije")" href="/rezervacije">Reservations</a></li>
+      <li><a class="@NavClass("/transakcije")" href="/transakcije">Transactions</a></li>
     </ul>
     <partial name="_LoginPartial" />
   </nav>
