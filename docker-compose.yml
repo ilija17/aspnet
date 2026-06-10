@@ -11,6 +11,8 @@
 #   MSSQL_SA_PASSWORD      - SA lozinka, koristi se samo u default connection stringu (default: CasinoPass123!)
 #   GOOGLE_CLIENT_ID       - Google OAuth client id (bez toga je Google login iskljucen)
 #   GOOGLE_CLIENT_SECRET   - Google OAuth client secret
+#   ADMIN_EMAIL            - email/username seedanog admin racuna (default: admin@casino.local)
+#   ADMIN_PASSWORD         - lozinka seedanog admin racuna (default: Admin123$)
 #   HTTP_BIND              - host bind za app (default: 127.0.0.1:5209, za nginx na istom hostu)
 
 services:
@@ -24,6 +26,8 @@ services:
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING:-Server=host.docker.internal,1433;Database=CasinoDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-CasinoPass123!};TrustServerCertificate=True;}
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
       - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
+      - SeedAdmin__Email=${ADMIN_EMAIL:-admin@casino.local}
+      - SeedAdmin__Password=${ADMIN_PASSWORD:-Admin123$$}
     ports:
       - "${HTTP_BIND:-127.0.0.1:5209}:8080"
     extra_hosts:

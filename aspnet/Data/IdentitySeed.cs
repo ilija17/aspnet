@@ -9,6 +9,7 @@ public static class IdentitySeed
     {
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<AppUser>>();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
         string[] roles = { "Admin", "Manager" };
 
@@ -20,7 +21,9 @@ public static class IdentitySeed
             }
         }
 
-        const string adminEmail = "admin@casino.local";
+        // Kredencijali admina dolaze iz konfiguracije (env varijable SeedAdmin__Email / SeedAdmin__Password)
+        var adminEmail = configuration["SeedAdmin:Email"] ?? "admin@casino.local";
+        var adminPassword = configuration["SeedAdmin:Password"] ?? "Admin123$";
 
         if (await userManager.FindByEmailAsync(adminEmail) is null)
         {
@@ -33,7 +36,7 @@ public static class IdentitySeed
                 JMBG = "1234567890123"
             };
 
-            var result = await userManager.CreateAsync(admin, "Admin123$");
+            var result = await userManager.CreateAsync(admin, adminPassword);
 
             if (result.Succeeded)
             {
