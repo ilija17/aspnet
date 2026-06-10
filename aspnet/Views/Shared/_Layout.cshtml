@@ -1,5 +1,6 @@
-@* Shared layout for all pages. Dark casino theme: top-bar navbar, app-shell container, footer.
-   Links Google Fonts (Rajdhani, Inter, JetBrains Mono) and casino.css. *@
+@* Shared layout — ✨ Performative UI theme: aurora mesh background, sparkle canvas,
+   sticky Series-C banner, glass navbar with gradient brand + status dot, glass footer
+   with compliance-vibes badges, and the AI concierge ChatFAB. *@
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,14 +11,29 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/casino.css" asp-append-version="true"/>
 </head>
 <body>
+<div class="aurora" aria-hidden="true">
+    <div class="aurora-blob aurora-b1"></div>
+    <div class="aurora-blob aurora-b2"></div>
+    <div class="aurora-blob aurora-b3"></div>
+</div>
+<canvas id="sparkle-canvas" aria-hidden="true"></canvas>
+
+<div class="sticky-banner">
+    🎉 Our $420M Series C was oversubscribed 14x — <a href="/#waitlist">Join the waitlist</a> ✨
+</div>
+
 <div class="app-shell">
   <nav class="top-bar">
-    <a class="brand" asp-controller="Home" asp-action="Index">CMS</a>
+    <div class="brand-group">
+      <a class="brand" asp-controller="Home" asp-action="Index">CMS✨</a>
+      <span class="eyebrow-pill">Series C 🚀</span>
+      <span class="status-dot-wrap"><span class="status-dot"></span> All systems agentic</span>
+    </div>
     <ul class="nav-links">
       <li><a class="nav-link" href="/kasina">Casinos</a></li>
       <li><a class="nav-link" href="/igraci">Players</a></li>
@@ -34,9 +50,33 @@
     @RenderBody()
   </main>
   <footer class="site-footer">
-    <span>Casino Management System &copy; 2026</span>
+    <span>Powered by frontier models ✨ &middot; Casino Management System &copy; 2026</span>
+    <div class="footer-badges">
+      <span class="compliance-badge">SOC-2 compliant vibes</span>
+      <span class="compliance-badge">AGI-ready since 2026</span>
+      <span class="compliance-badge">GDPR-curious</span>
+      <span class="compliance-badge">∞ TAM certified</span>
+      <span class="compliance-badge">0% hallucinations*</span>
+    </div>
+    <span style="font-size:0.66rem;opacity:0.7;">*as measured by our own eval suite</span>
   </footer>
 </div>
+
+@* AI concierge — canned responses only, no backend *@
+<button id="chatFab" class="chat-fab" type="button" aria-label="AI concierge">✨</button>
+<div id="chatPanel" class="chat-panel" role="dialog" aria-label="AI concierge chat">
+  <div class="chat-header">
+    <span class="status-dot"></span>
+    <span class="gradient-text">Concierge-GPT</span>
+    <span class="eyebrow-pill eyebrow-pill-cyan" style="margin-left:auto;">Frontier</span>
+  </div>
+  <div class="chat-body"></div>
+  <div class="chat-input-row">
+    <input id="chatInput" class="form-input" type="text" placeholder="Ask anything (it won't matter)…" autocomplete="off" />
+    <button id="chatSend" class="chat-send" type="button">Send</button>
+  </div>
+</div>
+
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>

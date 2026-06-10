@@ -14,6 +14,12 @@
 
 <h1 class="page-title">@Model.Name</h1>
 
+<div class="stat-bar" style="margin-top:1rem;">
+    <div class="stat-pill"><span class="stat-label">Stolovi</span><span class="stat-value">@Model.Tables.Count</span></div>
+    <div class="stat-pill"><span class="stat-label">Slobodni</span><span class="stat-value">@Model.Tables.Count(t => t.IsAvailable)</span></div>
+    <div class="stat-pill"><span class="stat-label">Djelatnici</span><span class="stat-value">@Model.Employees.Count</span></div>
+</div>
+
 <div class="detail-grid">
 
     <div class="detail-section">

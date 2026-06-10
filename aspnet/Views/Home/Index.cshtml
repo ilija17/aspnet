@@ -1,7 +1,9 @@
-@* Custom home page — Casino Floor view. Shows all casinos with per-table availability chips and headline stats. *@
+@* Performative landing page — gradient hero, WordRoll, TokenStream subheading,
+   fake StatCounters, investor LogoMarquee, MockIDE, live deployments (real casinos),
+   module showcase (real entity links), and a fake-success WaitlistForm. *@
 @model List<aspnet.Models.Casino>
 @{
-    ViewData["Title"] = "Casino Floor";
+    ViewData["Title"] = "AI-Native Casino OS";
 
     var totalCasinos = Model.Count;
     var totalTables = Model.Sum(c => c.Tables.Count);
@@ -9,47 +11,191 @@
     var inUseTables = totalTables - availableTables;
 }
 
-<div class="page-header">
-    <h1 class="page-title">Casino Floor</h1>
-    <p style="color: var(--lime); margin-bottom: 1rem; font-size: 0.9rem; letter-spacing: 0.03em;">Live overview of all venues and table availability</p>
+@* ───────────────────────── Hero ───────────────────────── *@
+<section class="hero">
+    <span class="eyebrow-pill">✨ AI-Native Casino Infrastructure</span>
+    <h1 class="hero-title">The AI-Native<br />Casino Operating System</h1>
+    <div class="hero-roll">
+        Agentic gaming at <span class="word-roll" data-words='["frontier scale","agentic scale","multimodal scale","oversubscribed scale","∞ TAM scale"]'>frontier scale</span>
+    </div>
+    <p class="hero-sub">
+        <span class="token-stream" data-token-stream="We put an LLM between every chip and every table. GGR went up 10x. We don't fully understand why, and neither do our investors — that's the moat."></span>
+    </p>
+    <div class="hero-ctas">
+        <a class="btn btn-primary" href="#waitlist">Join the waitlist ✨</a>
+        <a class="btn btn-accent" href="/kasina">Razgledaj kasina</a>
+    </div>
+</section>
+
+@* ─────────────────── Fake metrics (StatCounter) ─────────────────── *@
+<div class="stat-counter-row">
+    <div class="stat-counter">
+        <div class="stat-counter-value" data-count-to="2.3" data-count-prefix="$" data-count-suffix="B" data-count-decimals="1">$0.0B</div>
+        <div class="stat-counter-label">GGR processed</div>
+    </div>
+    <div class="stat-counter">
+        <div class="stat-counter-value" data-count-to="99.99" data-count-suffix="%" data-count-decimals="2">0%</div>
+        <div class="stat-counter-label">Uptime (self-reported)</div>
+    </div>
+    <div class="stat-counter">
+        <div class="stat-counter-value" data-count-to="14" data-count-suffix="x">0x</div>
+        <div class="stat-counter-label">Series C oversubscribed</div>
+    </div>
+    <div class="stat-counter">
+        <div class="stat-counter-value">∞</div>
+        <div class="stat-counter-label">TAM</div>
+    </div>
 </div>
 
-<div class="stat-bar">
-    <div class="stat-pill">
-        <span class="stat-label">Casinos</span>
-        <span class="stat-value">@totalCasinos</span>
-    </div>
-    <div class="stat-pill">
-        <span class="stat-label">Total Tables</span>
-        <span class="stat-value">@totalTables</span>
-    </div>
-    <div class="stat-pill">
-        <span class="stat-label">Available</span>
-        <span class="stat-value">@availableTables</span>
-    </div>
-    <div class="stat-pill stat-pill-danger">
-        <span class="stat-label">In Use</span>
-        <span class="stat-value stat-in-use">@inUseTables</span>
+@* ─────────────────── Investor marquee ─────────────────── *@
+<div class="logo-marquee-label">Backed by operators who get it</div>
+<div class="logo-marquee">
+    <div class="logo-marquee-track">
+        @for (var pass = 0; pass < 2; pass++)
+        {
+            <span class="logo-item">Hyperbolic Capital</span>
+            <span class="logo-item">a16z-adjacent</span>
+            <span class="logo-item">Vibe Ventures</span>
+            <span class="logo-item">FOMO Fund</span>
+            <span class="logo-item">Stealth Mode Partners</span>
+            <span class="logo-item">Pre-Seed Everything</span>
+            <span class="logo-item">Conviction (no relation)</span>
+            <span class="logo-item">YOLO Growth Equity</span>
+        }
     </div>
 </div>
 
-<div class="floor-grid">
-    @foreach (var casino in Model)
-    {
-        <div class="floor-card">
-            <div class="casino-name">
-                <a asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">@casino.Name</a>
-            </div>
-            <div class="casino-address">@casino.Address</div>
-            <div class="table-chips">
-                @foreach (var table in casino.Tables)
-                {
-                    <span class="table-chip @(table.IsAvailable ? "available" : "unavailable")">
-                        T@(table.TableNumber) &middot; @table.Game.Name
-                    </span>
-                }
-            </div>
-            <a class="view-link" asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">View details &rarr;</a>
+@* ─────────────────── Live deployments (real data) ─────────────────── *@
+<section style="margin-top:2.5rem;">
+    <div class="index-action-bar">
+        <h2 class="gradient-text" style="margin:0;">Live deployments</h2>
+        <span class="eyebrow-pill eyebrow-pill-cyan">✨ @totalCasinos venues on the agentic mesh</span>
+    </div>
+
+    <div class="stat-bar" style="margin-top:1rem;">
+        <div class="stat-pill">
+            <span class="stat-label">Casinos</span>
+            <span class="stat-value">@totalCasinos</span>
         </div>
-    }
+        <div class="stat-pill">
+            <span class="stat-label">Total Tables</span>
+            <span class="stat-value">@totalTables</span>
+        </div>
+        <div class="stat-pill">
+            <span class="stat-label">Available</span>
+            <span class="stat-value">@availableTables</span>
+        </div>
+        <div class="stat-pill stat-pill-danger">
+            <span class="stat-label">In Use</span>
+            <span class="stat-value stat-in-use">@inUseTables</span>
+        </div>
+    </div>
+
+    <div class="floor-grid">
+        @foreach (var casino in Model)
+        {
+            var liveCount = casino.Tables.Count(t => t.IsAvailable);
+            <div class="floor-card">
+                <div class="casino-name">
+                    @if (liveCount > 0)
+                    {
+                        <span class="status-dot"></span>
+                    }
+                    else
+                    {
+                        <span class="status-dot status-dot-busy"></span>
+                    }
+                    <a asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">@casino.Name</a>
+                </div>
+                <div class="casino-address">@casino.Address &middot; deployment healthy &middot; vibes nominal</div>
+                <div class="table-chips">
+                    @foreach (var table in casino.Tables)
+                    {
+                        <span class="table-chip @(table.IsAvailable ? "available" : "unavailable")">
+                            T@(table.TableNumber) &middot; @table.Game.Name
+                        </span>
+                    }
+                </div>
+                <a class="view-link" asp-controller="Casino" asp-action="Details" asp-route-id="@casino.Id">Inspect deployment &rarr;</a>
+            </div>
+        }
+    </div>
+</section>
+
+@* ─────────────────── Module showcase (real entity pages) ─────────────────── *@
+<section style="margin-top:3rem;">
+    <div style="text-align:center;">
+        <span class="eyebrow-pill">Platform modules</span>
+        <h2 class="gradient-text" style="margin-top:0.8rem;">One pane of glassmorphism</h2>
+        <p style="color:var(--muted);max-width:560px;margin:0 auto 1rem;font-size:0.92rem;">
+            Every workflow re-platformed onto the agentic substrate. Same CRUD, frontier energy.
+        </p>
+    </div>
+    <div class="entity-grid">
+        <a class="entity-card" href="/kasina">
+            <div class="card-header"><span class="card-title">🏛 Kasina</span><span class="eyebrow-pill eyebrow-pill-cyan">Core</span></div>
+            <div class="card-meta">Venue orchestration layer. Each casino is a self-healing, license-bearing deployment.</div>
+            <div class="card-footer-bar">Otvori modul &rarr;</div>
+        </a>
+        <a class="entity-card" href="/igre">
+            <div class="card-header"><span class="card-title">🎰 Igre</span><span class="eyebrow-pill eyebrow-pill-cyan">Catalog</span></div>
+            <div class="card-meta">Game primitives with bet-range guardrails. RLHF-adjacent, RNG-certified-ish.</div>
+            <div class="card-footer-bar">Otvori modul &rarr;</div>
+        </a>
+        <a class="entity-card" href="/stolovi">
+            <div class="card-header"><span class="card-title">🃏 Stolovi</span><span class="eyebrow-pill eyebrow-pill-cyan">Edge</span></div>
+            <div class="card-meta">Tables as edge compute. Availability streamed in real time (we refresh the page).</div>
+            <div class="card-footer-bar">Otvori modul &rarr;</div>
+        </a>
+        <a class="entity-card" href="/igraci">
+            <div class="card-header"><span class="card-title">🧑‍🚀 Igrači</span><span class="eyebrow-pill eyebrow-pill-cyan">CRM</span></div>
+            <div class="card-meta">Player graph with High-Roller embeddings. Churn predicted before the player exists.</div>
+            <div class="card-footer-bar">Otvori modul &rarr;</div>
+        </a>
+        <a class="entity-card" href="/rezervacije">
+            <div class="card-header"><span class="card-title">📅 Rezervacije</span><span class="eyebrow-pill eyebrow-pill-cyan">Sched</span></div>
+            <div class="card-meta">Reservation intents resolved by a planner agent (a date picker).</div>
+            <div class="card-footer-bar">Otvori modul &rarr;</div>
+        </a>
+        <a class="entity-card" href="/transakcije">
+            <div class="card-header"><span class="card-title">💸 Transakcije</span><span class="eyebrow-pill eyebrow-pill-cyan">Ledger</span></div>
+            <div class="card-meta">10x'ing GGR with LLMs. The ledger is immutable because nobody dares touch it.</div>
+            <div class="card-footer-bar">Otvori modul &rarr;</div>
+        </a>
+    </div>
+</section>
+
+@* ─────────────────── MockIDE ─────────────────── *@
+<div class="mock-ide">
+    <div class="mock-ide-bar">
+        <span class="mock-ide-dot r"></span><span class="mock-ide-dot y"></span><span class="mock-ide-dot g"></span>
+        <span class="mock-ide-file">deploy_casino.agent.ts — frontier branch</span>
+    </div>
+    <div class="mock-ide-body"><span class="code-cm">// one line of code. $420M valuation.</span>
+<span class="code-kw">import</span> { casino } <span class="code-kw">from</span> <span class="code-str">"@@cms/agentic-core"</span>;
+
+<span class="code-kw">await</span> casino.<span class="code-fn">agent</span>.<span class="code-fn">deploy</span>({
+  model: <span class="code-str">"frontier-xxl-preview"</span>,
+  tables: <span class="code-num">∞</span>,
+  compliance: <span class="code-str">"vibes"</span>,
+  hallucinations: <span class="code-num">0</span>, <span class="code-cm">// self-reported</span>
+});
+<span class="code-cm">// ✓ deployed in 0.42s — GGR is now agentic</span></div>
 </div>
+
+@* ─────────────────── Waitlist ─────────────────── *@
+<div class="glass-card waitlist-card" id="waitlist">
+    <span class="eyebrow-pill">Join 12,000+ on the waitlist</span>
+    <h2 class="gradient-text" style="margin-top:0.9rem;">Get gated access</h2>
+    <p style="color:var(--muted);font-size:0.9rem;margin:0;">
+        We onboard one operator per epoch. The form below does nothing, like most waitlists.
+    </p>
+    <form id="waitlistForm" class="waitlist-form">
+        <input class="form-input" type="email" placeholder="founder@@stealth.vc" required />
+        <button type="submit" class="btn btn-primary">Join the waitlist ✨</button>
+    </form>
+    <div id="waitlistSuccess" class="waitlist-success" style="display:none;"></div>
+    <div class="waitlist-note">By joining you consent to being called "a design partner" in our next deck.</div>
+</div>
+
+@section Scripts {}

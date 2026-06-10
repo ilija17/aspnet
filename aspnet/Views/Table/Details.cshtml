@@ -14,6 +14,12 @@
 
 <h1 class="page-title">Table #@Model.TableNumber</h1>
 
+<div class="stat-bar" style="margin-top:1rem;">
+    <div class="stat-pill"><span class="stat-label">Min ulog</span><span class="stat-value">@Model.MinBet</span></div>
+    <div class="stat-pill"><span class="stat-label">Max ulog</span><span class="stat-value">@Model.MaxBet</span></div>
+    <div class="stat-pill"><span class="stat-label">Rezervacije</span><span class="stat-value">@Model.Reservations.Count</span></div>
+</div>
+
 <div class="detail-grid">
     <div class="detail-section">
         <div class="detail-row">
