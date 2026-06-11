@@ -390,19 +390,70 @@ const PerformativeUI = (() => {
         });
     }
 
-    /* ── WaitlistForm — fake success, obviously ─────────────── */
+    /* ── WaitlistForm — real backend, somehow ───────────────── */
+    // POSTs to /Home/Waitlist, which persists the email and sends an
+    // actual confirmation mail. The satire stays; the form does not.
     function waitlist() {
         var form = document.getElementById('waitlistForm');
         if (!form) return;
+        var ok = document.getElementById('waitlistSuccess');
+        var btn = form.querySelector('button[type="submit"]');
+        var input = form.querySelector('input[type="email"]');
+
+        function show(msg, isError) {
+            if (!ok) return;
+            ok.textContent = msg;
+            ok.style.color = isError ? 'var(--danger)' : '';
+            ok.style.display = 'block';
+        }
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-            var ok = document.getElementById('waitlistSuccess');
-            if (ok) {
-                var n = (12000 + Math.floor(Math.random() * 400)).toLocaleString();
-                ok.textContent = '✨ You are #' + n + ' on the waitlist. Your TAM has been notified.';
-                ok.style.display = 'block';
+            var email = input ? input.value.trim() : '';
+            if (!email) {
+                show('⚠ We need an email. Even our agents can\'t hallucinate your inbox.', true);
+                return;
             }
-            form.querySelector('button[type="submit"]').disabled = true;
+
+            var idleLabel = btn ? btn.textContent : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Dealing you in…';
+            }
+
+            fetch('/Home/Waitlist', {
+                method: 'POST',
+                body: new URLSearchParams({ email: email })
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        if (!res.ok) {
+                            throw new Error(data && data.error
+                                ? data.error
+                                : 'Something went wrong on the agentic mesh.');
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    var n = Number(data.position).toLocaleString();
+                    if (data.alreadyJoined) {
+                        show('✨ Easy — you were already #' + n + ' on the waitlist. ' +
+                            'Joining twice does not move you up, but the conviction has been logged.');
+                    } else {
+                        show('✨ You are #' + n + ' on the waitlist. A confirmation email is in your ' +
+                            'inbox — check spam, our deliverability is still pre-revenue. Your TAM has been notified.');
+                    }
+                    if (btn) btn.textContent = 'Waitlisted ✓';
+                    // Button stays disabled — one operator per epoch, remember.
+                })
+                .catch(function (err) {
+                    show('⚠ ' + (err && err.message ? err.message : 'Network error. Even the moat has outages.'), true);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = idleLabel;
+                    }
+                });
         });
     }
 

@@ -16,6 +16,7 @@ public class CasinoDbContext : IdentityDbContext<AppUser>
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<Reservation> Reservations { get; set; }
+    public DbSet<WaitlistEntry> WaitlistEntries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

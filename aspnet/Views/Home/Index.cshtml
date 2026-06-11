@@ -1,6 +1,7 @@
 @* Performative landing page — gradient hero, WordRoll, TokenStream subheading,
    fake StatCounters, investor LogoMarquee, MockIDE, live deployments (real casinos),
-   module showcase (real entity links), and a fake-success WaitlistForm. *@
+   module showcase (real entity links), and a WaitlistForm that POSTs to
+   /Home/Waitlist and sends a real confirmation email. *@
 @model List<aspnet.Models.Casino>
 @{
     ViewData["Title"] = "AI-Native Casino OS";
@@ -188,10 +189,11 @@
     <span class="eyebrow-pill">Join 12,000+ on the waitlist</span>
     <h2 class="gradient-text" style="margin-top:0.9rem;">Get gated access</h2>
     <p style="color:var(--muted);font-size:0.9rem;margin:0;">
-        We onboard one operator per epoch. The form below does nothing, like most waitlists.
+        We onboard one operator per epoch. Unlike most waitlists, this form actually works —
+        it saves your email and sends a confirmation so artisanal you'll think it hallucinated.
     </p>
     <form id="waitlistForm" class="waitlist-form">
-        <input class="form-input" type="email" placeholder="founder@@stealth.vc" required />
+        <input class="form-input" type="email" name="email" placeholder="founder@@stealth.vc" required />
         <button type="submit" class="btn btn-primary">Join the waitlist ✨</button>
     </form>
     <div id="waitlistSuccess" class="waitlist-success" style="display:none;"></div>

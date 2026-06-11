@@ -99,6 +99,9 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<aspnet.Services.ChatToolService>();
 
+// ── Waitlist mail (SMTP preko MailKita; host/port u appsettings, creds u .env) ─
+builder.Services.AddScoped<aspnet.Services.MailService>();
+
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
