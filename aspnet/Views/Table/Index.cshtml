@@ -2,6 +2,14 @@
 @model List<aspnet.Models.Table>
 @{
     ViewData["Title"] = "Tables";
+
+    // Maps a game type to its playable web game, or null when none exists.
+    static string? PlayUrl(aspnet.Models.GameType type) => type switch
+    {
+        aspnet.Models.GameType.Blackjack => "/kocka/index.html",
+        aspnet.Models.GameType.Roulette  => "/rulet/index.html",
+        _ => null
+    };
 }
 
 <div class="breadcrumb-bar">
@@ -44,6 +52,10 @@
                 </div>
             </a>
             <div class="card-actions">
+                @if (PlayUrl(table.Game.Type) is string playUrl)
+                {
+                    <a class="btn btn-sm btn-primary" href="@playUrl" target="_blank" rel="noopener">Igraj ▸</a>
+                }
                 <a class="btn btn-sm btn-accent" href="/stolovi/@table.Id/uredi">Uredi</a>
                 <form method="post" action="/stolovi/@table.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovaj stol?')">
                     @Html.AntiForgeryToken()
@@ -60,6 +72,14 @@ $(function () {
     var debounceTimer;
     var $grid = $('#entityGrid');
 
+    // Mirrors the server-side PlayUrl mapping (search JSON carries the game name, not the enum).
+    function playUrlFor(gameName) {
+        var n = (gameName || '').toLowerCase();
+        if (n.indexOf('blackjack') !== -1) return '/kocka/index.html';
+        if (n.indexOf('roulette') !== -1 || n.indexOf('rulet') !== -1) return '/rulet/index.html';
+        return null;
+    }
+
     function renderTables(tables) {
         if (!tables || tables.length === 0) {
             $grid.html('<p class="empty-state">Nema rezultata.</p>');
@@ -70,16 +90,21 @@ $(function () {
             var badge = t.isAvailable
                 ? '<span class="badge badge-available">Slobodan</span>'
                 : '<span class="badge badge-unavailable">Zauzet</span>';
+            var playUrl = playUrlFor(t.game);
+            var playBtn = playUrl
+                ? '<a class="btn btn-sm btn-primary" href="' + playUrl + '" target="_blank" rel="noopener">Igraj ▸</a>'
+                : '';
             html += '<div class="entity-card-wrap">' +
                 '<a class="entity-card" href="/stolovi/' + t.id + '">' +
-                '<div class="card-header"><span class="card-title">Stol #' + t.tableNumber + ' — ' + (t.gameName || '') + '</span></div>' +
+                '<div class="card-header"><span class="card-title">Stol #' + t.tableNumber + ' — ' + (t.game || '') + '</span></div>' +
                 '<div class="card-meta">' +
-                '<div>' + (t.casinoName || '') + '</div>' +
+                '<div>' + (t.casino || '') + '</div>' +
                 '<div>Bet range: <span class="mono">' + (t.minBet || 0) + '–' + (t.maxBet || 0) + '</span></div>' +
                 '</div>' +
                 '<div class="card-footer-bar">' + badge + '</div>' +
                 '</a>' +
                 '<div class="card-actions">' +
+                playBtn +
                 '<a class="btn btn-sm btn-accent" href="/stolovi/' + t.id + '/uredi">Uredi</a>' +
                 '<form method="post" action="/stolovi/' + t.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
                 '<input name="__RequestVerificationToken" type="hidden" value="' + $('input[name="__RequestVerificationToken"]').first().val() + '" />' +

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roulette</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="top-bar">
+        <h1>Roulette</h1>
+        <div class="player-info" aria-live="polite">
+          <span id="player-name" class="player-name">—</span>
+          <span id="balance" class="balance">Balance: —</span>
+          <span id="total-bet" class="total-bet">Bet: —</span>
+        </div>
+      </section>
+
+      <section id="gate" class="gate-panel hidden" aria-live="polite">
+        <p id="gate-message"></p>
+        <a id="gate-link" class="btn btn-primary" href="#"></a>
+      </section>
+
+      <section id="table" class="table" aria-label="Roulette table">
+        <div class="table-rail"></div>
+        <div class="table-inner">
+          <div class="warning-strip" aria-hidden="true">Roulette // European Single Zero // Good Luck</div>
+          <div class="hud-grid" aria-hidden="true"></div>
+          <div id="vfx-layer" aria-hidden="true"></div>
+
+          <section class="bankroll-panel">
+            <p id="bet-display" class="bet">Chip: $25</p>
+            <div class="chips" role="group" aria-label="Bet chips">
+              <button class="chip" data-bet="25">$25</button>
+              <button class="chip" data-bet="50">$50</button>
+              <button class="chip" data-bet="100">$100</button>
+              <button class="chip" data-bet="200">$200</button>
+            </div>
+          </section>
+
+          <section class="result-area">
+            <div class="result-wheel">
+              <div id="result-number" class="result-number neutral" aria-live="polite">?</div>
+            </div>
+            <div class="history-area">
+              <h2>History</h2>
+              <div id="history" class="history" aria-label="Last 10 numbers"></div>
+            </div>
+          </section>
+
+          <article class="status-panel">
+            <p id="status">Connecting…</p>
+            <p id="round-result" class="round-result hidden" aria-live="polite"></p>
+          </article>
+
+          <section class="board-area" aria-label="Betting board">
+            <div id="board" class="board"></div>
+          </section>
+
+          <section class="bets-panel">
+            <header class="bets-header">
+              <h2>Pending Bets</h2>
+              <p id="bets-total" class="bets-total">Total: $0.00</p>
+            </header>
+            <ul id="bets-list" class="bets-list">
+              <li class="bets-empty">No bets placed.</li>
+            </ul>
+            <div class="actions">
+              <button id="spin-btn" class="btn btn-primary">Spin</button>
+              <button id="clear-btn" class="btn btn-accent">Clear</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

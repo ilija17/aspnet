@@ -2,6 +2,14 @@
 @model aspnet.Models.Table
 @{
     ViewData["Title"] = "Table #" + Model.TableNumber;
+
+    // Playable web game for this table's game type, or null when none exists.
+    var playUrl = Model.Game.Type switch
+    {
+        aspnet.Models.GameType.Blackjack => "/kocka/index.html",
+        aspnet.Models.GameType.Roulette  => "/rulet/index.html",
+        _ => null
+    };
 }
 
 <div class="breadcrumb-bar">
@@ -12,7 +20,13 @@
     <span>Table #@Model.TableNumber</span>
 </div>
 
-<h1 class="page-title">Table #@Model.TableNumber</h1>
+<div class="index-action-bar" style="margin-top:0.5rem;">
+    <h1 class="page-title" style="margin:0">Table #@Model.TableNumber</h1>
+    @if (playUrl != null)
+    {
+        <a class="btn btn-primary" href="@playUrl" target="_blank" rel="noopener">Igraj @Model.Game.Name ▸</a>
+    }
+</div>
 
 <div class="stat-bar" style="margin-top:1rem;">
     <div class="stat-pill"><span class="stat-label">Min ulog</span><span class="stat-value">@Model.MinBet</span></div>
@@ -92,6 +106,10 @@
 
 <div class="detail-actions">
     <a class="btn btn-back" href="/stolovi">Back to Tables</a>
+    @if (playUrl != null)
+    {
+        <a class="btn btn-primary" href="@playUrl" target="_blank" rel="noopener">Igraj ▸</a>
+    }
     <a class="btn btn-accent" href="/stolovi/@Model.Id/uredi">Uredi</a>
     <form method="post" action="/stolovi/@Model.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovaj stol?')">
         @Html.AntiForgeryToken()
