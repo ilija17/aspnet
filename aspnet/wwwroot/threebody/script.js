@@ -327,11 +327,11 @@ function drawIdleScene(state) {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  // Draw idle planets at spread-out default positions (matches simulation scale)
+  // Draw idle planets at spread-out positions matching simulation scale
   const defaults = [
-    { x: -160, y: 40, color: "#ff6b6b", radius: 32 },
-    { x: 80, y: -120, color: "#4ecdc4", radius: 24 },
-    { x: 120, y: 100, color: "#ffe66d", radius: 28 },
+    { x: -200, y: 30,  color: "#ff6b6b", radius: 32 },
+    { x: 100,  y: -150, color: "#4ecdc4", radius: 24 },
+    { x: 150,  y: 120,  color: "#ffe66d", radius: 28 },
   ];
 
   defaults.forEach((p) => {

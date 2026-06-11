@@ -12,12 +12,12 @@ public class ThreeBodyGameService
     private static readonly int[] AllowedBets = { 25, 50, 100, 200 };
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
 
-    private const double G = 200.0;
-    private const double Softening = 8.0;
+    private const double G = 80.0;
+    private const double Softening = 10.0;
     private const double EjectionRadius = 1200.0;
     private const double CollisionFactor = 0.8;
-    private const double PhysicsDt = 0.06;
-    private const int MaxPhysicsSteps = 4000;
+    private const double PhysicsDt = 0.05;
+    private const int MaxPhysicsSteps = 5000;
     private const int RecordEvery = 2;
     private const double PlaybackFps = 45.0;
 
@@ -245,25 +245,24 @@ public class ThreeBodyGameService
     private void InitializePositions(PlanetState[] planets)
     {
         var configs = new (double angle, double dist, double speed)[][] {
-            // Spread-out triangle configurations with moderate velocities
-            new[] { (0.0,   180.0, 0.8),  (2.3,   200.0, -1.2), (4.5,   170.0, 1.0) },
-            new[] { (1.0,   190.0, 1.1),  (3.1,   160.0, -0.9), (5.2,   210.0, -1.4) },
-            new[] { (0.5,   170.0, -0.7), (2.7,   220.0, 1.3),  (4.8,   180.0, -1.1) },
-            new[] { (1.8,   200.0, 0.6),  (3.9,   180.0, -1.5), (0.2,   190.0, 0.9) },
-            new[] { (0.3,   210.0, -1.0), (2.5,   170.0, 0.7),  (5.0,   200.0, -0.8) },
-            new[] { (1.4,   180.0, 1.4),  (3.6,   200.0, -0.6), (5.7,   160.0, 1.2) },
+            new[] { (0.0,  220.0, 5.0), (2.3,  240.0, -4.5), (4.5,  200.0, 6.0) },
+            new[] { (1.0,  230.0, 4.0), (3.1,  190.0, -6.0), (5.2,  250.0, -3.5) },
+            new[] { (0.5,  200.0, -7.0), (2.7,  260.0, 3.0), (4.8,  220.0, -5.5) },
+            new[] { (1.8,  240.0, 4.5), (3.9,  210.0, -5.0), (0.2,  230.0, 6.5) },
+            new[] { (0.3,  250.0, -3.0), (2.5,  200.0, 7.0), (5.0,  240.0, -4.0) },
+            new[] { (1.4,  210.0, 5.5), (3.6,  240.0, -3.5), (5.7,  190.0, 4.0) },
         };
 
         var config = configs[_rng.Next(configs.Length)];
 
-        var cx = _rng.NextDouble() * 120 - 60;
-        var cy = _rng.NextDouble() * 120 - 60;
+        var cx = _rng.NextDouble() * 80 - 40;
+        var cy = _rng.NextDouble() * 80 - 40;
 
         for (var i = 0; i < planets.Length; i++)
         {
-            var angle = config[i].angle + (_rng.NextDouble() - 0.5) * 0.3;
-            var dist = config[i].dist + (_rng.NextDouble() - 0.5) * 40;
-            var speed = config[i].speed + (_rng.NextDouble() - 0.5) * 0.5;
+            var angle = config[i].angle + (_rng.NextDouble() - 0.5) * 0.5;
+            var dist = config[i].dist + (_rng.NextDouble() - 0.5) * 50;
+            var speed = config[i].speed + (_rng.NextDouble() - 0.5) * 2.0;
             var perpAngle = angle + Math.PI / 2;
 
             planets[i].X = cx + Math.Cos(angle) * dist;
