@@ -17,11 +17,20 @@ public class MailService
 
     public async Task SendWaitlistConfirmationAsync(string toEmail, int position)
     {
-        var host = _config["Smtp:Host"]!;
-        var port = int.Parse(_config["Smtp:Port"]!);
-        var user = _config["Smtp:User"]!;
-        var password = _config["Smtp:Password"]!;
-        var from = _config["Smtp:From"]!;
+        var host = _config["Smtp:Host"];
+        var user = _config["Smtp:User"];
+        var password = _config["Smtp:Password"];
+        var from = _config["Smtp:From"];
+
+        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) ||
+            string.IsNullOrEmpty(password) || string.IsNullOrEmpty(from))
+        {
+            _logger.LogWarning(
+                "SMTP config incomplete (Smtp:Host/User/Password/From) — skipping waitlist mail to {Email}", toEmail);
+            return;
+        }
+
+        var port = int.Parse(_config["Smtp:Port"] ?? "465");
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("AI-Native Casino OS", from));

@@ -1,30 +1,6 @@
-const SUITS = [
-  { key: "hearts", symbol: "\u2665", color: "red" },
-  { key: "diamonds", symbol: "\u2666", color: "red" },
-  { key: "clubs", symbol: "\u2663", color: "black" },
-  { key: "spades", symbol: "\u2660", color: "black" },
-];
-
-const RANKS = [
-  { key: "A", value: 11 },
-  { key: "K", value: 10 },
-  { key: "Q", value: 10 },
-  { key: "J", value: 10 },
-  { key: "10", value: 10 },
-  { key: "9", value: 9 },
-  { key: "8", value: 8 },
-  { key: "7", value: 7 },
-  { key: "6", value: 6 },
-  { key: "5", value: 5 },
-  { key: "4", value: 4 },
-  { key: "3", value: 3 },
-  { key: "2", value: 2 },
-];
-
-const STARTING_BALANCE = 1000;
-const STORAGE_KEY = "blackjack-multiplayer-v1";
-const CHANNEL_NAME = "blackjack-multiplayer-channel";
+const API_BASE = "/api/blackjack";
 const CLIENT_KEY = "blackjack-multiplayer-client-id";
+const POLL_INTERVAL_MS = 1500;
 
 function getOrCreateClientId() {
   const existing = sessionStorage.getItem(CLIENT_KEY);
@@ -37,7 +13,11 @@ function getOrCreateClientId() {
 }
 
 const localClientId = getOrCreateClientId();
-let localSeat = null;
+let serverState = null;
+let lastRenderedVersion = -1;
+let lastRevealDealer = false;
+let connectionLost = false;
+let pollInFlight = false;
 let audioContext;
 
 const ui = {
@@ -83,277 +63,84 @@ const ui = {
   vfxLayer: document.getElementById("vfx-layer"),
 };
 
-const channel = "BroadcastChannel" in window ? new BroadcastChannel(CHANNEL_NAME) : null;
-let gameState = loadOrCreateState();
+// ============================================
+// SERVER API LAYER
+// ============================================
 
-function createPlayer() {
-  return {
-    id: null,
-    balance: STARTING_BALANCE,
-    selectedBet: 25,
-    currentBet: 0,
-    hand: [],
-    stood: false,
-    bust: false,
-    blackjack: false,
-    wins: 0,
-    losses: 0,
-    pushes: 0,
-  };
-}
-
-function createDefaultState() {
-  return {
-    version: 1,
-    phase: "waiting",
-    status: "Join Seat 1 or Seat 2 to play.",
-    soloMode: false,
-    dealerHand: [],
-    revealDealer: false,
-    deck: [],
-    turnSeat: null,
-    lastRoundResults: { 1: null, 2: null },
-    players: {
-      1: createPlayer(),
-      2: createPlayer(),
-    },
-  };
-}
-
-function isValidState(data) {
-  return (
-    data &&
-    typeof data === "object" &&
-    data.players &&
-    data.players["1"] &&
-    data.players["2"] &&
-    Array.isArray(data.dealerHand) &&
-    Array.isArray(data.deck)
-  );
-}
-
-function loadOrCreateState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    const fresh = createDefaultState();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-    return fresh;
+async function apiGetState() {
+  const res = await fetch(`${API_BASE}/state?clientId=${encodeURIComponent(localClientId)}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new Error(`GET state failed: ${res.status}`);
   }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (isValidState(parsed)) {
-      parsed.soloMode = Boolean(parsed.soloMode);
-      parsed.lastRoundResults = parsed.lastRoundResults && typeof parsed.lastRoundResults === "object"
-        ? parsed.lastRoundResults
-        : { 1: null, 2: null };
-      return parsed;
-    }
-  } catch (error) {
-    console.error("Failed to parse saved multiplayer state:", error);
-  }
-
-  const fresh = createDefaultState();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-  return fresh;
+  return res.json();
 }
 
-function publishState(sound = null) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-  if (channel) {
-    channel.postMessage({ from: localClientId, sound });
+async function apiPost(action, extra = {}) {
+  const res = await fetch(`${API_BASE}/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ clientId: localClientId, ...extra }),
+  });
+  if (!res.ok) {
+    throw new Error(`POST ${action} failed: ${res.status}`);
   }
+  return res.json();
 }
 
-function runMutation(mutator, sound = null) {
-  gameState = loadOrCreateState();
-  mutator(gameState);
-  gameState.version += 1;
-  publishState(sound);
+function handleConnectionError(error) {
+  console.error("Blackjack server error:", error);
+  connectionLost = true;
+  setStatus("Connection lost. Retrying…", true);
+}
+
+function applyServerState(state) {
+  if (connectionLost) {
+    connectionLost = false;
+    lastRenderedVersion = -1; // force re-render to restore real status text
+  }
+  serverState = state;
   render();
+}
+
+async function sendAction(action, extra, sound) {
   if (sound) {
     playSound(sound);
     triggerActionFx(sound);
   }
-}
-
-function makeDeck() {
-  const deck = [];
-  for (const suit of SUITS) {
-    for (const rank of RANKS) {
-      deck.push({
-        rank: rank.key,
-        suit: suit.symbol,
-        color: suit.color,
-        value: rank.value,
-      });
-    }
-  }
-  return deck;
-}
-
-function shuffle(deck) {
-  for (let i = deck.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
+  try {
+    const state = await apiPost(action, extra);
+    applyServerState(state);
+  } catch (error) {
+    handleConnectionError(error);
   }
 }
 
-function drawCard(state) {
-  if (state.deck.length === 0) {
-    state.deck = makeDeck();
-    shuffle(state.deck);
-  }
-  return state.deck.pop();
-}
-
-function scoreHand(hand) {
-  let total = hand.reduce((sum, card) => sum + card.value, 0);
-  let aces = hand.filter((card) => card.rank === "A").length;
-  while (total > 21 && aces > 0) {
-    total -= 10;
-    aces -= 1;
-  }
-  return total;
-}
-
-function isBlackjack(hand) {
-  return hand.length === 2 && scoreHand(hand) === 21;
-}
-
-function nextTurnSeat(state, currentSeat) {
-  const order = [1, 2];
-  const start = currentSeat ? order.indexOf(currentSeat) + 1 : 0;
-  for (let offset = 0; offset < order.length; offset += 1) {
-    const seat = order[(start + offset) % order.length];
-    const player = state.players[seat];
-    if (
-      player.id &&
-      player.hand.length > 0 &&
-      !player.stood &&
-      !player.bust &&
-      !player.blackjack
-    ) {
-      return seat;
-    }
-  }
-  return null;
-}
-
-function activeSeats(state) {
-  return [1, 2].filter((seat) => Boolean(state.players[seat].id));
-}
-
-function seatsReadyToDeal(state) {
-  const seats = activeSeats(state);
-  const requiredSeats = state.soloMode ? 1 : 2;
-  if (seats.length < requiredSeats) {
-    return false;
-  }
-  return seats.every((seat) => {
-    const player = state.players[seat];
-    return player.id && player.balance >= player.selectedBet && player.selectedBet > 0;
-  });
-}
-
-function resolveRound(state) {
-  const dealerTotal = scoreHand(state.dealerHand);
-  const dealerBJ = isBlackjack(state.dealerHand);
-  const summaries = [];
-  state.lastRoundResults = { 1: null, 2: null };
-
-  activeSeats(state).forEach((seat) => {
-    const player = state.players[seat];
-    if (!player.id || player.currentBet <= 0) {
-      return;
-    }
-
-    const playerTotal = scoreHand(player.hand);
-    let result = "loss";
-    let payout = 0;
-
-    if (player.bust) {
-      result = "loss";
-    } else if (player.blackjack && !dealerBJ) {
-      result = "win";
-      payout = Math.floor(player.currentBet * 2.5);
-    } else if (dealerTotal > 21 || playerTotal > dealerTotal) {
-      result = "win";
-      payout = player.currentBet * 2;
-    } else if (playerTotal === dealerTotal) {
-      result = "push";
-      payout = player.currentBet;
-    }
-
-    if (result === "win") {
-      player.wins += 1;
-      player.balance += payout;
-      summaries.push(`P${seat} wins`);
-    } else if (result === "push") {
-      player.pushes += 1;
-      player.balance += payout;
-      summaries.push(`P${seat} pushes`);
-    } else {
-      player.losses += 1;
-      summaries.push(`P${seat} loses`);
-    }
-
-    state.lastRoundResults[seat] = result;
-    player.currentBet = 0;
-    player.stood = true;
-  });
-
-  state.phase = "round-over";
-  state.turnSeat = null;
-  state.revealDealer = true;
-  state.status = `Round over: ${summaries.join(", ")}. Press Deal for next hand.`;
-}
-
-function runDealerIfNeeded(state) {
-  state.phase = "dealer-turn";
-  state.revealDealer = true;
-
-  while (scoreHand(state.dealerHand) < 17) {
-    state.dealerHand.push(drawCard(state));
-  }
-
-  resolveRound(state);
-}
-
-function advanceTurn(state, seatThatMoved) {
-  const next = nextTurnSeat(state, seatThatMoved);
-  if (next) {
-    state.turnSeat = next;
-    state.phase = "player-turns";
-    state.status = `Player ${next}'s turn.`;
+async function pollState() {
+  if (pollInFlight) {
     return;
   }
-
-  runDealerIfNeeded(state);
-}
-
-function playerForLocalSeat(state) {
-  if (!localSeat) {
-    return null;
+  pollInFlight = true;
+  try {
+    const state = await apiGetState();
+    applyServerState(state);
+  } catch (error) {
+    handleConnectionError(error);
+  } finally {
+    pollInFlight = false;
   }
-  const player = state.players[localSeat];
-  if (!player || player.id !== localClientId) {
-    localSeat = null;
-    return null;
-  }
-  return player;
 }
 
-function isMyTurn(state) {
-  const player = playerForLocalSeat(state);
-  return Boolean(player && state.phase === "player-turns" && state.turnSeat === localSeat);
-}
+// ============================================
+// RENDERING
+// ============================================
 
 function renderCard(card, hidden = false) {
   const cardEl = document.createElement("div");
   cardEl.className = `card${hidden ? " back" : ""}${card.color === "red" && !hidden ? " red" : ""}`;
   if (hidden) {
-    cardEl.innerHTML = '<span class="rank">?</span><span class="suit">\u25C6</span>';
+    cardEl.innerHTML = '<span class="rank">?</span><span class="suit">◆</span>';
     return cardEl;
   }
   cardEl.innerHTML = `<span class="rank">${card.rank}</span><span class="suit">${card.suit}</span>`;
@@ -469,54 +256,60 @@ function triggerActionFx(kind) {
 }
 
 function render() {
-  gameState = loadOrCreateState();
-  if (!localSeat) {
-    const claimedSeat = [1, 2].find((seat) => gameState.players[seat].id === localClientId);
-    if (claimedSeat) {
-      localSeat = claimedSeat;
-    }
+  if (!serverState) {
+    return;
   }
-  const localPlayer = playerForLocalSeat(gameState);
-  const occupiedSeats = [1, 2].filter((seat) => Boolean(gameState.players[seat].id));
+  // Only re-render (and re-animate cards) when the server state actually changed,
+  // so the 1.5s poll never makes cards flicker or replay animations.
+  if (serverState.version === lastRenderedVersion) {
+    return;
+  }
+  lastRenderedVersion = serverState.version;
+
+  const revealJustHappened = serverState.revealDealer && !lastRevealDealer;
+  lastRevealDealer = serverState.revealDealer;
+
+  const yourSeat = serverState.yourSeat;
+  const localPlayer = yourSeat ? serverState.players[yourSeat] : null;
+  const occupiedSeats = [1, 2].filter((seat) => Boolean(serverState.players[seat]?.occupied));
   const isSinglePlayerLayout = occupiedSeats.length === 1;
 
-  const seat1Taken = Boolean(gameState.players[1].id && gameState.players[1].id !== localClientId);
-  const seat2Taken = Boolean(gameState.players[2].id && gameState.players[2].id !== localClientId);
-  const someoneIsSeated = occupiedSeats.length > 0;
-  const inActiveHand = gameState.phase === "player-turns" || gameState.phase === "dealer-turn";
+  ui.youAre.textContent = yourSeat ? `You are: Player ${yourSeat}` : "You are: Spectator";
+  ui.seat1Status.textContent = `Seat 1: ${serverState.players[1]?.occupied ? "Occupied" : "Open"}`;
+  ui.seat2Status.textContent = `Seat 2: ${serverState.players[2]?.occupied ? "Occupied" : "Open"}`;
+  ui.soloModeBtn.textContent = `Solo Mode: ${serverState.soloMode ? "On" : "Off"}`;
 
-  ui.youAre.textContent = localSeat ? `You are: Player ${localSeat}` : "You are: Spectator";
-  ui.seat1Status.textContent = `Seat 1: ${gameState.players[1].id ? "Occupied" : "Open"}`;
-  ui.seat2Status.textContent = `Seat 2: ${gameState.players[2].id ? "Occupied" : "Open"}`;
-  ui.soloModeBtn.textContent = `Solo Mode: ${gameState.soloMode ? "On" : "Off"}`;
-
-  ui.joinSeat1Btn.disabled = seat1Taken || localSeat === 1 || (gameState.soloMode && someoneIsSeated && !gameState.players[1].id);
-  ui.joinSeat2Btn.disabled = seat2Taken || localSeat === 2 || (gameState.soloMode && someoneIsSeated && !gameState.players[2].id);
-  ui.leaveSeatBtn.disabled = !localSeat || inActiveHand;
-  ui.soloModeBtn.disabled = inActiveHand;
-  ui.resetTableBtn.disabled = inActiveHand;
+  // Button availability comes straight from the server's can* flags.
+  ui.joinSeat1Btn.disabled = !serverState.canJoin1;
+  ui.joinSeat2Btn.disabled = !serverState.canJoin2;
+  ui.leaveSeatBtn.disabled = !serverState.canLeave;
+  ui.soloModeBtn.disabled = !serverState.canToggleSolo;
+  ui.resetTableBtn.disabled = !serverState.canReset;
 
   ui.dealerCards.innerHTML = "";
-  gameState.dealerHand.forEach((card, index) => {
-    const hidden = !gameState.revealDealer && index === 1;
+  serverState.dealerHand.forEach((card, index) => {
+    const hidden = Boolean(card.hidden);
     const cardEl = renderCard(card, hidden);
     ui.dealerCards.appendChild(cardEl);
     animateCardIn(cardEl);
-    if (!hidden && hidden !== gameState.revealDealer) {
+    if (!hidden && index === 1 && revealJustHappened) {
       setTimeout(() => animateDealerReveal(cardEl), 300);
     }
   });
-  ui.dealerTotal.textContent = gameState.revealDealer
-    ? `Total: ${scoreHand(gameState.dealerHand)}`
+  ui.dealerTotal.textContent = serverState.dealerTotal !== null && serverState.dealerTotal !== undefined
+    ? `Total: ${serverState.dealerTotal}`
     : "Total: ?";
 
   [1, 2].forEach((seat) => {
-    const player = gameState.players[seat];
+    const player = serverState.players[seat];
     const area = ui.playerAreas[seat];
+    if (!player || !area) {
+      return;
+    }
     area.cards.innerHTML = "";
     const cardElements = [];
-    player.hand.forEach((card) => {
-      const cardEl = renderCard(card);
+    (player.hand || []).forEach((card) => {
+      const cardEl = renderCard(card, Boolean(card.hidden));
       area.cards.appendChild(cardEl);
       cardElements.push(cardEl);
     });
@@ -524,11 +317,11 @@ function render() {
       animateCardCascade(cardElements);
     }
 
-    const youTag = seat === localSeat ? " (You)" : "";
+    const youTag = seat === yourSeat ? " (You)" : "";
     area.label.textContent = `Player ${seat}${youTag}`;
-    area.total.textContent = player.hand.length ? `Total: ${scoreHand(player.hand)}` : "Total: 0";
-    area.meta.textContent = `Bal: $${player.balance} | Bet: $${player.selectedBet} | In: $${player.currentBet}`;
-    area.container?.classList.toggle("is-hidden", isSinglePlayerLayout && !player.id);
+    area.total.textContent = `Total: ${player.hand?.length ? player.total ?? 0 : 0}`;
+    area.meta.textContent = `Bal: $${player.balance ?? 0} | Bet: $${player.selectedBet ?? 0} | In: $${player.currentBet ?? 0}`;
+    area.container?.classList.toggle("is-hidden", isSinglePlayerLayout && !player.occupied);
   });
   ui.playersGrid?.classList.toggle("single-player", isSinglePlayerLayout);
 
@@ -541,8 +334,8 @@ function render() {
   }
   ui.betDisplay.textContent = `Your Bet: ${localPlayer ? `$${localPlayer.selectedBet}` : "-"}`;
 
-  const localResult = localSeat ? gameState.lastRoundResults?.[localSeat] : null;
-  if (gameState.phase === "round-over" && localResult && ui.roundResult) {
+  const localResult = yourSeat ? serverState.lastRoundResults?.[yourSeat] : null;
+  if (serverState.phase === "round-over" && localResult && ui.roundResult) {
     const label = localResult === "win" ? "YOU WIN" : localResult === "push" ? "PUSH" : "YOU LOSE";
     ui.roundResult.textContent = label;
     ui.roundResult.className = `round-result ${localResult}`;
@@ -555,291 +348,64 @@ function render() {
   ui.chips.forEach((chip) => {
     const chipValue = Number(chip.dataset.bet);
     chip.classList.toggle("active", Boolean(localPlayer && localPlayer.selectedBet === chipValue));
-    chip.disabled = !localPlayer || gameState.phase === "player-turns" || gameState.phase === "dealer-turn";
+    chip.disabled = !serverState.canSetBet;
   });
 
-  const canDeal = Boolean(localPlayer && seatsReadyToDeal(gameState) && !inActiveHand);
-  ui.dealBtn.disabled = !canDeal;
-  ui.hitBtn.disabled = !isMyTurn(gameState);
-  ui.standBtn.disabled = !isMyTurn(gameState);
-  ui.doubleBtn.disabled = !(
-    isMyTurn(gameState) &&
-    localPlayer &&
-    localPlayer.hand.length === 2 &&
-    localPlayer.balance >= localPlayer.currentBet
-  );
+  ui.dealBtn.disabled = !serverState.canDeal;
+  ui.hitBtn.disabled = !serverState.canHit;
+  ui.standBtn.disabled = !serverState.canStand;
+  ui.doubleBtn.disabled = !serverState.canDouble;
 
-  if (gameState.phase === "waiting" && gameState.soloMode && isSinglePlayerLayout) {
+  if (serverState.phase === "waiting" && serverState.soloMode && isSinglePlayerLayout) {
     setStatus("Solo mode: press Deal when ready.", false);
-  } else if (gameState.status) {
-    setStatus(gameState.status, false);
+  } else if (serverState.status) {
+    setStatus(serverState.status, false);
   }
 }
 
+// ============================================
+// PLAYER ACTIONS (server-backed)
+// ============================================
+
 function joinSeat(seat) {
-  runMutation((state) => {
-    if (state.phase === "player-turns" || state.phase === "dealer-turn") {
-      return;
-    }
-
-    const target = state.players[seat];
-    if (state.soloMode) {
-      const occupied = activeSeats(state);
-      const otherOccupied = occupied.find((occupiedSeat) => occupiedSeat !== seat);
-      if (otherOccupied) {
-        state.status = "Solo mode allows only one occupied seat. Leave or reset first.";
-        return;
-      }
-    }
-
-    if (target.id && target.id !== localClientId) {
-      state.status = `Seat ${seat} is already taken.`;
-      return;
-    }
-
-    if (localSeat && localSeat !== seat) {
-      const current = state.players[localSeat];
-      if (current.id === localClientId) {
-        current.id = null;
-      }
-    }
-
-    target.id = localClientId;
-    localSeat = seat;
-    state.status = `Player ${seat} joined. Select your bet and press Deal when ready.`;
-  }, "button");
+  sendAction("join", { seat }, "button");
 }
 
 function leaveSeat() {
-  if (!localSeat) {
-    return;
-  }
-
-  runMutation((state) => {
-    if (state.phase === "player-turns" || state.phase === "dealer-turn") {
-      state.status = "Cannot leave seat during an active hand.";
-      return;
-    }
-
-    const player = state.players[localSeat];
-    if (player.id === localClientId) {
-      player.id = null;
-      player.hand = [];
-      player.currentBet = 0;
-      localSeat = null;
-      state.status = "Seat released.";
-    }
-  }, "button");
+  sendAction("leave", {}, "button");
 }
 
 function toggleSoloMode() {
-  runMutation((state) => {
-    if (state.phase === "player-turns" || state.phase === "dealer-turn") {
-      return;
-    }
-
-    if (!state.soloMode && activeSeats(state).length > 1) {
-      state.status = "Leave one seat first, then enable Solo Mode.";
-      return;
-    }
-
-    state.soloMode = !state.soloMode;
-    state.status = state.soloMode
-      ? "Solo Mode enabled. One occupied seat can play."
-      : "Solo Mode disabled. Two occupied seats are required.";
-  }, "button");
+  sendAction("solo", {}, "button");
 }
 
 function resetTable() {
-  runMutation((state) => {
-    if (state.phase === "player-turns" || state.phase === "dealer-turn") {
-      return;
-    }
-
-    state.phase = "waiting";
-    state.turnSeat = null;
-    state.deck = [];
-    state.dealerHand = [];
-    state.revealDealer = false;
-    state.lastRoundResults = { 1: null, 2: null };
-    state.players = {
-      1: createPlayer(),
-      2: createPlayer(),
-    };
-    localSeat = null;
-    state.status = "Table reset. Join a seat to start.";
-  }, "button");
+  sendAction("reset", {}, "button");
 }
 
 function setBet(amount) {
-  if (!localSeat) {
-    return;
-  }
-
-  runMutation((state) => {
-    if (state.phase === "player-turns" || state.phase === "dealer-turn") {
-      return;
-    }
-
-    const player = state.players[localSeat];
-    if (player.id !== localClientId) {
-      return;
-    }
-
-    const bet = Number(amount);
-    if (bet > player.balance) {
-      state.status = "Bet too high for your current balance.";
-      return;
-    }
-
-    player.selectedBet = bet;
-    state.status = `Player ${localSeat} selected $${bet}.`;
-  }, "button");
+  sendAction("bet", { amount: Number(amount) }, "button");
 }
 
 function startRound() {
-  if (!localSeat) {
-    return;
-  }
-
-  runMutation((state) => {
-    if (!seatsReadyToDeal(state)) {
-      state.status = state.soloMode
-        ? "Solo mode needs one occupied seat with a valid bet and balance."
-        : "Two occupied seats with valid bets and balances are required.";
-      return;
-    }
-
-    if (state.phase === "player-turns" || state.phase === "dealer-turn") {
-      return;
-    }
-
-    state.deck = makeDeck();
-    shuffle(state.deck);
-    state.dealerHand = [drawCard(state), drawCard(state)];
-    state.revealDealer = false;
-    state.phase = "player-turns";
-    state.lastRoundResults = { 1: null, 2: null };
-
-    const seatsInRound = activeSeats(state);
-    seatsInRound.forEach((seat) => {
-      const player = state.players[seat];
-      player.balance -= player.selectedBet;
-      player.currentBet = player.selectedBet;
-      player.hand = [drawCard(state), drawCard(state)];
-      player.bust = false;
-      player.stood = false;
-      player.blackjack = isBlackjack(player.hand);
-      if (player.blackjack) {
-        player.stood = true;
-      }
-    });
-
-    const firstTurn = nextTurnSeat(state, null);
-    state.turnSeat = firstTurn;
-    if (!firstTurn) {
-      runDealerIfNeeded(state);
-      return;
-    }
-
-    state.status = `Round started. Player ${firstTurn}'s turn.`;
-  }, "deal");
-}
-
-function reclaimSoloSeatIfNeeded() {
-  gameState = loadOrCreateState();
-  const ownedSeat = [1, 2].find((seat) => gameState.players[seat].id === localClientId);
-  if (ownedSeat) {
-    localSeat = ownedSeat;
-    return;
-  }
-
-  const occupiedSeats = activeSeats(gameState);
-  if (gameState.phase !== "player-turns" || occupiedSeats.length !== 1) {
-    return;
-  }
-
-  const seat = occupiedSeats[0];
-  gameState.players[seat].id = localClientId;
-  gameState.version += 1;
-  gameState.status = `Solo mode: reconnected as Player ${seat}.`;
-  localSeat = seat;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-  if (channel) {
-    channel.postMessage({ from: localClientId, sound: null });
-  }
+  sendAction("deal", {}, "deal");
 }
 
 function hit() {
-  if (!localSeat) {
-    return;
-  }
-
-  runMutation((state) => {
-    if (!(state.phase === "player-turns" && state.turnSeat === localSeat)) {
-      return;
-    }
-
-    const player = state.players[localSeat];
-    player.hand.push(drawCard(state));
-    if (scoreHand(player.hand) > 21) {
-      player.bust = true;
-      player.stood = true;
-      state.status = `Player ${localSeat} busts.`;
-      advanceTurn(state, localSeat);
-      return;
-    }
-
-    state.status = `Player ${localSeat} hits.`;
-  }, "hit");
+  sendAction("hit", {}, "hit");
 }
 
 function stand() {
-  if (!localSeat) {
-    return;
-  }
-
-  runMutation((state) => {
-    if (!(state.phase === "player-turns" && state.turnSeat === localSeat)) {
-      return;
-    }
-
-    const player = state.players[localSeat];
-    player.stood = true;
-    state.status = `Player ${localSeat} stands.`;
-    advanceTurn(state, localSeat);
-  }, "stand");
+  sendAction("stand", {}, "stand");
 }
 
 function doubleDown() {
-  if (!localSeat) {
-    return;
-  }
-
-  runMutation((state) => {
-    if (!(state.phase === "player-turns" && state.turnSeat === localSeat)) {
-      return;
-    }
-
-    const player = state.players[localSeat];
-    if (player.hand.length !== 2 || player.balance < player.currentBet) {
-      state.status = "Double Down unavailable.";
-      return;
-    }
-
-    player.balance -= player.currentBet;
-    player.currentBet *= 2;
-    player.hand.push(drawCard(state));
-    player.stood = true;
-    if (scoreHand(player.hand) > 21) {
-      player.bust = true;
-      state.status = `Player ${localSeat} busts after Double Down.`;
-    } else {
-      state.status = `Player ${localSeat} doubles to $${player.currentBet}.`;
-    }
-    advanceTurn(state, localSeat);
-  }, "double");
+  sendAction("double", {}, "double");
 }
+
+// ============================================
+// AUDIO
+// ============================================
 
 function ensureAudioContext() {
   if (!window.AudioContext && !window.webkitAudioContext) {
@@ -899,6 +465,10 @@ function playSound(kind) {
   }
 }
 
+// ============================================
+// EVENT WIRING
+// ============================================
+
 ui.joinSeat1Btn.addEventListener("click", () => {
   animateButtonPress(ui.joinSeat1Btn);
   joinSeat(1);
@@ -943,42 +513,22 @@ ui.chips.forEach((chip) => {
   });
 });
 
-if (channel) {
-  channel.addEventListener("message", (event) => {
-    if (event.data?.from === localClientId) {
-      return;
-    }
-    gameState = loadOrCreateState();
-    render();
-  });
-}
-
-window.addEventListener("storage", (event) => {
-  if (event.key !== STORAGE_KEY) {
-    return;
-  }
-  gameState = loadOrCreateState();
-  render();
-});
-
 window.addEventListener("beforeunload", () => {
-  if (!localSeat) {
+  if (!serverState || !serverState.yourSeat) {
     return;
   }
-  gameState = loadOrCreateState();
-  if (gameState.phase === "player-turns" || gameState.phase === "dealer-turn") {
+  if (serverState.phase === "player-turns" || serverState.phase === "dealer-turn") {
     return;
   }
-  const player = gameState.players[localSeat];
-  if (player.id === localClientId) {
-    player.id = null;
-    gameState.version += 1;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-  }
+  navigator.sendBeacon(
+    `${API_BASE}/leave`,
+    new Blob([JSON.stringify({ clientId: localClientId })], { type: "application/json" })
+  );
 });
 
-reclaimSoloSeatIfNeeded();
-render();
+// Initial sync + multiplayer polling (also serves as the server heartbeat).
+pollState();
+setInterval(pollState, POLL_INTERVAL_MS);
 
 // ============================================
 // ANIME.JS ANIMATION FUNCTIONS
@@ -1200,4 +750,3 @@ function animateSeatBounce(seatElement) {
     easing: "easeOutQuad",
   });
 }
-

@@ -16,6 +16,9 @@
 #   DEEPSEEK_API_KEY       - API kljuc za DeepSeek AI chat (bez njega je chat iskljucen);
 #                            moze stajati i u .env datoteci uz docker-compose.yml
 #   DEEPSEEK_MODEL         - DeepSeek model (default: deepseek-chat)
+#   SMTP_FROM              - adresa s koje se salju mailovi (bez nje je slanje maila iskljuceno)
+#   SMTP_USER              - SMTP korisnik (Gmail adresa)
+#   SMTP_PASSWORD          - SMTP lozinka (Gmail app password)
 #   HTTP_BIND              - host bind za app (default: 127.0.0.1:5209, za nginx na istom hostu)
 
 services:
@@ -33,6 +36,9 @@ services:
       - SeedAdmin__Password=${ADMIN_PASSWORD:-Admin123$$}
       - DeepSeek__ApiKey=${DEEPSEEK_API_KEY:-}
       - DeepSeek__Model=${DEEPSEEK_MODEL:-deepseek-chat}
+      - Smtp__From=${SMTP_FROM:-}
+      - Smtp__User=${SMTP_USER:-}
+      - Smtp__Password=${SMTP_PASSWORD:-}
     ports:
       - "${HTTP_BIND:-127.0.0.1:5209}:8080"
     extra_hosts:
