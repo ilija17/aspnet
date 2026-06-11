@@ -15,7 +15,8 @@ public class ThreeBodyGameService
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
     private const decimal PayoutMultiplier = 3m;
 
-    private const double G = 160.0;
+    // G ×4 + početne brzine ×2 = iste putanje, ali 2× brže odigrane.
+    private const double G = 640.0;
     private const double Softening = 10.0;
     private const double EjectionRadius = 1200.0;
     private const double CollisionFactor = 0.8;
@@ -211,12 +212,12 @@ public class ThreeBodyGameService
     private void InitializePositions(PlanetState[] planets)
     {
         var configs = new (double angle, double dist, double speed)[][] {
-            new[] { (0.0,  220.0, 10.0), (2.3,  240.0, -9.0),  (4.5,  200.0, 12.0) },
-            new[] { (1.0,  230.0, 8.0),  (3.1,  190.0, -12.0), (5.2,  250.0, -7.0) },
-            new[] { (0.5,  200.0, -14.0), (2.7,  260.0, 6.0),  (4.8,  220.0, -11.0) },
-            new[] { (1.8,  240.0, 9.0),  (3.9,  210.0, -10.0), (0.2,  230.0, 13.0) },
-            new[] { (0.3,  250.0, -6.0), (2.5,  200.0, 14.0),  (5.0,  240.0, -8.0) },
-            new[] { (1.4,  210.0, 11.0), (3.6,  240.0, -7.0),  (5.7,  190.0, 8.0) },
+            new[] { (0.0,  220.0, 20.0), (2.3,  240.0, -18.0),  (4.5,  200.0, 24.0) },
+            new[] { (1.0,  230.0, 16.0),  (3.1,  190.0, -24.0), (5.2,  250.0, -14.0) },
+            new[] { (0.5,  200.0, -28.0), (2.7,  260.0, 12.0),  (4.8,  220.0, -22.0) },
+            new[] { (1.8,  240.0, 18.0),  (3.9,  210.0, -20.0), (0.2,  230.0, 26.0) },
+            new[] { (0.3,  250.0, -12.0), (2.5,  200.0, 28.0),  (5.0,  240.0, -16.0) },
+            new[] { (1.4,  210.0, 22.0), (3.6,  240.0, -14.0),  (5.7,  190.0, 16.0) },
         };
 
         var config = configs[_rng.Next(configs.Length)];
@@ -228,7 +229,7 @@ public class ThreeBodyGameService
         {
             var angle = config[i].angle + (_rng.NextDouble() - 0.5) * 0.5;
             var dist = config[i].dist + (_rng.NextDouble() - 0.5) * 50;
-            var speed = config[i].speed + (_rng.NextDouble() - 0.5) * 3.0;
+            var speed = config[i].speed + (_rng.NextDouble() - 0.5) * 6.0;
             var perpAngle = angle + Math.PI / 2;
 
             planets[i].X = cx + Math.Cos(angle) * dist;
