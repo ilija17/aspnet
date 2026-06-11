@@ -58,6 +58,10 @@ public class HomeController : Controller
         return Ok(new { position, alreadyJoined = false });
     }
 
+    // The Vision — performative AI manifesto page with anime.js animations
+    [Route("vision")]
+    public IActionResult Vision() => View();
+
     public IActionResult Privacy() => View();
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

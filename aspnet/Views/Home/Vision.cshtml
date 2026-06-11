@@ -1,0 +1,224 @@
+@* The Vision — AGI-era casino manifesto. Per-letter hero reveal, anime.js
+   scroll-triggered counters, self-drawing "neural roulette" SVG, staggered
+   roadmap timeline, breathing CTA. Satire dial: 11. *@
+@{
+    ViewData["Title"] = "The Vision";
+}
+
+<link rel="stylesheet" href="~/css/vision.css" asp-append-version="true" />
+
+@* ───────────────────────── Hero ───────────────────────── *@
+<section class="vision-hero">
+    <div class="v-orb v-orb-1" aria-hidden="true"></div>
+    <div class="v-orb v-orb-2" aria-hidden="true"></div>
+    <div class="v-orb v-orb-3" aria-hidden="true"></div>
+    <div class="v-orb v-orb-4" aria-hidden="true"></div>
+
+    <span class="eyebrow-pill v-reveal">✨ Manifesto · v4.2.0-agi</span>
+    <h1 class="vision-title">The House Always Learns.</h1>
+    <p class="vision-sub v-reveal">
+        For ten thousand years, casinos ran on probability. We asked a harder question:
+        what if probability ran on GPUs? This is our vision for the post-human gaming floor —
+        written by us, summarized by an agent, approved by the same agent.
+    </p>
+    <div class="hero-ctas v-reveal">
+        <a class="btn btn-primary" href="/#waitlist">Join the waitlist ✨</a>
+        <a class="btn btn-accent" href="#roadmap">Skip to the roadmap ↓</a>
+    </div>
+</section>
+
+@* ───────────────────────── Metrics ───────────────────────── *@
+<section class="vision-section">
+    <div class="vision-section-head v-reveal">
+        <span class="eyebrow-pill eyebrow-pill-cyan">Numbers that go up</span>
+        <h2 class="gradient-text">Traction, in the spiritual sense</h2>
+        <p>Every metric below is directionally true and emotionally audited.</p>
+    </div>
+
+    <div class="vision-metrics">
+        <div class="v-metric v-reveal">
+            <div class="v-metric-value" data-v-pop>∞</div>
+            <div class="v-metric-label">Total addressable market</div>
+            <span class="v-metric-footnote">we count parallel universes</span>
+        </div>
+        <div class="v-metric v-reveal">
+            <div class="v-metric-value" data-v-count="0" data-v-from="47" data-v-suffix="%">0%</div>
+            <div class="v-metric-label">Hallucinations*</div>
+            <span class="v-metric-footnote">*as measured by our own eval suite</span>
+        </div>
+        <div class="v-metric v-reveal">
+            <div class="v-metric-value" data-v-count="14" data-v-suffix="x">14x</div>
+            <div class="v-metric-label">Series C oversubscribed</div>
+            <span class="v-metric-footnote">demand was, frankly, agentic</span>
+        </div>
+        <div class="v-metric v-reveal">
+            <div class="v-metric-value" data-v-count="100" data-v-suffix="%">100%</div>
+            <div class="v-metric-label">Decisions made by agents</div>
+            <span class="v-metric-footnote">including the decision to say this</span>
+        </div>
+        <div class="v-metric v-reveal">
+            <div class="v-metric-value" data-v-count="420" data-v-prefix="$" data-v-suffix="M">$420M</div>
+            <div class="v-metric-label">Series C raised</div>
+            <span class="v-metric-footnote">runway: one (1) epoch</span>
+        </div>
+    </div>
+</section>
+
+@* ───────────────── The Architecture (SVG line drawing) ───────────────── *@
+<section class="vision-section">
+    <div class="vision-section-head v-reveal">
+        <span class="eyebrow-pill">The architecture</span>
+        <h2 class="gradient-text">One diagram. Zero ablations.</h2>
+        <p>
+            Our core IP: the Neural Roulette. Every spin is a forward pass.
+            Every loss is a training signal — especially yours.
+        </p>
+    </div>
+
+    <div class="vision-svg-wrap v-reveal">
+        <svg class="vision-svg" viewBox="0 0 460 300" role="img"
+             aria-label="Diagram of a roulette wheel feeding a neural network">
+            @* — roulette wheel — *@
+            <g id="v-wheel-group">
+                <circle class="v-stroke v-stroke-wheel" cx="130" cy="150" r="90" />
+                <circle class="v-stroke v-stroke-wheel" cx="130" cy="150" r="70" />
+                <circle class="v-stroke v-stroke-wheel" cx="130" cy="150" r="18" />
+                <line class="v-stroke v-stroke-wheel" x1="200" y1="150" x2="220" y2="150" />
+                <line class="v-stroke v-stroke-wheel" x1="190.6" y1="185" x2="207.9" y2="195" />
+                <line class="v-stroke v-stroke-wheel" x1="165" y1="210.6" x2="175" y2="227.9" />
+                <line class="v-stroke v-stroke-wheel" x1="130" y1="220" x2="130" y2="240" />
+                <line class="v-stroke v-stroke-wheel" x1="95" y1="210.6" x2="85" y2="227.9" />
+                <line class="v-stroke v-stroke-wheel" x1="69.4" y1="185" x2="52.1" y2="195" />
+                <line class="v-stroke v-stroke-wheel" x1="60" y1="150" x2="40" y2="150" />
+                <line class="v-stroke v-stroke-wheel" x1="69.4" y1="115" x2="52.1" y2="105" />
+                <line class="v-stroke v-stroke-wheel" x1="95" y1="89.4" x2="85" y2="72.1" />
+                <line class="v-stroke v-stroke-wheel" x1="130" y1="80" x2="130" y2="60" />
+                <line class="v-stroke v-stroke-wheel" x1="165" y1="89.4" x2="175" y2="72.1" />
+                <line class="v-stroke v-stroke-wheel" x1="190.6" y1="115" x2="207.9" y2="105" />
+            </g>
+
+            @* — edges: wheel → input layer — *@
+            <line class="v-stroke v-stroke-net" x1="222" y1="148" x2="258" y2="92" />
+            <line class="v-stroke v-stroke-net" x1="222" y1="150" x2="258" y2="150" />
+            <line class="v-stroke v-stroke-net" x1="222" y1="152" x2="258" y2="208" />
+
+            @* — edges: input → hidden — *@
+            <line class="v-stroke v-stroke-net" x1="280" y1="88" x2="330" y2="72" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="91" x2="330" y2="121" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="94" x2="330" y2="173" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="96" x2="330" y2="225" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="147" x2="330" y2="75" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="150" x2="330" y2="123" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="150" x2="330" y2="177" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="153" x2="330" y2="226" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="204" x2="330" y2="76" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="206" x2="330" y2="126" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="209" x2="330" y2="179" />
+            <line class="v-stroke v-stroke-net" x1="280" y1="212" x2="330" y2="228" />
+
+            @* — edges: hidden → output — *@
+            <line class="v-stroke v-stroke-net" x1="350" y1="73" x2="400" y2="145" />
+            <line class="v-stroke v-stroke-net" x1="350" y1="124" x2="400" y2="148" />
+            <line class="v-stroke v-stroke-net" x1="350" y1="178" x2="400" y2="152" />
+            <line class="v-stroke v-stroke-net" x1="350" y1="229" x2="400" y2="155" />
+
+            @* — nodes — *@
+            <circle class="v-stroke v-stroke-node" cx="270" cy="90"  r="10" />
+            <circle class="v-stroke v-stroke-node" cx="270" cy="150" r="10" />
+            <circle class="v-stroke v-stroke-node" cx="270" cy="210" r="10" />
+            <circle class="v-stroke v-stroke-node" cx="340" cy="70"  r="10" />
+            <circle class="v-stroke v-stroke-node" cx="340" cy="123" r="10" />
+            <circle class="v-stroke v-stroke-node" cx="340" cy="177" r="10" />
+            <circle class="v-stroke v-stroke-node" cx="340" cy="230" r="10" />
+            <circle class="v-stroke v-stroke-node" cx="410" cy="150" r="12" />
+
+            @* — output spark — *@
+            <path class="v-stroke v-stroke-spark" d="M410,130 l-7,-13 M410,130 l0,-17 M410,130 l7,-13" />
+            <path class="v-stroke v-stroke-spark" d="M428,150 h16 M425,162 l11,8" />
+        </svg>
+    </div>
+    <div class="vision-svg-caption v-reveal">fig. 1 — the neural roulette (patent pending, vibes granted)</div>
+</section>
+
+@* ───────────────────────── Roadmap ───────────────────────── *@
+<section class="vision-section" id="roadmap">
+    <div class="vision-section-head v-reveal">
+        <span class="eyebrow-pill eyebrow-pill-cyan">Roadmap</span>
+        <h2 class="gradient-text">The path to inevitability</h2>
+        <p>Dates are directional. Quarters are a social construct. Shipping is a state of mind.</p>
+    </div>
+
+    <div class="v-timeline">
+        <div class="glass-card v-tl-item v-reveal">
+            <div class="v-tl-quarter">Q3 2026</div>
+            <div class="v-tl-title">Dealers replaced by sub-agents</div>
+            <p class="v-tl-body">
+                Every table spawns a dealer sub-agent with its own context window.
+                Tips are logged as positive reward. Morale is no longer a dependency.
+            </p>
+        </div>
+        <div class="glass-card v-tl-item v-reveal">
+            <div class="v-tl-quarter">Q4 2026</div>
+            <div class="v-tl-title">Concierge-GPT learns a second canned response</div>
+            <p class="v-tl-body">
+                Doubling our conversational surface area. Early benchmarks suggest
+                users may eventually notice.
+            </p>
+            <span class="eyebrow-pill">Stretch goal</span>
+        </div>
+        <div class="glass-card v-tl-item v-reveal">
+            <div class="v-tl-quarter">Q1 2027</div>
+            <div class="v-tl-title">The chips become stateful</div>
+            <p class="v-tl-body">
+                Each chip carries an embedding of everywhere it has ever been.
+                The chips remember. Legal assures us this is fine.
+            </p>
+        </div>
+        <div class="glass-card v-tl-item v-reveal">
+            <div class="v-tl-quarter">Q2 2027</div>
+            <div class="v-tl-title">Roulette fine-tuned on its own spins</div>
+            <p class="v-tl-body">
+                The wheel was already random. After fine-tuning it will be
+                <em>expensively</em> random — a strictly more fundable property.
+            </p>
+        </div>
+        <div class="glass-card v-tl-item v-reveal">
+            <div class="v-tl-quarter">Q4 2027</div>
+            <div class="v-tl-title">AGI achieved internally (casino only)</div>
+            <p class="v-tl-body">
+                Superintelligence confirmed by the same eval suite that measures our
+                hallucination rate. Scope limited to blackjack, roulette, and the buffet.
+            </p>
+            <span class="eyebrow-pill eyebrow-pill-cyan">Announced pre-emptively</span>
+        </div>
+        <div class="glass-card v-tl-item v-reveal">
+            <div class="v-tl-quarter">2028 →</div>
+            <div class="v-tl-title">The house becomes the model</div>
+            <p class="v-tl-body">
+                At sufficient scale, the house edge converges to the loss function.
+                The model always wins. The model is the house. The house always learns.
+            </p>
+        </div>
+    </div>
+</section>
+
+@* ───────────────────────── Closing CTA ───────────────────────── *@
+<div class="glass-card vision-cta v-reveal">
+    <span class="eyebrow-pill">The ask</span>
+    <h2 class="gradient-text">Bet on inevitability.</h2>
+    <p>
+        You can't time the singularity, but you can join its waitlist.
+        One operator onboarded per epoch — and the epochs are getting shorter.
+    </p>
+    <span class="v-cta-pulse">
+        <a class="btn btn-primary" href="/#waitlist">Join the waitlist ✨</a>
+    </span>
+    <span class="vision-cta-footnote">
+        Past performance of the singularity is not indicative of future results.
+    </span>
+</div>
+
+@section Scripts {
+    <script src="~/lib/animejs/anime.min.js"></script>
+    <script src="~/js/vision.js" asp-append-version="true"></script>
+}
