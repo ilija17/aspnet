@@ -1,0 +1,312 @@
+/* ============================================================
+   ✨ Playground — full-screen anime.js demo reel
+   Builds on casino.css tokens. Every section is a full-bleed
+   100vh stage; wwwroot/js/playground.js drives all motion
+   (transform / opacity only). Initial hidden states are gated
+   behind prefers-reduced-motion: no-preference so reduced-motion
+   and no-JS users see complete static layouts.
+   ============================================================ */
+
+/* ── Full-bleed 100vh sections (page scroll-snaps between them) ── */
+.pg-snap { scroll-snap-type: y proximity; }
+
+.pg-section {
+  position: relative;
+  min-height: 100vh;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  padding: 4.5rem 1.4rem;
+  overflow: hidden;
+  scroll-snap-align: start;
+  text-align: center;
+}
+
+/* darker translucent stage so the demos pop over the aurora */
+.pg-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 50%, rgba(10, 10, 28, 0.35), rgba(5, 5, 16, 0.72) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.pg-section > * { position: relative; z-index: 1; }
+
+/* per-section accent tints */
+.pg-section-bars::before    { box-shadow: inset 0 0 160px rgba(34, 211, 238, 0.06); }
+.pg-section-chip::before    { box-shadow: inset 0 0 160px rgba(168, 85, 247, 0.07); }
+.pg-section-springs::before { box-shadow: inset 0 0 160px rgba(236, 72, 153, 0.06); }
+.pg-section-finale::before  { box-shadow: inset 0 0 160px rgba(99, 102, 241, 0.08); }
+
+/* ── Section heads & shared bits ────────────────────────────── */
+.pg-head { max-width: 620px; }
+.pg-head h2 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: clamp(1.9rem, 4.6vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0.85rem 0 0.6rem;
+}
+.pg-head p {
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.pg-caption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.pg-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82em;
+  color: var(--cyan);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 6px;
+  padding: 0.08em 0.4em;
+}
+
+/* anime.js drives .pg-reveal; CSS only pre-hides when motion is OK */
+@media (prefers-reduced-motion: no-preference) {
+  .pg-reveal { opacity: 0; }
+}
+
+/* ── 01 · Hero — staggered grid ripple ──────────────────────── */
+.pg-section-hero { justify-content: center; }
+
+.pg-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(22, 1fr);
+  place-items: center;
+  padding: 5vmin;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.pg-dot {
+  width: clamp(4px, 0.8vmin, 8px);
+  height: clamp(4px, 0.8vmin, 8px);
+  border-radius: 50%;
+  background: var(--indigo-hi);
+  box-shadow: 0 0 8px rgba(129, 140, 248, 0.55);
+}
+.pg-dot:nth-child(3n)  { background: var(--violet-hi); box-shadow: 0 0 8px rgba(192, 132, 252, 0.55); }
+.pg-dot:nth-child(5n)  { background: var(--cyan);      box-shadow: 0 0 8px rgba(34, 211, 238, 0.5); }
+.pg-dot:nth-child(11n) { background: var(--pink);      box-shadow: 0 0 8px rgba(236, 72, 153, 0.5); }
+
+/* readability halo behind hero copy */
+.pg-hero-inner {
+  position: relative;
+  max-width: 680px;
+  padding: 2.4rem 1.6rem;
+}
+.pg-hero-inner::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(5, 5, 16, 0.86), rgba(5, 5, 16, 0.55) 60%, transparent);
+  pointer-events: none;
+}
+
+.pg-title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: clamp(2.5rem, 7.5vw, 4.8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 1.1rem 0 0.9rem;
+  color: var(--ink);
+}
+
+.pg-sub {
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: 0 0 1.4rem;
+}
+
+/* JS splits headlines into these — transform/opacity only */
+.pg-letter { display: inline-block; will-change: transform, opacity; }
+.pg-word   { display: inline-block; white-space: nowrap; }
+
+.pg-letter-grad {
+  background: var(--grad);
+  background-size: 600% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-scroll-hint { animation: pg-hint 1.7s ease-in-out infinite; }
+}
+@keyframes pg-hint {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+
+/* ── 02 · Stagger symphony — bars ───────────────────────────── */
+.pg-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(3px, 0.7vw, 8px);
+  width: min(880px, 92vw);
+  height: clamp(160px, 30vh, 260px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pg-bar { flex: 1 1 0; height: 100%; will-change: transform; }
+
+.pg-bar-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px 6px 2px 2px;
+  transform-origin: bottom;
+  transform: scaleY(0.35);
+  background: linear-gradient(180deg, var(--indigo-hi), rgba(99, 102, 241, 0.25));
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
+  will-change: transform;
+}
+.pg-bar:nth-child(2n) .pg-bar-fill { transform: scaleY(0.55); }
+.pg-bar:nth-child(3n) .pg-bar-fill {
+  transform: scaleY(0.7);
+  background: linear-gradient(180deg, var(--violet-hi), rgba(168, 85, 247, 0.25));
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+}
+.pg-bar:nth-child(5n) .pg-bar-fill {
+  transform: scaleY(0.45);
+  background: linear-gradient(180deg, var(--cyan), rgba(34, 211, 238, 0.22));
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.22);
+}
+.pg-bar:nth-child(7n) .pg-bar-fill {
+  background: linear-gradient(180deg, var(--pink), rgba(236, 72, 153, 0.22));
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.22);
+}
+
+/* ── 03 · Timeline orchestration — chip SVG ─────────────────── */
+.pg-chip-svg {
+  width: min(300px, 64vw);
+  height: auto;
+  overflow: visible;
+}
+
+#pgChipSpin,
+.pg-piece {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.pg-chip-ring {
+  fill: rgba(99, 102, 241, 0.10);
+  stroke: var(--indigo-hi);
+  stroke-width: 9;
+}
+.pg-chip-tick {
+  fill: var(--ink);
+  opacity: 0.92;
+}
+.pg-chip-inner {
+  fill: rgba(192, 132, 252, 0.08);
+  stroke: var(--violet-hi);
+  stroke-width: 2.5;
+  stroke-dasharray: 12 9;
+}
+.pg-chip-text {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+/* ── 04 · Spring physics — pokeable chips ───────────────────── */
+.pg-spring-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 2rem);
+  padding: 1.2rem 0;
+}
+
+.pg-chip {
+  width: clamp(64px, 11vw, 92px);
+  height: clamp(64px, 11vw, 92px);
+  cursor: pointer;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pg-chip-face {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 6px dashed rgba(255, 255, 255, 0.85);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
+  color: #fff;
+  user-select: none;
+  will-change: transform;
+}
+
+.pg-chip-indigo { background: radial-gradient(circle at 32% 30%, #818cf8, #4338ca); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.45); }
+.pg-chip-violet { background: radial-gradient(circle at 32% 30%, #c084fc, #7e22ce); box-shadow: 0 10px 30px rgba(168, 85, 247, 0.45); }
+.pg-chip-cyan   { background: radial-gradient(circle at 32% 30%, #67e8f9, #0e7490); box-shadow: 0 10px 30px rgba(34, 211, 238, 0.4); }
+.pg-chip-pink   { background: radial-gradient(circle at 32% 30%, #f9a8d4, #be185d); box-shadow: 0 10px 30px rgba(236, 72, 153, 0.4); }
+.pg-chip-mint   { background: radial-gradient(circle at 32% 30%, #6ee7b7, #047857); box-shadow: 0 10px 30px rgba(52, 211, 153, 0.4); }
+
+/* ── 05 · Finale — kinetic typography ───────────────────────── */
+.pg-finale-title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: clamp(2.2rem, 6.5vw, 4.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  margin: 1rem 0 0.9rem;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* once JS splits it, letters carry the gradient instead */
+.pg-finale-title.pg-split {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--ink);
+}
+
+.pg-section-finale .hero-ctas {
+  margin-top: 1.6rem;
+  margin-bottom: 1.2rem;
+  justify-content: center;
+}
+
+/* ── Small screens ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .pg-section { padding: 3.5rem 1rem; }
+  .pg-grid { padding: 3vmin; }
+  .pg-hero-inner { padding: 1.6rem 0.8rem; }
+}

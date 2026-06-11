@@ -62,6 +62,10 @@ public class HomeController : Controller
     [Route("vision")]
     public IActionResult Vision() => View();
 
+    // The Playground — full-screen anime.js motion showcase (animejs.com-style)
+    [Route("playground")]
+    public IActionResult Playground() => View();
+
     public IActionResult Privacy() => View();
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

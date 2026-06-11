@@ -31,6 +31,10 @@
     var currentPath = Context.Request.Path.Value ?? "";
     string NavClass(string prefix) =>
         currentPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "nav-link active" : "nav-link";
+    var showcaseClass =
+        currentPath.StartsWith("/vision", StringComparison.OrdinalIgnoreCase) ||
+        currentPath.StartsWith("/playground", StringComparison.OrdinalIgnoreCase)
+            ? "nav-link active" : "nav-link";
 }
 <div class="app-shell">
   <nav class="top-bar">
@@ -54,7 +58,13 @@
       <li><a class="@NavClass("/djelatnici")" href="/djelatnici">Employees</a></li>
       <li><a class="@NavClass("/rezervacije")" href="/rezervacije">Reservations</a></li>
       <li><a class="@NavClass("/transakcije")" href="/transakcije">Transactions</a></li>
-      <li><a class="@NavClass("/vision")" href="/vision">Vision ✨</a></li>
+      <li class="nav-dropdown">
+        <a class="@showcaseClass nav-dropdown-trigger" href="/vision" aria-haspopup="true">Showcase ✨ <span class="nav-caret" aria-hidden="true">▾</span></a>
+        <ul class="nav-dropdown-menu" aria-label="Showcase">
+          <li><a class="nav-dropdown-item" href="/vision">The Vision</a></li>
+          <li><a class="nav-dropdown-item" href="/playground">Playground</a></li>
+        </ul>
+      </li>
     </ul>
     <partial name="_LoginPartial" />
   </nav>

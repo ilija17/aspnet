@@ -1,0 +1,113 @@
+@* Playground — full-screen anime.js demo reel (animejs.com-style).
+   Five 100vh sections: staggered grid ripple hero, click-rippling
+   stagger bars, timeline-orchestrated chip assembly, spring-physics
+   chips, kinetic-typography finale. All motion lives in
+   wwwroot/js/playground.js (transform/opacity only, IO-paused loops,
+   reduced-motion safe). Satire dial: still 11. *@
+@{
+    ViewData["Title"] = "Playground";
+}
+
+<link rel="stylesheet" href="~/css/playground.css" asp-append-version="true" />
+
+@* ──────────────── 01 · Hero — staggered grid ripple ──────────────── *@
+<section class="pg-section pg-section-hero" id="pg-hero">
+    <div class="pg-grid" id="pgGrid" aria-hidden="true"></div>
+    <div class="pg-hero-inner">
+        <span class="eyebrow-pill pg-reveal">✨ Live demo reel · zero slides</span>
+        <h1 class="pg-title" id="pgTitle">Motion, but make it agentic.</h1>
+        <p class="pg-sub pg-reveal">
+            Every keyframe on this page is a decision an agent made.
+            308 dots, one shared vision, 60&nbsp;fps, 0 hallucinations.
+            Scroll to witness compute.
+        </p>
+        <div class="pg-caption pg-reveal pg-scroll-hint">scroll ↓ the animations are load-bearing</div>
+    </div>
+</section>
+
+@* ──────────────── 02 · Stagger symphony — dancing bars ──────────────── *@
+<section class="pg-section pg-section-bars" id="pg-bars-section">
+    <div class="pg-head">
+        <span class="eyebrow-pill eyebrow-pill-cyan pg-reveal">Demo 02 · Advanced staggering</span>
+        <h2 class="gradient-text pg-reveal">The revenue chart dances.</h2>
+        <p class="pg-reveal">
+            Forty bars of directionally true ARR, animated until they mean something.
+            Click anywhere on the chart to trigger a market correction —
+            it propagates outward, like confidence.
+        </p>
+    </div>
+    <div class="pg-bars" id="pgBars" role="img" aria-label="Decorative animated bar chart"></div>
+    <div class="pg-caption pg-reveal">fig. 2 — ARR (Annualized Ripple Rate) · y-axis intentionally unlabeled</div>
+</section>
+
+@* ──────────────── 03 · Timeline orchestration — chip assembly ──────────────── *@
+<section class="pg-section pg-section-chip" id="pg-chip-section">
+    <div class="pg-head">
+        <span class="eyebrow-pill pg-reveal">Demo 03 · Timeline orchestration</span>
+        <h2 class="gradient-text pg-reveal">Compute, assembling itself.</h2>
+        <p class="pg-reveal">
+            Nine SVG primitives choreographed into one fully compliant casino chip.
+            Then it disassembles and does it again. We call this iteration;
+            the board calls it traction.
+        </p>
+    </div>
+
+    <svg class="pg-chip-svg" viewBox="0 0 300 300" role="img"
+         aria-label="Animated casino chip assembling from parts">
+        <g id="pgChipSpin">
+            <g class="pg-piece"><circle class="pg-chip-ring" cx="150" cy="150" r="112" /></g>
+            <g transform="rotate(0 150 150)"><g class="pg-piece"><rect class="pg-chip-tick" x="141" y="30" width="18" height="26" rx="5" /></g></g>
+            <g transform="rotate(60 150 150)"><g class="pg-piece"><rect class="pg-chip-tick" x="141" y="30" width="18" height="26" rx="5" /></g></g>
+            <g transform="rotate(120 150 150)"><g class="pg-piece"><rect class="pg-chip-tick" x="141" y="30" width="18" height="26" rx="5" /></g></g>
+            <g transform="rotate(180 150 150)"><g class="pg-piece"><rect class="pg-chip-tick" x="141" y="30" width="18" height="26" rx="5" /></g></g>
+            <g transform="rotate(240 150 150)"><g class="pg-piece"><rect class="pg-chip-tick" x="141" y="30" width="18" height="26" rx="5" /></g></g>
+            <g transform="rotate(300 150 150)"><g class="pg-piece"><rect class="pg-chip-tick" x="141" y="30" width="18" height="26" rx="5" /></g></g>
+            <g class="pg-piece"><circle class="pg-chip-inner" cx="150" cy="150" r="72" /></g>
+            <g class="pg-piece" id="pgChipCore"><text class="pg-chip-text" x="150" y="160" text-anchor="middle">CMS✨</text></g>
+        </g>
+    </svg>
+    <div class="pg-caption pg-reveal">fig. 3 — chip-as-a-service · direction alternates, like our strategy</div>
+</section>
+
+@* ──────────────── 04 · Spring physics — pokeable chips ──────────────── *@
+<section class="pg-section pg-section-springs" id="pg-springs-section">
+    <div class="pg-head">
+        <span class="eyebrow-pill eyebrow-pill-cyan pg-reveal">Demo 04 · Spring physics</span>
+        <h2 class="gradient-text pg-reveal">Poke the chips. They recover.</h2>
+        <p class="pg-reveal">
+            Each chip runs <code class="pg-code">spring(1, 120, 8, 0)</code> — mass, stiffness,
+            damping, velocity. Poke one and it snaps back stronger,
+            exactly like our valuation after a down round.
+        </p>
+    </div>
+    <div class="pg-spring-row" id="pgSprings">
+        <div class="pg-chip"><div class="pg-chip-face pg-chip-indigo">25</div></div>
+        <div class="pg-chip"><div class="pg-chip-face pg-chip-violet">100</div></div>
+        <div class="pg-chip"><div class="pg-chip-face pg-chip-cyan">GPU</div></div>
+        <div class="pg-chip"><div class="pg-chip-face pg-chip-pink">AGI</div></div>
+        <div class="pg-chip"><div class="pg-chip-face pg-chip-mint">∞</div></div>
+    </div>
+    <div class="pg-caption pg-reveal">interaction is optional — the chips are intrinsically motivated</div>
+</section>
+
+@* ──────────────── 05 · Finale — kinetic typography ──────────────── *@
+<section class="pg-section pg-section-finale" id="pg-finale">
+    <div class="pg-head">
+        <span class="eyebrow-pill pg-reveal">Demo ∞ · Kinetic typography</span>
+        <h2 class="pg-finale-title" id="pgFinaleTitle">The demo is the product.</h2>
+        <p class="pg-reveal">
+            You just scrolled five viewports of pure transform and opacity.
+            Nothing was laid out twice. Nothing was learned. Everything was animated.
+        </p>
+        <div class="hero-ctas pg-reveal">
+            <a class="btn btn-primary" href="/#waitlist">Join the waitlist ✨</a>
+            <a class="btn btn-accent" href="/vision">Read the manifesto →</a>
+        </div>
+        <div class="pg-caption pg-reveal">60 fps sustained · 0 layout thrash · 1 oversubscribed Series C</div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/lib/animejs/anime.min.js"></script>
+    <script src="~/js/playground.js" asp-append-version="true"></script>
+}
