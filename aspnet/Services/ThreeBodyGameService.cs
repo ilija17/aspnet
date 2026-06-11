@@ -7,10 +7,13 @@ using aspnet.Models.DTO;
 
 namespace aspnet.Services;
 
+// Runda se simulira i razrješava u jednom pozivu (start); klijent dobiva
+// cijelu snimljenu putanju i sam je reproducira — nema server-side playbacka.
 public class ThreeBodyGameService
 {
-    private static readonly int[] AllowedBets = { 25, 50, 100, 200 };
+    public static readonly int[] AllowedBets = { 25, 50, 100, 200 };
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
+    private const decimal PayoutMultiplier = 3m;
 
     private const double G = 160.0;
     private const double Softening = 10.0;
@@ -19,8 +22,6 @@ public class ThreeBodyGameService
     private const double PhysicsDt = 0.04;
     private const int MaxPhysicsSteps = 6000;
     private const int RecordEvery = 2;
-    private const double PlaybackFps = 50.0;
-    private const int FreezeFrames = 45;
 
     private static readonly (string Name, string Color, double Mass, double Radius)[] PlanetTemplates =
     {
@@ -32,36 +33,24 @@ public class ThreeBodyGameService
     private sealed class PlanetState
     {
         public string Name = "";
-        public string Color = "";
         public double Mass;
         public double Radius;
         public double X, Y, Vx, Vy;
         public bool Alive = true;
     }
 
-    private sealed class Frame
-    {
-        public PlanetData[] Planets = Array.Empty<PlanetData>();
-    }
-
-    private sealed record EliminationEvent(int FrameIndex, string PlanetName);
-
     private sealed class GameSession
     {
         public DateTime LastSeenUtc;
         public long Version;
-        public string Phase = "betting";
         public string Status = "Bet on which planet will survive the longest.";
         public int SelectedBet = 25;
         public string? BetOnPlanet;
-        public Frame[]? Trajectory;
-        public DateTime SimulationStartedAt;
-        public EliminationEvent[] EliminationEvents = Array.Empty<EliminationEvent>();
-        public string? WinnerPlanet;
-        public string? LastRoundResult;
+        public string? LastResult;
+        public string? LastWinner;
+        public decimal LastPayout;
         public int Wins;
         public int Losses;
-        public bool Resolved;
     }
 
     private readonly object _sync = new();
@@ -71,13 +60,12 @@ public class ThreeBodyGameService
 
     public ThreeBodyGameService(IServiceScopeFactory scopeFactory) => _scopeFactory = scopeFactory;
 
-    public ThreeBodyStateDTO GetState(int playerId, Player? preloadedPlayer = null)
-        => Mutate(playerId, (s, _, _) => { }, preloadedPlayer);
+    public ThreeBodyStateDTO GetState(int playerId)
+        => Mutate(playerId, (s, _, _) => { });
 
-    public ThreeBodyStateDTO SetBet(int playerId, int amount, string planet, Player? preloadedPlayer = null)
+    public ThreeBodyStateDTO SetBet(int playerId, int amount, string planet)
         => Mutate(playerId, (s, _, p) =>
         {
-            if (s.Phase != "betting") return;
             if (amount > p.Balance)
             {
                 s.Status = "Bet too high for your balance.";
@@ -86,12 +74,14 @@ public class ThreeBodyGameService
             s.SelectedBet = amount;
             s.BetOnPlanet = planet;
             s.Status = $"Bet ${amount} on planet {planet}. Press Start to begin.";
-        }, preloadedPlayer);
+        });
 
-    public ThreeBodyStateDTO Start(int playerId, Player? preloadedPlayer = null)
-        => Mutate(playerId, (s, db, p) =>
+    public ThreeBodyStateDTO Start(int playerId)
+    {
+        ThreeBodyRoundDTO? round = null;
+
+        var state = Mutate(playerId, (s, db, p) =>
         {
-            if (s.Phase != "betting") return;
             if (s.BetOnPlanet is null)
             {
                 s.Status = "Select a planet first.";
@@ -106,47 +96,51 @@ public class ThreeBodyGameService
             p.Balance -= s.SelectedBet;
             AddTransaction(db, p.Id, TransactionType.Bet, s.SelectedBet);
 
-            var result = ComputeTrajectory();
-            s.Trajectory = result.Frames;
-            s.EliminationEvents = result.EliminationEvents;
-            s.WinnerPlanet = result.WinnerPlanet;
-            s.SimulationStartedAt = DateTime.UtcNow;
-            s.Resolved = false;
-            s.Phase = "simulating";
-            s.Status = "Watch the chaos unfold!";
-        }, preloadedPlayer);
+            var (frames, eliminations, winner) = ComputeTrajectory();
 
-    public ThreeBodyStateDTO SkipToEnd(int playerId, Player? preloadedPlayer = null)
-        => Mutate(playerId, (s, db, p) =>
-        {
-            if (s.Phase != "simulating" || s.Trajectory is null) return;
-            ResolveRound(s, db, p);
-        }, preloadedPlayer);
+            decimal payout = 0;
+            string result;
+            if (s.BetOnPlanet == winner)
+            {
+                payout = s.SelectedBet * PayoutMultiplier;
+                p.Balance += payout;
+                AddTransaction(db, p.Id, TransactionType.Win, payout);
+                s.Wins++;
+                result = "win";
+                s.Status = $"Planet {winner} survived the longest! You win ${payout:0.##}!";
+            }
+            else
+            {
+                s.Losses++;
+                result = "loss";
+                s.Status = winner is not null
+                    ? $"Planet {winner} survived the longest. You bet on {s.BetOnPlanet}. You lose."
+                    : "All planets destroyed! You lose.";
+            }
 
-    public ThreeBodyStateDTO Reset(int playerId, Player? preloadedPlayer = null)
-        => Mutate(playerId, (s, _, _) =>
-        {
-            s.Phase = "betting";
-            s.Status = "Bet on which planet will survive the longest.";
+            round = new ThreeBodyRoundDTO(
+                Frames: frames,
+                Eliminations: eliminations,
+                WinnerPlanet: winner,
+                BetPlanet: s.BetOnPlanet,
+                BetAmount: s.SelectedBet,
+                Payout: payout,
+                Result: result);
+
+            s.LastResult = result;
+            s.LastWinner = winner;
+            s.LastPayout = payout;
             s.BetOnPlanet = null;
-            s.Trajectory = null;
-            s.EliminationEvents = Array.Empty<EliminationEvent>();
-            s.WinnerPlanet = null;
-            s.LastRoundResult = null;
-            s.Resolved = false;
-        }, preloadedPlayer);
+        });
 
-    private sealed record TrajectoryResult(
-        Frame[] Frames,
-        EliminationEvent[] EliminationEvents,
-        string? WinnerPlanet);
+        return state with { Round = round };
+    }
 
-    private TrajectoryResult ComputeTrajectory()
+    private (double[][] Frames, List<ThreeBodyEliminationDTO> Eliminations, string? Winner) ComputeTrajectory()
     {
         var planets = PlanetTemplates.Select(t => new PlanetState
         {
             Name = t.Name,
-            Color = t.Color,
             Mass = t.Mass,
             Radius = t.Radius,
             Alive = true
@@ -154,37 +148,33 @@ public class ThreeBodyGameService
 
         InitializePositions(planets);
 
-        var frames = new List<Frame>();
-        var eliminationEvents = new List<EliminationEvent>();
-        var eliminatedSet = new HashSet<string>();
+        var frames = new List<double[]>();
+        var eliminations = new List<ThreeBodyEliminationDTO>();
+        var eliminated = new HashSet<string>();
+
+        void Eliminate(PlanetState planet, int frameIdx)
+        {
+            planet.Alive = false;
+            if (eliminated.Add(planet.Name))
+                eliminations.Add(new ThreeBodyEliminationDTO(frameIdx, planet.Name));
+        }
+
+        double[] Snapshot() => planets
+            .SelectMany(p => new[] { Math.Round(p.X, 1), Math.Round(p.Y, 1) })
+            .ToArray();
 
         for (var step = 0; step < MaxPhysicsSteps; step++)
         {
-            var frameIdx = step / RecordEvery;
             if (step % RecordEvery == 0)
-            {
-                frames.Add(new Frame
-                {
-                    Planets = planets.Select(p => new PlanetData(
-                        p.Name, p.Color, p.Mass, p.Radius,
-                        Math.Round(p.X, 2), Math.Round(p.Y, 2))).ToArray()
-                });
-            }
+                frames.Add(Snapshot());
+            var frameIdx = frames.Count - 1;
 
             StepRK4(planets);
 
-            for (var i = 0; i < planets.Length; i++)
+            foreach (var planet in planets)
             {
-                if (!planets[i].Alive) continue;
-                if (Math.Sqrt(planets[i].X * planets[i].X + planets[i].Y * planets[i].Y) > EjectionRadius)
-                {
-                    planets[i].Alive = false;
-                    if (!eliminatedSet.Contains(planets[i].Name))
-                    {
-                        eliminationEvents.Add(new EliminationEvent(frameIdx, planets[i].Name));
-                        eliminatedSet.Add(planets[i].Name);
-                    }
-                }
+                if (planet.Alive && Math.Sqrt(planet.X * planet.X + planet.Y * planet.Y) > EjectionRadius)
+                    Eliminate(planet, frameIdx);
             }
 
             for (var i = 0; i < planets.Length; i++)
@@ -198,30 +188,15 @@ public class ThreeBodyGameService
                     var dist = Math.Sqrt(dx * dx + dy * dy);
                     if (dist < (planets[i].Radius + planets[j].Radius) * CollisionFactor)
                     {
-                        if (!eliminatedSet.Contains(planets[i].Name))
-                        {
-                            planets[i].Alive = false;
-                            eliminationEvents.Add(new EliminationEvent(frameIdx, planets[i].Name));
-                            eliminatedSet.Add(planets[i].Name);
-                        }
-                        if (!eliminatedSet.Contains(planets[j].Name))
-                        {
-                            planets[j].Alive = false;
-                            eliminationEvents.Add(new EliminationEvent(frameIdx, planets[j].Name));
-                            eliminatedSet.Add(planets[j].Name);
-                        }
+                        Eliminate(planets[i], frameIdx);
+                        Eliminate(planets[j], frameIdx);
                     }
                 }
             }
 
             if (planets.Count(p => p.Alive) <= 1)
             {
-                frames.Add(new Frame
-                {
-                    Planets = planets.Select(p => new PlanetData(
-                        p.Name, p.Color, p.Mass, p.Radius,
-                        Math.Round(p.X, 2), Math.Round(p.Y, 2))).ToArray()
-                });
+                frames.Add(Snapshot());
                 break;
             }
         }
@@ -230,14 +205,7 @@ public class ThreeBodyGameService
             ? planets.First(p => p.Alive).Name
             : null;
 
-        if (frames.Count > 0)
-        {
-            var last = frames[^1];
-            for (var i = 0; i < FreezeFrames; i++)
-                frames.Add(last);
-        }
-
-        return new TrajectoryResult(frames.ToArray(), eliminationEvents.ToArray(), winner);
+        return (frames.ToArray(), eliminations, winner);
     }
 
     private void InitializePositions(PlanetState[] planets)
@@ -327,35 +295,7 @@ public class ThreeBodyGameService
         }
     }
 
-    private static void ResolveRound(GameSession s, CasinoDbContext db, Player p)
-    {
-        if (s.Resolved) return;
-        s.Resolved = true;
-
-        var winner = s.WinnerPlanet;
-
-        if (s.BetOnPlanet == winner)
-        {
-            var payout = s.SelectedBet * 3m;
-            p.Balance += payout;
-            AddTransaction(db, p.Id, TransactionType.Win, payout);
-            s.Wins++;
-            s.LastRoundResult = "win";
-            s.Status = $"Planet {winner} survived the longest! You win ${payout:0.##}!";
-        }
-        else
-        {
-            s.Losses++;
-            s.LastRoundResult = "loss";
-            s.Status = winner is not null
-                ? $"Planet {winner} survived the longest. You bet on {s.BetOnPlanet}. You lose."
-                : "All planets destroyed! You lose.";
-        }
-
-        s.Phase = "round-over";
-    }
-
-    private ThreeBodyStateDTO Mutate(int playerId, Action<GameSession, CasinoDbContext, Player> action, Player? preloaded)
+    private ThreeBodyStateDTO Mutate(int playerId, Action<GameSession, CasinoDbContext, Player> action)
     {
         lock (_sync)
         {
@@ -363,16 +303,8 @@ public class ThreeBodyGameService
             var db = scope.ServiceProvider.GetRequiredService<CasinoDbContext>();
 
             var now = DateTime.UtcNow;
-            foreach (var kv in _sessions.Where(kv => now - kv.Value.LastSeenUtc > SessionTimeout).ToList())
-            {
-                if (kv.Value.Phase == "simulating" && kv.Value.Trajectory is not null)
-                {
-                    var stalePlayer = db.Players.Find(kv.Key);
-                    if (stalePlayer is not null)
-                        ResolveRound(kv.Value, db, stalePlayer);
-                }
-                _sessions.Remove(kv.Key);
-            }
+            foreach (var stale in _sessions.Where(kv => now - kv.Value.LastSeenUtc > SessionTimeout).ToList())
+                _sessions.Remove(stale.Key);
 
             if (!_sessions.TryGetValue(playerId, out var session))
             {
@@ -381,22 +313,12 @@ public class ThreeBodyGameService
             }
             session.LastSeenUtc = now;
 
-            var player = preloaded ?? db.Players.Find(playerId)
+            // Igrača uvijek učitavamo u vlastiti kontekst da SaveChanges
+            // stvarno zapiše promjenu salda.
+            var player = db.Players.Find(playerId)
                 ?? throw new InvalidOperationException($"Player {playerId} not found.");
 
             action(session, db, player);
-
-            // Auto-resolve if simulation playback is complete
-            if (session.Phase == "simulating" && session.Trajectory is not null)
-            {
-                var elapsed = (DateTime.UtcNow - session.SimulationStartedAt).TotalSeconds;
-                var endFrame = session.Trajectory.Length - FreezeFrames;
-                var naturalEnd = endFrame / PlaybackFps;
-                if (elapsed >= naturalEnd + 2.0) // 2 extra seconds at freeze frame
-                {
-                    ResolveRound(session, db, player);
-                }
-            }
 
             db.SaveChanges();
             session.Version++;
@@ -405,77 +327,23 @@ public class ThreeBodyGameService
     }
 
     private static ThreeBodyStateDTO BuildView(GameSession s, Player p)
-    {
-        int currentFrame;
-        bool isSimulating = s.Phase == "simulating" && s.Trajectory is not null;
-
-        if (isSimulating)
-        {
-            var elapsed = (DateTime.UtcNow - s.SimulationStartedAt).TotalSeconds;
-            currentFrame = (int)(elapsed * PlaybackFps);
-            if (currentFrame >= s.Trajectory!.Length)
-                currentFrame = s.Trajectory.Length - 1;
-        }
-        else
-        {
-            currentFrame = s.Phase == "round-over" && s.Trajectory is not null
-                ? s.Trajectory.Length - 1
-                : 0;
-        }
-
-        var currentPlanets = s.Trajectory is not null && s.Trajectory.Length > 0
-            ? s.Trajectory[Math.Min(currentFrame, s.Trajectory.Length - 1)].Planets.ToList()
-            : PlanetTemplates.Select(t => new PlanetData(t.Name, t.Color, t.Mass, t.Radius, 0, 0)).ToList();
-
-        var allNames = PlanetTemplates.Select(t => t.Name).ToList();
-
-        List<string> aliveNames;
-        List<string> eliminatedSoFar;
-
-        if (s.Phase == "betting")
-        {
-            aliveNames = allNames;
-            eliminatedSoFar = new List<string>();
-        }
-        else if (s.Phase == "round-over" && s.WinnerPlanet is not null)
-        {
-            aliveNames = new List<string> { s.WinnerPlanet };
-            eliminatedSoFar = allNames.Where(n => n != s.WinnerPlanet).ToList();
-        }
-        else
-        {
-            var dead = s.EliminationEvents
-                .Where(e => e.FrameIndex <= currentFrame)
-                .Select(e => e.PlanetName)
-                .ToHashSet();
-            aliveNames = allNames.Where(n => !dead.Contains(n)).ToList();
-            eliminatedSoFar = s.EliminationEvents
-                .Where(e => e.FrameIndex <= currentFrame)
-                .Select(e => e.PlanetName)
-                .ToList();
-        }
-
-        return new ThreeBodyStateDTO(
+        => new(
             Version: s.Version,
-            Phase: s.Phase,
             Status: s.Status,
             PlayerName: $"{p.FirstName} {p.LastName}".Trim(),
             Balance: p.Balance,
             SelectedBet: s.SelectedBet,
             BetOnPlanet: s.BetOnPlanet,
-            Planets: currentPlanets,
-            CurrentFrame: currentFrame,
-            TotalFrames: s.Trajectory?.Length ?? 0,
-            AlivePlanets: aliveNames,
-            EliminatedOrder: eliminatedSoFar,
-            WinnerPlanet: s.WinnerPlanet,
-            LastRoundResult: s.LastRoundResult,
+            Planets: PlanetTemplates
+                .Select(t => new ThreeBodyPlanetDTO(t.Name, t.Color, t.Mass, t.Radius))
+                .ToList(),
+            LastResult: s.LastResult,
+            LastWinner: s.LastWinner,
+            LastPayout: s.LastPayout,
             Wins: s.Wins,
             Losses: s.Losses,
-            CanBet: s.Phase == "betting",
-            CanStart: s.Phase == "betting" && s.BetOnPlanet is not null && s.SelectedBet <= p.Balance,
-            CanReset: s.Phase == "round-over");
-    }
+            CanStart: s.BetOnPlanet is not null && s.SelectedBet <= p.Balance,
+            Round: null);
 
     private static void AddTransaction(CasinoDbContext db, int playerId, TransactionType type, decimal amount)
     {

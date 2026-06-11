@@ -41,25 +41,19 @@ public class ThreeBodyApiController : ControllerBase
 
     [HttpGet("state")]
     public ActionResult<ThreeBodyStateDTO> State()
-        => WithPlayer(p => _game.GetState(p.Id, p));
+        => WithPlayer(p => _game.GetState(p.Id));
 
     [HttpPost("bet")]
     public ActionResult<ThreeBodyStateDTO> Bet([FromBody] ThreeBodyBetRequest req)
     {
-        if (req.Amount <= 0) return BadRequest(new { error = "amount must be positive." });
-        if (req.Planet is not ("A" or "B" or "C")) return BadRequest(new { error = "planet must be A, B, or C." });
-        return WithPlayer(p => _game.SetBet(p.Id, req.Amount, req.Planet, p));
+        if (!ThreeBodyGameService.AllowedBets.Contains(req.Amount))
+            return BadRequest(new { error = "amount must be one of: " + string.Join(", ", ThreeBodyGameService.AllowedBets) });
+        if (req.Planet is not ("A" or "B" or "C"))
+            return BadRequest(new { error = "planet must be A, B, or C." });
+        return WithPlayer(p => _game.SetBet(p.Id, req.Amount, req.Planet));
     }
 
     [HttpPost("start")]
     public ActionResult<ThreeBodyStateDTO> Start()
-        => WithPlayer(p => _game.Start(p.Id, p));
-
-    [HttpPost("skip")]
-    public ActionResult<ThreeBodyStateDTO> SkipToEnd()
-        => WithPlayer(p => _game.SkipToEnd(p.Id, p));
-
-    [HttpPost("reset")]
-    public ActionResult<ThreeBodyStateDTO> Reset()
-        => WithPlayer(p => _game.Reset(p.Id, p));
+        => WithPlayer(p => _game.Start(p.Id));
 }
