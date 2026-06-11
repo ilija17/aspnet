@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three Body Problem</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="top-bar">
+        <h1>3 Body Problem</h1>
+        <div class="player-info" aria-live="polite">
+          <span id="player-name" class="player-name">—</span>
+          <span id="balance" class="balance">Balance: —</span>
+        </div>
+        <div class="scoreboard" aria-live="polite">
+          <span id="wins">Wins: 0</span>
+          <span id="losses">Losses: 0</span>
+        </div>
+      </section>
+
+      <section id="gate" class="gate-panel hidden" aria-live="polite">
+        <p id="gate-message"></p>
+        <a id="gate-link" class="btn btn-primary" href="#"></a>
+      </section>
+
+      <section id="table" class="table" aria-label="Three Body Problem table">
+        <div class="table-rail"></div>
+        <div class="table-inner">
+          <div class="warning-strip" aria-hidden="true">Three Body Problem // Gravitational Chaos // Bet Wisely</div>
+          <div class="hud-grid" aria-hidden="true"></div>
+          <div id="vfx-layer" aria-hidden="true"></div>
+
+          <section class="canvas-container">
+            <canvas id="space-canvas"></canvas>
+            <div id="canvas-status" class="canvas-overlay hidden">Simulation complete</div>
+          </section>
+
+          <section class="planet-panel">
+            <div class="planet-cards">
+              <button id="planet-a" class="planet-card" data-planet="A">
+                <span class="planet-dot" style="background:#ff6b6b"></span>
+                <div class="planet-info">
+                  <strong>Planet A</strong>
+                  <small>Mass: 400 &middot; Radius: 28</small>
+                </div>
+                <span class="planet-status" id="planet-a-status">Active</span>
+              </button>
+              <button id="planet-b" class="planet-card" data-planet="B">
+                <span class="planet-dot" style="background:#4ecdc4"></span>
+                <div class="planet-info">
+                  <strong>Planet B</strong>
+                  <small>Mass: 250 &middot; Radius: 20</small>
+                </div>
+                <span class="planet-status" id="planet-b-status">Active</span>
+              </button>
+              <button id="planet-c" class="planet-card" data-planet="C">
+                <span class="planet-dot" style="background:#ffe66d"></span>
+                <div class="planet-info">
+                  <strong>Planet C</strong>
+                  <small>Mass: 150 &middot; Radius: 24</small>
+                </div>
+                <span class="planet-status" id="planet-c-status">Active</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="bankroll-panel">
+            <p id="bet-display" class="bet">Your Bet: —</p>
+            <div class="chips" role="group" aria-label="Bet chips">
+              <button class="chip" data-bet="25">$25</button>
+              <button class="chip" data-bet="50">$50</button>
+              <button class="chip" data-bet="100">$100</button>
+              <button class="chip" data-bet="200">$200</button>
+            </div>
+          </section>
+
+          <section class="status-panel">
+            <p id="status">Connecting…</p>
+            <p id="round-result" class="round-result hidden" aria-live="polite"></p>
+          </section>
+
+          <section class="actions">
+            <button id="start-btn" class="btn btn-primary">Start Simulation</button>
+            <button id="skip-btn" class="btn">Skip to End</button>
+            <button id="reset-btn" class="btn btn-accent">Play Again</button>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

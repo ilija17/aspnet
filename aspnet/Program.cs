@@ -110,6 +110,7 @@ builder.Services.AddScoped<aspnet.Services.MailService>();
 // novac ide kroz bazu (Player.Balance + Bet/Win transakcije) ────────────────
 builder.Services.AddSingleton<aspnet.Services.BlackjackGameService>();
 builder.Services.AddSingleton<aspnet.Services.RouletteGameService>();
+builder.Services.AddSingleton<aspnet.Services.ThreeBodyGameService>();
 
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);

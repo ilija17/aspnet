@@ -10,6 +10,11 @@
         aspnet.Models.GameType.Roulette  => "/rulet/index.html",
         _ => null
     };
+
+    static string? PlayUrlByName(string? name) =>
+        name is not null && name.Contains("Three Body", StringComparison.OrdinalIgnoreCase)
+            ? "/threebody/index.html"
+            : null;
 }
 
 <div class="breadcrumb-bar">
@@ -52,7 +57,10 @@
                 </div>
             </a>
             <div class="card-actions">
-                @if (PlayUrl(table.Game.Type) is string playUrl)
+                @{
+                    var playUrl = PlayUrl(table.Game.Type) ?? PlayUrlByName(table.Game.Name);
+                }
+                @if (playUrl is not null)
                 {
                     <a class="btn btn-sm btn-primary" href="@playUrl" target="_blank" rel="noopener">Igraj ▸</a>
                 }
@@ -77,6 +85,7 @@ $(function () {
         var n = (gameName || '').toLowerCase();
         if (n.indexOf('blackjack') !== -1) return '/kocka/index.html';
         if (n.indexOf('roulette') !== -1 || n.indexOf('rulet') !== -1) return '/rulet/index.html';
+        if (n.indexOf('threebody') !== -1 || n.indexOf('three body') !== -1) return '/threebody/index.html';
         return null;
     }
 
