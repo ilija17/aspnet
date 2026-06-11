@@ -81,8 +81,12 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // ── Google OAuth (Lab 5) — registrira se samo ako su secrets konfigurirani ──
-var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
-var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+// Compose mapira GOOGLE_CLIENT_ID → Authentication__Google__ClientId, ali kod
+// lokalnog pokretanja .env postavlja samo sirova imena pa čitamo i njih
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
+    ?? builder.Configuration["GOOGLE_CLIENT_ID"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+    ?? builder.Configuration["GOOGLE_CLIENT_SECRET"];
 
 if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
 {

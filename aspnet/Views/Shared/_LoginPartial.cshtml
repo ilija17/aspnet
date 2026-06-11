@@ -6,12 +6,16 @@
 <div class="auth-slot">
     @if (SignInManager.IsSignedIn(User))
     {
-        var name = User.Identity?.Name ?? "?";
-        var initial = char.ToUpperInvariant(name[0]);
-        <div class="user-chip" title="@name">
+        var appUser = await UserManager.GetUserAsync(User);
+        var email = appUser?.Email ?? User.Identity?.Name ?? "?";
+        var fullName = $"{appUser?.FirstName} {appUser?.LastName}".Trim();
+        var displayName = !string.IsNullOrWhiteSpace(fullName) ? fullName : email.Split('@')[0];
+        if (string.IsNullOrWhiteSpace(displayName)) { displayName = "?"; }
+        var initial = char.ToUpperInvariant(displayName[0]);
+        <a class="user-chip" asp-controller="Account" asp-action="Profile" title="@email">
             <span class="user-chip-avatar" aria-hidden="true">@initial</span>
-            <span class="user-chip-name">@name</span>
-        </div>
+            <span class="user-chip-name">@displayName</span>
+        </a>
         <form class="logout-form" asp-controller="Account" asp-action="Logout" method="post">
             <button type="submit" class="btn btn-sm btn-logout">Odjava</button>
         </form>

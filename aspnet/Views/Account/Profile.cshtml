@@ -1,24 +1,32 @@
-@* Local account registration form. *@
-@model aspnet.Models.RegisterViewModel
+@* "Moj profil" — editing personal data; email/username cannot be changed. *@
+@model aspnet.Models.ProfileViewModel
 @{
-    ViewData["Title"] = "Registracija";
-    var returnUrl = ViewData["ReturnUrl"] as string;
+    ViewData["Title"] = "Moj profil";
 }
 
 <div class="breadcrumb-bar">
     <a asp-controller="Home" asp-action="Index">Home</a>
     <span class="breadcrumb-sep">›</span>
-    <span class="current">Registracija</span>
+    <span class="current">Moj profil</span>
 </div>
 
-<h1 class="page-title">Registracija</h1>
+<h1 class="page-title">Moj profil</h1>
 
 <div class="edit-form-wrap auth-wrap">
-    <div class="auth-eyebrow"><span class="eyebrow-pill">🚀 Join 12,000+ on the cap table*</span></div>
-    <p class="auth-hype">*not actually the cap table</p>
+    @if (TempData["ProfileSaved"] is not null)
+    {
+        <div class="form-success" role="status">Promjene su spremljene.</div>
+    }
 
-    <form asp-controller="Account" asp-action="Register" asp-route-returnUrl="@returnUrl" method="post" novalidate>
+    <form asp-controller="Account" asp-action="Profile" method="post" novalidate>
         <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        @* Display-only: rendered without a name attribute so it is never posted nor validated. *@
+        <div class="form-field">
+            <label class="form-label" for="Email">E-mail</label>
+            <input id="Email" type="email" class="form-input" value="@Model.Email" readonly />
+            <span class="form-hint">E-mail adresa se ne može mijenjati.</span>
+        </div>
 
         <div class="form-field">
             <label asp-for="FirstName" class="form-label"></label>
@@ -39,12 +47,6 @@
         </div>
 
         <div class="form-field">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-input" autocomplete="username" />
-            <span asp-validation-for="Email" class="form-validation"></span>
-        </div>
-
-        <div class="form-field">
             <label asp-for="OIB" class="form-label"></label>
             <input asp-for="OIB" class="form-input" maxlength="11" inputmode="numeric" />
             <span asp-validation-for="OIB" class="form-validation"></span>
@@ -56,27 +58,10 @@
             <span asp-validation-for="JMBG" class="form-validation"></span>
         </div>
 
-        <div class="form-field">
-            <label asp-for="Password" class="form-label"></label>
-            <input asp-for="Password" class="form-input" autocomplete="new-password" />
-            <span asp-validation-for="Password" class="form-validation"></span>
-        </div>
-
-        <div class="form-field">
-            <label asp-for="ConfirmPassword" class="form-label"></label>
-            <input asp-for="ConfirmPassword" class="form-input" autocomplete="new-password" />
-            <span asp-validation-for="ConfirmPassword" class="form-validation"></span>
-        </div>
-
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Registriraj se</button>
+            <button type="submit" class="btn btn-primary">Spremi promjene</button>
         </div>
     </form>
-
-    <p class="auth-alt-link">
-        Već imaš račun?
-        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">Prijavi se</a>
-    </p>
 </div>
 
 @section Scripts {

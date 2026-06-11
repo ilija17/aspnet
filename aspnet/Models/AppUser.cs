@@ -5,6 +5,13 @@ namespace aspnet.Models;
 
 public class AppUser : IdentityUser
 {
+    // Nullable: korisnici iz ranijih verzija (i seedani admin) nemaju ime
+    [StringLength(100)]
+    public string? FirstName { get; set; }
+
+    [StringLength(100)]
+    public string? LastName { get; set; }
+
     [Required(ErrorMessage = "OIB je obavezan")]
     [StringLength(11, MinimumLength = 11, ErrorMessage = "OIB mora imati točno 11 znamenki")]
     [RegularExpression("^[0-9]*$", ErrorMessage = "OIB smije sadržavati samo brojeve")]

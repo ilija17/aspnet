@@ -9,6 +9,7 @@ public class PlayerMockRepository : IPlayerRepository
 
     public List<Player> GetAll() => _data;
     public Player? GetById(int id) => _data.FirstOrDefault(p => p.Id == id);
+    public Player? GetByEmail(string email) => _data.FirstOrDefault(p => p.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
     public void Create(Player player) { player.Id = _data.Max(p => p.Id) + 1; _data.Add(player); }
     public void Update(Player player) { var i = _data.FindIndex(p => p.Id == player.Id); if (i >= 0) _data[i] = player; }
     public void Delete(int id) { var p = _data.FirstOrDefault(p => p.Id == id); if (p is not null) _data.Remove(p); }

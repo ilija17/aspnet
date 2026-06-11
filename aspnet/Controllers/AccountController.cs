@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using aspnet.Models;
+using aspnet.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,11 +12,32 @@ public class AccountController : Controller
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
+    private readonly IPlayerRepository _playerRepo;
 
-    public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
+    public AccountController(
+        UserManager<AppUser> userManager,
+        SignInManager<AppUser> signInManager,
+        IPlayerRepository playerRepo)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _playerRepo = playerRepo;
+    }
+
+    // Svaki registrirani korisnik je ujedno igrač — bez ovoga se novi računi
+    // (posebno oni preko Googlea) ne pojavljuju na popisu igrača
+    private void EnsurePlayerExists(string email, string firstName, string lastName, DateTime dateOfBirth)
+    {
+        if (_playerRepo.GetByEmail(email) is not null) return;
+
+        _playerRepo.Create(new Player
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            DateOfBirth = dateOfBirth,
+            Balance = 0
+        });
     }
 
     [AllowAnonymous]
@@ -37,6 +59,8 @@ public class AccountController : Controller
         {
             UserName = model.Email,
             Email = model.Email,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
             OIB = model.OIB,
             JMBG = model.JMBG
         };
@@ -45,6 +69,7 @@ public class AccountController : Controller
 
         if (result.Succeeded)
         {
+            EnsurePlayerExists(model.Email, model.FirstName, model.LastName, model.DateOfBirth!.Value);
             await _signInManager.SignInAsync(user, isPersistent: false);
             return LocalRedirect(returnUrl ?? "/");
         }
@@ -96,6 +121,71 @@ public class AccountController : Controller
     [AllowAnonymous]
     public IActionResult AccessDenied() => View();
 
+    // ── Moj profil ───────────────────────────────────────────────────────────
+
+    [Authorize]
+    public async Task<IActionResult> Profile()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return RedirectToAction(nameof(Login));
+
+        var player = _playerRepo.GetByEmail(user.Email!);
+
+        return View(new ProfileViewModel
+        {
+            Email = user.Email,
+            FirstName = user.FirstName ?? player?.FirstName,
+            LastName = user.LastName ?? player?.LastName,
+            DateOfBirth = player?.DateOfBirth,
+            OIB = user.OIB,
+            JMBG = user.JMBG
+        });
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(ProfileViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return RedirectToAction(nameof(Login));
+
+        model.Email = user.Email;
+        if (!ModelState.IsValid) return View(model);
+
+        user.FirstName = model.FirstName;
+        user.LastName = model.LastName;
+        user.OIB = model.OIB;
+        user.JMBG = model.JMBG;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+            return View(model);
+        }
+
+        // Drži zapis igrača usklađenim s računom (stariji računi ga možda nemaju)
+        var player = _playerRepo.GetByEmail(user.Email!);
+        if (player is null)
+        {
+            EnsurePlayerExists(user.Email!, model.FirstName, model.LastName, model.DateOfBirth!.Value);
+        }
+        else
+        {
+            player.FirstName = model.FirstName;
+            player.LastName = model.LastName;
+            player.DateOfBirth = model.DateOfBirth!.Value;
+            _playerRepo.Update(player);
+        }
+
+        TempData["ProfileSaved"] = true;
+        return RedirectToAction(nameof(Profile));
+    }
+
     // ── Vanjska prijava (Google) ─────────────────────────────────────────────
 
     [HttpPost]
@@ -133,10 +223,12 @@ public class AccountController : Controller
         }
 
         // Prva prijava — korisnik mora dovršiti registraciju (OIB, JMBG)
-        var email = info.Principal.FindFirstValue(System.Security.Claims.ClaimTypes.Email);
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
         return View("ExternalLogin", new ExternalLoginViewModel
         {
             Email = email,
+            FirstName = info.Principal.FindFirstValue(ClaimTypes.GivenName),
+            LastName = info.Principal.FindFirstValue(ClaimTypes.Surname),
             ProviderDisplayName = info.ProviderDisplayName,
             ReturnUrl = returnUrl
         });
@@ -163,6 +255,8 @@ public class AccountController : Controller
         {
             UserName = model.Email,
             Email = model.Email,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
             OIB = model.OIB,
             JMBG = model.JMBG
         };
@@ -175,6 +269,7 @@ public class AccountController : Controller
 
             if (result.Succeeded)
             {
+                EnsurePlayerExists(model.Email, model.FirstName, model.LastName, model.DateOfBirth!.Value);
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 return LocalRedirect(model.ReturnUrl ?? "/");
             }

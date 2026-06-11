@@ -1348,6 +1348,22 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
   min-height: 1.1em;
 }
 
+.form-hint {
+  color: var(--muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+}
+
+/* Display-only inputs (e.g. email on Moj profil) */
+.form-input[readonly] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.form-input[readonly]:focus {
+  border-color: var(--glass-border);
+  box-shadow: none;
+}
+
 .form-actions {
   display: flex;
   gap: 0.75rem;
@@ -1666,6 +1682,19 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
 }
 .validation-summary-valid ul { display: none; }
 
+/* ── Form success notice (e.g. profile saved) ───────────────── */
+.form-success {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem;
+  color: var(--success);
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 12px;
+  animation: word-roll-in 350ms ease;
+}
+
 .form-check-field {
   display: flex;
   align-items: center;
@@ -1825,7 +1854,9 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
   box-shadow: 0 0 18px rgba(99, 102, 241, 0.25);
 }
 
-/* Signed-in user chip: avatar + name in a glass pill */
+/* Signed-in user chip: avatar + name in a glass pill.
+   Rendered as a link to Account/Profile — strip default anchor
+   styling and add a subtle hover glow instead. */
 .user-chip {
   display: inline-flex;
   align-items: center;
@@ -1837,6 +1868,13 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   max-width: 220px;
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+a.user-chip:hover {
+  border-color: rgba(192, 132, 252, 0.6);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
 }
 
 .user-chip-avatar {

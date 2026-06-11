@@ -20,6 +20,9 @@ public class PlayerEfRepository : IPlayerRepository
            .Include(p => p.Reservations).ThenInclude(r => r.Table).ThenInclude(t => t.Game)
            .FirstOrDefault(p => p.Id == id);
 
+    public Player? GetByEmail(string email) =>
+        _db.Players.FirstOrDefault(p => p.Email == email);
+
     public void Create(Player player)
     {
         _db.Players.Add(player);

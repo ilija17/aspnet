@@ -6,6 +6,7 @@ public interface IPlayerRepository
 {
     List<Player> GetAll();
     Player? GetById(int id);
+    Player? GetByEmail(string email);
     void Create(Player player);
     void Update(Player player);
     void Delete(int id);

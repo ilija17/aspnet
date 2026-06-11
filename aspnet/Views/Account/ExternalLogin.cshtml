@@ -27,6 +27,24 @@
         <input asp-for="ProviderDisplayName" type="hidden" />
 
         <div class="form-field">
+            <label asp-for="FirstName" class="form-label"></label>
+            <input asp-for="FirstName" class="form-input" autocomplete="given-name" />
+            <span asp-validation-for="FirstName" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="LastName" class="form-label"></label>
+            <input asp-for="LastName" class="form-input" autocomplete="family-name" />
+            <span asp-validation-for="LastName" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="DateOfBirth" class="form-label"></label>
+            <input asp-for="DateOfBirth" type="date" class="form-input" autocomplete="bday" />
+            <span asp-validation-for="DateOfBirth" class="form-validation"></span>
+        </div>
+
+        <div class="form-field">
             <label asp-for="Email" class="form-label"></label>
             <input asp-for="Email" class="form-input" autocomplete="username" />
             <span asp-validation-for="Email" class="form-validation"></span>
