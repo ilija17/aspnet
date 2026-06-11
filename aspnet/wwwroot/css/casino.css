@@ -212,6 +212,7 @@ h2,
 .detail-actions,
 .detail-section,
 .edit-form-wrap,
+.balance-card,
 .floor-card,
 .mock-ide,
 .chat-panel {
@@ -1695,6 +1696,20 @@ span.badge-available, span.badge-unavailable, span.badge-purple {
   animation: word-roll-in 350ms ease;
 }
 
+/* ── Form error notice (e.g. failed deposit) — mirrors the
+      .validation-summary box but for a single TempData message ── */
+.form-error {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem;
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(251, 113, 133, 0.08);
+  border: 1px solid rgba(251, 113, 133, 0.4);
+  border-radius: 12px;
+  animation: word-roll-in 350ms ease;
+}
+
 .form-check-field {
   display: flex;
   align-items: center;
@@ -2030,6 +2045,129 @@ a.user-chip:hover {
 @keyframes card-rise {
   from { opacity: 0; transform: translateY(22px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Saldo i uplata (Moj profil)
+   ============================================================ */
+
+/* Glass recipe comes from the .glass-card group above. */
+.balance-card {
+  padding: 1.5rem 2rem 1.75rem;
+  margin-top: 1rem;
+}
+
+.balance-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+}
+
+.balance-amount {
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Null balance (no player record yet) — flat muted dash, no gradient */
+.balance-amount-empty {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--muted);
+}
+
+.balance-divider {
+  height: 1px;
+  border: 0;
+  margin: 1.25rem 0;
+  background: linear-gradient(90deg, transparent, var(--glass-border) 18%, var(--glass-border) 82%, transparent);
+}
+
+.deposit-heading {
+  margin: 0 0 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+
+/* Payment method picker — radios hidden, labels styled as tiles */
+.pay-methods {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.pay-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pay-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(5, 5, 16, 0.55);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  user-select: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease,
+              color 140ms ease, background 140ms ease;
+}
+
+.pay-tile:hover {
+  border-color: rgba(192, 132, 252, 0.45);
+  color: var(--text);
+}
+
+.pay-radio:checked + .pay-tile {
+  border-color: rgba(192, 132, 252, 0.75);
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.35), 0 0 18px rgba(168, 85, 247, 0.22);
+}
+
+.pay-radio:focus-visible + .pay-tile {
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+}
+
+.pay-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+/* PayPal has no good emoji — stylized italic "P" wordmark instead */
+.pay-icon-paypal {
+  font-size: 0.95rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #8fb8ff;
+}
+
+.deposit-note {
+  display: block;
+  margin: 0.8rem 0 0;
+}
+
+@media (max-width: 420px) {
+  .pay-methods { grid-template-columns: 1fr; }
 }
 
 /* ── Reduced motion: disable the theatre ────────────────────── */

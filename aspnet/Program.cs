@@ -106,8 +106,9 @@ builder.Services.AddScoped<aspnet.Services.ChatToolService>();
 // ── Waitlist mail (SMTP preko MailKita; host/port u appsettings, creds u .env) ─
 builder.Services.AddScoped<aspnet.Services.MailService>();
 
-// ── Blackjack (NERV) — jedan zajednički stol u memoriji, zato singleton ─────
-builder.Services.AddSingleton<aspnet.Services.BlackjackTableService>();
+// ── Blackjack (NERV) — ruke u memoriji po igraču, zato singleton; novac ide
+// kroz bazu (Player.Balance + Bet/Win transakcije) ──────────────────────────
+builder.Services.AddSingleton<aspnet.Services.BlackjackGameService>();
 
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);

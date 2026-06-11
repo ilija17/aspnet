@@ -12,6 +12,39 @@
 
 <h1 class="page-title">Moj profil</h1>
 
+@* ── Saldo i uplata — separate card above the personal-data form ── *@
+<section class="balance-card auth-wrap" aria-labelledby="balance-label">
+    @if (TempData["DepositSuccess"] is string depositSuccess)
+    {
+        <div class="form-success" role="status">@depositSuccess</div>
+    }
+    @if (TempData["DepositError"] is string depositError)
+    {
+        <div class="form-error" role="alert">@depositError</div>
+    }
+
+    <div class="balance-label" id="balance-label">Trenutno stanje računa</div>
+
+    @if (Model.Balance is not null)
+    {
+        <div class="balance-amount">@Model.Balance?.ToString("N2") €</div>
+
+        <hr class="balance-divider" />
+
+        <h2 class="deposit-heading">Uplata na račun</h2>
+        <partial name="_DepositForm"
+                 model="new aspnet.Models.DepositViewModel { Method = aspnet.Models.DepositViewModel.MethodBank }" />
+    }
+    else
+    {
+        <div class="balance-amount balance-amount-empty">—</div>
+        <p class="form-hint">
+            Profil igrača još ne postoji. Spremi osobne podatke u nastavku —
+            time se kreira profil igrača, a nakon toga moguće su i uplate na saldo.
+        </p>
+    }
+</section>
+
 <div class="edit-form-wrap auth-wrap">
     @if (TempData["ProfileSaved"] is not null)
     {

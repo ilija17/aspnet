@@ -109,6 +109,9 @@ public class ProfileViewModel
     // Samo za prikaz — email je ujedno username pa se ne mijenja kroz profil
     public string? Email { get; set; }
 
+    // Samo za prikaz — saldo se mijenja kroz uplate i igru, ne kroz profil
+    public decimal? Balance { get; set; }
+
     [Required(ErrorMessage = "Ime je obavezno")]
     [StringLength(100, ErrorMessage = "Ime ne smije biti duže od 100 znakova")]
     [Display(Name = "Ime")]
@@ -135,4 +138,22 @@ public class ProfileViewModel
     [RegularExpression("^[0-9]*$", ErrorMessage = "JMBG smije sadržavati samo brojeve")]
     [Display(Name = "JMBG")]
     public string JMBG { get; set; }
+}
+
+public class DepositViewModel
+{
+    public const string MethodBank = "bank";
+    public const string MethodCard = "card";
+    public const string MethodCrypto = "crypto";
+    public const string MethodPayPal = "paypal";
+    public static readonly string[] AllowedMethods = { MethodBank, MethodCard, MethodCrypto, MethodPayPal };
+
+    [Required(ErrorMessage = "Iznos je obavezan")]
+    [Range(1, 100000, ErrorMessage = "Iznos mora biti između 1 i 100.000")]
+    [Display(Name = "Iznos")]
+    public decimal? Amount { get; set; }
+
+    [Required(ErrorMessage = "Odaberi način plaćanja")]
+    [Display(Name = "Način plaćanja")]
+    public string Method { get; set; }
 }

@@ -3,13 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blackjack (NERV)</title>
+    <title>Blackjack</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="app-shell">
       <section class="top-bar">
-        <h1>Blackjack (NERV)</h1>
+        <h1>Blackjack</h1>
+        <div class="player-info" aria-live="polite">
+          <span id="player-name" class="player-name">—</span>
+          <span id="balance" class="balance">Balance: —</span>
+        </div>
         <div class="scoreboard" aria-live="polite">
           <span id="wins">Wins: 0</span>
           <span id="losses">Losses: 0</span>
@@ -17,33 +21,22 @@
         </div>
       </section>
 
-      <section class="table" aria-label="Blackjack table">
+      <section id="gate" class="gate-panel hidden" aria-live="polite">
+        <p id="gate-message"></p>
+        <a id="gate-link" class="btn btn-primary" href="#"></a>
+      </section>
+
+      <section id="table" class="table" aria-label="Blackjack table">
         <div class="table-rail"></div>
         <div class="table-inner">
           <div class="warning-strip" aria-hidden="true">Blackjack // House Rules Apply // Good Luck</div>
           <div class="hud-grid" aria-hidden="true"></div>
           <div id="vfx-layer" aria-hidden="true"></div>
 
-          <section class="multiplayer-panel">
-            <p id="you-are" class="seat-label">You are: Spectator</p>
-            <div class="seat-actions">
-              <button id="join-seat-1" class="btn">Join Seat 1</button>
-              <button id="join-seat-2" class="btn">Join Seat 2</button>
-              <button id="leave-seat" class="btn">Leave Seat</button>
-              <button id="solo-mode-btn" class="btn">Solo Mode: Off</button>
-              <button id="reset-table-btn" class="btn">Reset Table</button>
-            </div>
-            <div class="seat-status-row">
-              <span id="seat-1-status">Seat 1: Open</span>
-              <span id="seat-2-status">Seat 2: Open</span>
-            </div>
-          </section>
-
           <section class="bankroll-panel">
-            <p id="balance" class="bankroll">Balance: -</p>
-            <p id="bet-display" class="bet">Your Bet: $50</p>
+            <p id="bet-display" class="bet">Your Bet: —</p>
             <div class="chips" role="group" aria-label="Bet chips">
-              <button class="chip active" data-bet="25">$25</button>
+              <button class="chip" data-bet="25">$25</button>
               <button class="chip" data-bet="50">$50</button>
               <button class="chip" data-bet="100">$100</button>
               <button class="chip" data-bet="200">$200</button>
@@ -59,32 +52,20 @@
           </article>
 
           <article class="status-panel">
-            <p id="status">System online. Join a seat and synchronize.</p>
+            <p id="status">Connecting…</p>
             <p id="round-result" class="round-result hidden" aria-live="polite"></p>
           </article>
 
-          <section class="players-grid">
-            <article class="hand-area player-area">
-              <header>
-                <h2 id="player-1-label">Player 1</h2>
-                <p id="player-1-total" class="total">Total: 0</p>
-              </header>
-              <p id="player-1-meta" class="meta">Bal: $1000 | Bet: $50</p>
-              <div id="player-1-cards" class="cards"></div>
-            </article>
-
-            <article class="hand-area player-area">
-              <header>
-                <h2 id="player-2-label">Player 2</h2>
-                <p id="player-2-total" class="total">Total: 0</p>
-              </header>
-              <p id="player-2-meta" class="meta">Bal: $1000 | Bet: $50</p>
-              <div id="player-2-cards" class="cards"></div>
-            </article>
-          </section>
+          <article class="hand-area player-area">
+            <header>
+              <h2 id="player-label">Player</h2>
+              <p id="player-total" class="total">Total: 0</p>
+            </header>
+            <div id="player-cards" class="cards"></div>
+          </article>
 
           <section class="actions">
-            <button id="new-game-btn" class="btn btn-primary">Deal</button>
+            <button id="deal-btn" class="btn btn-primary">Deal</button>
             <button id="hit-btn" class="btn">Hit</button>
             <button id="stand-btn" class="btn">Stand</button>
             <button id="double-btn" class="btn btn-accent">Double Down</button>

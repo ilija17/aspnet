@@ -1,0 +1,44 @@
+@* Uplata na saldo — rendered from Profile.cshtml with its own model so
+   asp-for emits the exact binding names (Amount, Method) for Account/Deposit. *@
+@model aspnet.Models.DepositViewModel
+
+<form asp-controller="Account" asp-action="Deposit" method="post" novalidate>
+    <div class="form-field">
+        <label asp-for="Amount" class="form-label"></label>
+        <input asp-for="Amount" type="number" class="form-input"
+               min="1" max="100000" step="0.01" inputmode="decimal" placeholder="npr. 50" />
+        <span asp-validation-for="Amount" class="form-validation"></span>
+    </div>
+
+    <div class="form-field">
+        <span class="form-label" id="pay-methods-label">Način plaćanja</span>
+        <div class="pay-methods" role="radiogroup" aria-labelledby="pay-methods-label">
+            <input type="radio" asp-for="Method" value="bank" id="pay-bank" class="pay-radio" />
+            <label class="pay-tile" for="pay-bank">
+                <span class="pay-icon" aria-hidden="true">🏦</span>Bankovni prijenos
+            </label>
+
+            <input type="radio" asp-for="Method" value="card" id="pay-card" class="pay-radio" />
+            <label class="pay-tile" for="pay-card">
+                <span class="pay-icon" aria-hidden="true">💳</span>Kartica
+            </label>
+
+            <input type="radio" asp-for="Method" value="crypto" id="pay-crypto" class="pay-radio" />
+            <label class="pay-tile" for="pay-crypto">
+                <span class="pay-icon" aria-hidden="true">₿</span>Kripto
+            </label>
+
+            <input type="radio" asp-for="Method" value="paypal" id="pay-paypal" class="pay-radio" />
+            <label class="pay-tile" for="pay-paypal">
+                <span class="pay-icon pay-icon-paypal" aria-hidden="true">P</span>PayPal
+            </label>
+        </div>
+        <span asp-validation-for="Method" class="form-validation"></span>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Potvrdi uplatu</button>
+    </div>
+
+    <p class="form-hint deposit-note">Demo: uplata se odmah dodaje na saldo, bez stvarne naplate.</p>
+</form>

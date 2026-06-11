@@ -13,15 +13,18 @@ public class AccountController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
     private readonly IPlayerRepository _playerRepo;
+    private readonly ITransactionRepository _transactionRepo;
 
     public AccountController(
         UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
-        IPlayerRepository playerRepo)
+        IPlayerRepository playerRepo,
+        ITransactionRepository transactionRepo)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _playerRepo = playerRepo;
+        _transactionRepo = transactionRepo;
     }
 
     // Svaki registrirani korisnik je ujedno igrač — bez ovoga se novi računi
@@ -134,6 +137,7 @@ public class AccountController : Controller
         return View(new ProfileViewModel
         {
             Email = user.Email,
+            Balance = player?.Balance,
             FirstName = user.FirstName ?? player?.FirstName,
             LastName = user.LastName ?? player?.LastName,
             DateOfBirth = player?.DateOfBirth,
@@ -151,6 +155,7 @@ public class AccountController : Controller
         if (user is null) return RedirectToAction(nameof(Login));
 
         model.Email = user.Email;
+        model.Balance = _playerRepo.GetByEmail(user.Email!)?.Balance;
         if (!ModelState.IsValid) return View(model);
 
         user.FirstName = model.FirstName;
@@ -183,6 +188,43 @@ public class AccountController : Controller
         }
 
         TempData["ProfileSaved"] = true;
+        return RedirectToAction(nameof(Profile));
+    }
+
+    // Lažna uplata: nema stvarne naplate — odabir načina plaćanja je samo UI,
+    // potvrda odmah uvećava saldo i bilježi Deposit transakciju
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Deposit(DepositViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return RedirectToAction(nameof(Login));
+
+        var player = _playerRepo.GetByEmail(user.Email!);
+        if (player is null)
+        {
+            TempData["DepositError"] = "Tvoj račun nema zapis igrača. Najprije spremi profil.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        if (!ModelState.IsValid || !DepositViewModel.AllowedMethods.Contains(model.Method))
+        {
+            TempData["DepositError"] = "Neispravan iznos ili način plaćanja.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        player.Balance += model.Amount!.Value;
+        _playerRepo.Update(player);
+        _transactionRepo.Create(new Transaction
+        {
+            PlayerId = player.Id,
+            Amount = model.Amount.Value,
+            Type = TransactionType.Deposit,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        TempData["DepositSuccess"] = $"Uplata od {model.Amount.Value:N2} € je dodana na tvoj saldo.";
         return RedirectToAction(nameof(Profile));
     }
 

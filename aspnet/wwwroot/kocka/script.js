@@ -1,140 +1,155 @@
 const API_BASE = "/api/blackjack";
-const CLIENT_KEY = "blackjack-multiplayer-client-id";
-const POLL_INTERVAL_MS = 1500;
+const LOGIN_URL = "/Account/Login?returnUrl=/kocka/index.html";
+const PROFILE_URL = "/Account/Profile";
 
-function getOrCreateClientId() {
-  const existing = sessionStorage.getItem(CLIENT_KEY);
-  if (existing) {
-    return existing;
-  }
-  const created = `${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
-  sessionStorage.setItem(CLIENT_KEY, created);
-  return created;
-}
-
-const localClientId = getOrCreateClientId();
 let serverState = null;
 let lastRenderedVersion = -1;
 let lastRevealDealer = false;
-let connectionLost = false;
-let pollInFlight = false;
 let audioContext;
 
 const ui = {
+  table: document.getElementById("table"),
+  gate: document.getElementById("gate"),
+  gateMessage: document.getElementById("gate-message"),
+  gateLink: document.getElementById("gate-link"),
+  playerName: document.getElementById("player-name"),
+  balance: document.getElementById("balance"),
   dealerCards: document.getElementById("dealer-cards"),
   dealerTotal: document.getElementById("dealer-total"),
+  playerLabel: document.getElementById("player-label"),
+  playerTotal: document.getElementById("player-total"),
+  playerCards: document.getElementById("player-cards"),
+  playerArea: document.getElementById("player-cards")?.closest(".player-area"),
   status: document.getElementById("status"),
   roundResult: document.getElementById("round-result"),
+  betDisplay: document.getElementById("bet-display"),
+  chips: Array.from(document.querySelectorAll(".chip")),
+  dealBtn: document.getElementById("deal-btn"),
   hitBtn: document.getElementById("hit-btn"),
   standBtn: document.getElementById("stand-btn"),
   doubleBtn: document.getElementById("double-btn"),
-  dealBtn: document.getElementById("new-game-btn"),
   wins: document.getElementById("wins"),
   losses: document.getElementById("losses"),
   pushes: document.getElementById("pushes"),
-  balance: document.getElementById("balance"),
-  betDisplay: document.getElementById("bet-display"),
-  chips: Array.from(document.querySelectorAll(".chip")),
-  playerAreas: {
-    1: {
-      container: document.getElementById("player-1-cards")?.closest(".player-area"),
-      label: document.getElementById("player-1-label"),
-      total: document.getElementById("player-1-total"),
-      meta: document.getElementById("player-1-meta"),
-      cards: document.getElementById("player-1-cards"),
-    },
-    2: {
-      container: document.getElementById("player-2-cards")?.closest(".player-area"),
-      label: document.getElementById("player-2-label"),
-      total: document.getElementById("player-2-total"),
-      meta: document.getElementById("player-2-meta"),
-      cards: document.getElementById("player-2-cards"),
-    },
-  },
-  playersGrid: document.querySelector(".players-grid"),
-  youAre: document.getElementById("you-are"),
-  seat1Status: document.getElementById("seat-1-status"),
-  seat2Status: document.getElementById("seat-2-status"),
-  joinSeat1Btn: document.getElementById("join-seat-1"),
-  joinSeat2Btn: document.getElementById("join-seat-2"),
-  leaveSeatBtn: document.getElementById("leave-seat"),
-  soloModeBtn: document.getElementById("solo-mode-btn"),
-  resetTableBtn: document.getElementById("reset-table-btn"),
   vfxLayer: document.getElementById("vfx-layer"),
 };
 
 // ============================================
-// SERVER API LAYER
+// SERVER API LAYER (authenticated, singleplayer)
 // ============================================
 
-async function apiGetState() {
-  const res = await fetch(`${API_BASE}/state?clientId=${encodeURIComponent(localClientId)}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!res.ok) {
-    throw new Error(`GET state failed: ${res.status}`);
+// Thrown when a response was already handled (gate shown / status set).
+class HandledApiError extends Error {}
+
+function showGate(message, linkHref, linkText) {
+  ui.gateMessage.textContent = message;
+  ui.gateLink.href = linkHref;
+  ui.gateLink.textContent = linkText;
+  ui.gate.classList.remove("hidden");
+  ui.table.classList.add("hidden");
+}
+
+function hideGate() {
+  ui.gate.classList.add("hidden");
+  ui.table.classList.remove("hidden");
+}
+
+async function readErrorMessage(res, fallback) {
+  try {
+    const body = await res.json();
+    if (body && typeof body.error === "string" && body.error.length > 0) {
+      return body.error;
+    }
+  } catch {
+    /* non-JSON body */
   }
+  return fallback;
+}
+
+async function api(path, options) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/${path}`, options);
+  } catch (error) {
+    setStatus("Connection lost. Check your network and try again.", true);
+    throw new HandledApiError(String(error));
+  }
+
+  if (res.status === 401) {
+    showGate("Za igru se moraš prijaviti.", LOGIN_URL, "Prijavi se");
+    throw new HandledApiError("401");
+  }
+
+  if (res.status === 409) {
+    const message = await readErrorMessage(
+      res,
+      "Tvoj račun nema zapis igrača. Spremi svoj profil (Moj profil) pa pokušaj ponovno."
+    );
+    showGate(message, PROFILE_URL, "Moj profil");
+    throw new HandledApiError("409");
+  }
+
+  if (!res.ok) {
+    const message = await readErrorMessage(res, `Request failed (${res.status}). Try again.`);
+    setStatus(message, true);
+    throw new HandledApiError(String(res.status));
+  }
+
+  hideGate();
   return res.json();
 }
 
-async function apiPost(action, extra = {}) {
-  const res = await fetch(`${API_BASE}/${action}`, {
+function apiGetState() {
+  return api("state", { headers: { Accept: "application/json" } });
+}
+
+function apiPost(action, body = {}) {
+  return api(action, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ clientId: localClientId, ...extra }),
+    body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    throw new Error(`POST ${action} failed: ${res.status}`);
-  }
-  return res.json();
-}
-
-function handleConnectionError(error) {
-  console.error("Blackjack server error:", error);
-  connectionLost = true;
-  setStatus("Connection lost. Retrying…", true);
 }
 
 function applyServerState(state) {
-  if (connectionLost) {
-    connectionLost = false;
-    lastRenderedVersion = -1; // force re-render to restore real status text
-  }
   serverState = state;
   render();
 }
 
-async function sendAction(action, extra, sound) {
+async function sendAction(action, body, sound) {
   if (sound) {
     playSound(sound);
     triggerActionFx(sound);
   }
   try {
-    const state = await apiPost(action, extra);
-    applyServerState(state);
+    applyServerState(await apiPost(action, body));
   } catch (error) {
-    handleConnectionError(error);
+    if (!(error instanceof HandledApiError)) {
+      console.error("Blackjack error:", error);
+      setStatus("Something went wrong. Try again.", true);
+    }
   }
 }
 
-async function pollState() {
-  if (pollInFlight) {
-    return;
-  }
-  pollInFlight = true;
+async function refreshState() {
   try {
-    const state = await apiGetState();
-    applyServerState(state);
+    applyServerState(await apiGetState());
   } catch (error) {
-    handleConnectionError(error);
-  } finally {
-    pollInFlight = false;
+    if (!(error instanceof HandledApiError)) {
+      console.error("Blackjack error:", error);
+      setStatus("Something went wrong. Try again.", true);
+    }
   }
 }
 
 // ============================================
 // RENDERING
 // ============================================
+
+function formatMoney(value) {
+  const amount = Number(value ?? 0);
+  return `$${amount.toFixed(2)}`;
+}
 
 function renderCard(card, hidden = false) {
   const cardEl = document.createElement("div");
@@ -162,10 +177,10 @@ function triggerActionFx(kind) {
   }
 
   const config = {
-    deal: { count: 120, color: "#70ff3a", spread: 360, flash: "flash-deal", waves: 2, words: ["SYNC", "READY", "ARMED"] },
-    hit: { count: 90, color: "#b4ff66", spread: 310, flash: "flash-hit", waves: 2, words: ["IMPACT", "BREACH", "PULSE"] },
-    stand: { count: 66, color: "#ff952a", spread: 270, flash: "flash-stand", waves: 1, words: ["LOCK", "HOLD", "GUARD"] },
-    double: { count: 180, color: "#ff53b8", spread: 520, flash: "flash-double", waves: 3, words: ["BERSERK", "OVERDRIVE", "MAX POWER"] },
+    deal: { count: 120, color: "#70ff3a", spread: 360, flash: "flash-deal", waves: 2, words: ["DEAL", "SHUFFLE", "READY"] },
+    hit: { count: 90, color: "#b4ff66", spread: 310, flash: "flash-hit", waves: 2, words: ["HIT", "DRAW", "CARD"] },
+    stand: { count: 66, color: "#ff952a", spread: 270, flash: "flash-stand", waves: 1, words: ["STAND", "HOLD", "LOCK"] },
+    double: { count: 180, color: "#ff53b8", spread: 520, flash: "flash-double", waves: 3, words: ["DOUBLE", "ALL IN", "MAX BET"] },
   }[kind];
 
   const rect = ui.vfxLayer.getBoundingClientRect();
@@ -260,7 +275,7 @@ function render() {
     return;
   }
   // Only re-render (and re-animate cards) when the server state actually changed,
-  // so the 1.5s poll never makes cards flicker or replay animations.
+  // so focus re-fetches never make cards flicker or replay animations.
   if (serverState.version === lastRenderedVersion) {
     return;
   }
@@ -269,23 +284,13 @@ function render() {
   const revealJustHappened = serverState.revealDealer && !lastRevealDealer;
   lastRevealDealer = serverState.revealDealer;
 
-  const yourSeat = serverState.yourSeat;
-  const localPlayer = yourSeat ? serverState.players[yourSeat] : null;
-  const occupiedSeats = [1, 2].filter((seat) => Boolean(serverState.players[seat]?.occupied));
-  const isSinglePlayerLayout = occupiedSeats.length === 1;
+  // Header: real player identity and real casino balance (server-authoritative).
+  ui.playerName.textContent = serverState.playerName || "—";
+  ui.balance.textContent = `Balance: ${formatMoney(serverState.balance)}`;
+  animateBalanceChange(ui.balance);
+  ui.playerLabel.textContent = serverState.playerName || "Player";
 
-  ui.youAre.textContent = yourSeat ? `You are: Player ${yourSeat}` : "You are: Spectator";
-  ui.seat1Status.textContent = `Seat 1: ${serverState.players[1]?.occupied ? "Occupied" : "Open"}`;
-  ui.seat2Status.textContent = `Seat 2: ${serverState.players[2]?.occupied ? "Occupied" : "Open"}`;
-  ui.soloModeBtn.textContent = `Solo Mode: ${serverState.soloMode ? "On" : "Off"}`;
-
-  // Button availability comes straight from the server's can* flags.
-  ui.joinSeat1Btn.disabled = !serverState.canJoin1;
-  ui.joinSeat2Btn.disabled = !serverState.canJoin2;
-  ui.leaveSeatBtn.disabled = !serverState.canLeave;
-  ui.soloModeBtn.disabled = !serverState.canToggleSolo;
-  ui.resetTableBtn.disabled = !serverState.canReset;
-
+  // Dealer hand.
   ui.dealerCards.innerHTML = "";
   serverState.dealerHand.forEach((card, index) => {
     const hidden = Boolean(card.hidden);
@@ -300,88 +305,62 @@ function render() {
     ? `Total: ${serverState.dealerTotal}`
     : "Total: ?";
 
-  [1, 2].forEach((seat) => {
-    const player = serverState.players[seat];
-    const area = ui.playerAreas[seat];
-    if (!player || !area) {
-      return;
-    }
-    area.cards.innerHTML = "";
-    const cardElements = [];
-    (player.hand || []).forEach((card) => {
-      const cardEl = renderCard(card, Boolean(card.hidden));
-      area.cards.appendChild(cardEl);
-      cardElements.push(cardEl);
-    });
-    if (cardElements.length > 0) {
-      animateCardCascade(cardElements);
-    }
-
-    const youTag = seat === yourSeat ? " (You)" : "";
-    area.label.textContent = `Player ${seat}${youTag}`;
-    area.total.textContent = `Total: ${player.hand?.length ? player.total ?? 0 : 0}`;
-    area.meta.textContent = `Bal: $${player.balance ?? 0} | Bet: $${player.selectedBet ?? 0} | In: $${player.currentBet ?? 0}`;
-    area.container?.classList.toggle("is-hidden", isSinglePlayerLayout && !player.occupied);
+  // Player hand.
+  ui.playerCards.innerHTML = "";
+  const cardElements = [];
+  (serverState.hand || []).forEach((card) => {
+    const cardEl = renderCard(card, false);
+    ui.playerCards.appendChild(cardEl);
+    cardElements.push(cardEl);
   });
-  ui.playersGrid?.classList.toggle("single-player", isSinglePlayerLayout);
-
-  ui.wins.textContent = `Wins: ${localPlayer ? localPlayer.wins : 0}`;
-  ui.losses.textContent = `Losses: ${localPlayer ? localPlayer.losses : 0}`;
-  ui.pushes.textContent = `Pushes: ${localPlayer ? localPlayer.pushes : 0}`;
-  ui.balance.textContent = `Balance: ${localPlayer ? `$${localPlayer.balance}` : "-"}`;
-  if (localPlayer) {
-    animateBalanceChange(ui.balance);
+  if (cardElements.length > 0) {
+    animateCardCascade(cardElements);
   }
-  ui.betDisplay.textContent = `Your Bet: ${localPlayer ? `$${localPlayer.selectedBet}` : "-"}`;
+  ui.playerTotal.textContent = `Total: ${serverState.hand?.length ? serverState.total ?? 0 : 0}`;
+  if (serverState.bust) {
+    animateBustShake(ui.playerArea);
+  }
 
-  const localResult = yourSeat ? serverState.lastRoundResults?.[yourSeat] : null;
-  if (serverState.phase === "round-over" && localResult && ui.roundResult) {
-    const label = localResult === "win" ? "YOU WIN" : localResult === "push" ? "PUSH" : "YOU LOSE";
+  // Scoreboard and bet.
+  ui.wins.textContent = `Wins: ${serverState.wins ?? 0}`;
+  ui.losses.textContent = `Losses: ${serverState.losses ?? 0}`;
+  ui.pushes.textContent = `Pushes: ${serverState.pushes ?? 0}`;
+  ui.betDisplay.textContent = serverState.phase === "betting"
+    ? `Your Bet: ${formatMoney(serverState.selectedBet)}`
+    : `Your Bet: ${formatMoney(serverState.currentBet)}`;
+
+  // Round result banner.
+  const result = serverState.lastRoundResult;
+  if (serverState.phase === "round-over" && result) {
+    const label = result === "win" ? "YOU WIN" : result === "push" ? "PUSH" : "YOU LOSE";
     ui.roundResult.textContent = label;
-    ui.roundResult.className = `round-result ${localResult}`;
+    ui.roundResult.className = `round-result ${result}`;
     animateRoundResult(ui.roundResult);
-  } else if (ui.roundResult) {
+  } else {
     ui.roundResult.textContent = "";
     ui.roundResult.className = "round-result hidden";
   }
 
+  // Button availability comes straight from the server's can* flags —
+  // the client never computes game rules.
   ui.chips.forEach((chip) => {
     const chipValue = Number(chip.dataset.bet);
-    chip.classList.toggle("active", Boolean(localPlayer && localPlayer.selectedBet === chipValue));
+    chip.classList.toggle("active", serverState.selectedBet === chipValue);
     chip.disabled = !serverState.canSetBet;
   });
-
   ui.dealBtn.disabled = !serverState.canDeal;
   ui.hitBtn.disabled = !serverState.canHit;
   ui.standBtn.disabled = !serverState.canStand;
   ui.doubleBtn.disabled = !serverState.canDouble;
 
-  if (serverState.phase === "waiting" && serverState.soloMode && isSinglePlayerLayout) {
-    setStatus("Solo mode: press Deal when ready.", false);
-  } else if (serverState.status) {
-    setStatus(serverState.status, false);
+  if (serverState.status) {
+    setStatus(serverState.status, Boolean(serverState.bust));
   }
 }
 
 // ============================================
 // PLAYER ACTIONS (server-backed)
 // ============================================
-
-function joinSeat(seat) {
-  sendAction("join", { seat }, "button");
-}
-
-function leaveSeat() {
-  sendAction("leave", {}, "button");
-}
-
-function toggleSoloMode() {
-  sendAction("solo", {}, "button");
-}
-
-function resetTable() {
-  sendAction("reset", {}, "button");
-}
 
 function setBet(amount) {
   sendAction("bet", { amount: Number(amount) }, "button");
@@ -469,26 +448,6 @@ function playSound(kind) {
 // EVENT WIRING
 // ============================================
 
-ui.joinSeat1Btn.addEventListener("click", () => {
-  animateButtonPress(ui.joinSeat1Btn);
-  joinSeat(1);
-});
-ui.joinSeat2Btn.addEventListener("click", () => {
-  animateButtonPress(ui.joinSeat2Btn);
-  joinSeat(2);
-});
-ui.leaveSeatBtn.addEventListener("click", () => {
-  animateButtonPress(ui.leaveSeatBtn);
-  leaveSeat();
-});
-ui.soloModeBtn.addEventListener("click", () => {
-  animateButtonPress(ui.soloModeBtn);
-  toggleSoloMode();
-});
-ui.resetTableBtn.addEventListener("click", () => {
-  animateButtonPress(ui.resetTableBtn);
-  resetTable();
-});
 ui.dealBtn.addEventListener("click", () => {
   animateButtonPress(ui.dealBtn);
   animateButtonGlow(ui.dealBtn);
@@ -513,22 +472,10 @@ ui.chips.forEach((chip) => {
   });
 });
 
-window.addEventListener("beforeunload", () => {
-  if (!serverState || !serverState.yourSeat) {
-    return;
-  }
-  if (serverState.phase === "player-turns" || serverState.phase === "dealer-turn") {
-    return;
-  }
-  navigator.sendBeacon(
-    `${API_BASE}/leave`,
-    new Blob([JSON.stringify({ clientId: localClientId })], { type: "application/json" })
-  );
-});
-
-// Initial sync + multiplayer polling (also serves as the server heartbeat).
-pollState();
-setInterval(pollState, POLL_INTERVAL_MS);
+// Singleplayer: fetch once on load and after each action; re-sync on focus
+// in case the balance changed elsewhere (no polling needed).
+refreshState();
+window.addEventListener("focus", refreshState);
 
 // ============================================
 // ANIME.JS ANIMATION FUNCTIONS
@@ -550,17 +497,6 @@ function animateCardIn(cardElement) {
     duration: 450,
     easing: "easeOutElastic(1, .6)",
     delay: Math.random() * 100,
-  });
-}
-
-// Animate card flip
-function animateCardFlip(cardElement) {
-  if (!window.anime) return;
-  anime({
-    targets: cardElement,
-    rotateY: [0, 180],
-    duration: 400,
-    easing: "easeInOutQuad",
   });
 }
 
@@ -627,29 +563,6 @@ function animateBalanceChange(balanceElement) {
   });
 }
 
-// Animate player area highlight
-function animatePlayerHighlight(playerArea) {
-  if (!window.anime) return;
-  anime({
-    targets: playerArea,
-    borderColor: ["rgba(112, 255, 58, 0.2)", "rgba(112, 255, 58, 0.8)", "rgba(112, 255, 58, 0.2)"],
-    duration: 500,
-    easing: "easeInOutQuad",
-  });
-}
-
-// Animate blackjack celebration
-function animateBlackjackWin(element) {
-  if (!window.anime) return;
-  anime({
-    targets: element,
-    scale: [1, 1.25, 1],
-    rotate: [0, 10, -10, 0],
-    duration: 800,
-    easing: "easeOutElastic(1, .6)",
-  });
-}
-
 // Animate dealer card reveal
 function animateDealerReveal(cardElement) {
   if (!window.anime) return;
@@ -661,53 +574,14 @@ function animateDealerReveal(cardElement) {
   });
 }
 
-// Animate hand total increase
-function animateTotalIncrease(totalElement) {
-  if (!window.anime) return;
-  anime({
-    targets: totalElement,
-    scale: [1, 1.2, 1],
-    color: ["#ff952a", "#70ff3a", "#ff952a"],
-    duration: 400,
-    easing: "easeOutQuad",
-  });
-}
-
 // Animate bust shake
 function animateBustShake(playerArea) {
-  if (!window.anime) return;
+  if (!window.anime || !playerArea) return;
   anime({
     targets: playerArea,
     translateX: [-8, 8, -8, 8, 0],
     duration: 400,
     easing: "easeInOutQuad",
-  });
-}
-
-// Animate smooth panel transitions
-function animatePanelSlideIn(panelElement) {
-  if (!window.anime) return;
-  anime.set(panelElement, {
-    opacity: 0,
-    translateX: -30,
-  });
-  anime({
-    targets: panelElement,
-    opacity: 1,
-    translateX: 0,
-    duration: 500,
-    easing: "easeOutQuad",
-  });
-}
-
-// Smooth color transition for status states
-function animateStatusColor(statusElement, newColor) {
-  if (!window.anime) return;
-  anime({
-    targets: statusElement,
-    color: newColor,
-    duration: 400,
-    easing: "easeOutQuad",
   });
 }
 
@@ -737,16 +611,5 @@ function animateCardCascade(cardElements) {
     delay: anime.stagger(80),
     duration: 500,
     easing: "easeOutElastic(1, .6)",
-  });
-}
-
-// Bounce effect for seat status changes
-function animateSeatBounce(seatElement) {
-  if (!window.anime) return;
-  anime({
-    targets: seatElement,
-    translateY: [0, -8, 0],
-    duration: 400,
-    easing: "easeOutQuad",
   });
 }
