@@ -15,13 +15,18 @@ public class ThreeBodyGameService
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
     private const decimal PayoutMultiplier = 3m;
 
-    // G ×4 + početne brzine ×2 = iste putanje, ali 2× brže odigrane.
-    private const double G = 640.0;
+    // Jača gravitacija = brže orbite (brzine se izvode iz G u
+    // InitializePositions, pa veći G znači brže vrtnje, iste putanje).
+    private const double G = 2800.0;
     private const double Softening = 10.0;
     private const double EjectionRadius = 1200.0;
     private const double CollisionFactor = 0.8;
     private const double PhysicsDt = 0.04;
-    private const int MaxPhysicsSteps = 6000;
+    private const int MaxPhysicsSteps = 3000; // 1500 frejmova = max 30 s reprodukcije
+    // Nakon ovog koraka gravitacija postupno jača — stabilni plesovi se
+    // zaoštre i runda se uvijek razriješi prije limita koraka.
+    private const int GravityRampStart = 1200;
+    private const double GravityRampPerStep = 0.0015;
     private const int RecordEvery = 2;
 
     private static readonly (string Name, string Color, double Mass, double Radius)[] PlanetTemplates =
@@ -170,7 +175,8 @@ public class ThreeBodyGameService
                 frames.Add(Snapshot());
             var frameIdx = frames.Count - 1;
 
-            StepRK4(planets);
+            var g = G * (1.0 + Math.Max(0, step - GravityRampStart) * GravityRampPerStep);
+            StepRK4(planets, g);
 
             foreach (var planet in planets)
             {
@@ -189,8 +195,18 @@ public class ThreeBodyGameService
                     var dist = Math.Sqrt(dx * dx + dy * dy);
                     if (dist < (planets[i].Radius + planets[j].Radius) * CollisionFactor)
                     {
-                        Eliminate(planets[i], frameIdx);
-                        Eliminate(planets[j], frameIdx);
+                        // Sudar zadnja dva planeta odlučuje rundu: jedan
+                        // preživi (50/50), inače bi duge runde prečesto
+                        // završile bez pobjednika.
+                        if (planets.Count(p => p.Alive) == 2)
+                        {
+                            Eliminate(_rng.Next(2) == 0 ? planets[i] : planets[j], frameIdx);
+                        }
+                        else
+                        {
+                            Eliminate(planets[i], frameIdx);
+                            Eliminate(planets[j], frameIdx);
+                        }
                     }
                 }
             }
@@ -211,35 +227,64 @@ public class ThreeBodyGameService
 
     private void InitializePositions(PlanetState[] planets)
     {
-        var configs = new (double angle, double dist, double speed)[][] {
-            new[] { (0.0,  220.0, 20.0), (2.3,  240.0, -18.0),  (4.5,  200.0, 24.0) },
-            new[] { (1.0,  230.0, 16.0),  (3.1,  190.0, -24.0), (5.2,  250.0, -14.0) },
-            new[] { (0.5,  200.0, -28.0), (2.7,  260.0, 12.0),  (4.8,  220.0, -22.0) },
-            new[] { (1.8,  240.0, 18.0),  (3.9,  210.0, -20.0), (0.2,  230.0, 26.0) },
-            new[] { (0.3,  250.0, -12.0), (2.5,  200.0, 28.0),  (5.0,  240.0, -16.0) },
-            new[] { (1.4,  210.0, 22.0), (3.6,  240.0, -14.0),  (5.7,  190.0, 16.0) },
+        // Pozicije iz konfiguracije; brzine se NE zadaju ručno nego se računaju
+        // iz stvarne gravitacije: tangencijalno (ko-rotacija) s iznosom blizu
+        // orbitalne brzine v = √(a_in · r). Tako se planeti vrte jedan oko
+        // drugog nekoliko okretaja prije nego kaos nekoga izbaci.
+        var configs = new (double angle, double dist)[][] {
+            new[] { (0.0,  220.0), (2.3,  240.0), (4.5,  200.0) },
+            new[] { (1.0,  230.0), (3.1,  190.0), (5.2,  250.0) },
+            new[] { (0.5,  200.0), (2.7,  260.0), (4.8,  220.0) },
+            new[] { (1.8,  240.0), (3.9,  210.0), (0.2,  230.0) },
+            new[] { (0.3,  250.0), (2.5,  200.0), (5.0,  240.0) },
+            new[] { (1.4,  210.0), (3.6,  240.0), (5.7,  190.0) },
         };
 
         var config = configs[_rng.Next(configs.Length)];
+        var direction = _rng.Next(2) == 0 ? 1.0 : -1.0;
 
         var cx = _rng.NextDouble() * 80 - 40;
         var cy = _rng.NextDouble() * 80 - 40;
 
+        var angles = new double[planets.Length];
+        var dists = new double[planets.Length];
         for (var i = 0; i < planets.Length; i++)
         {
-            var angle = config[i].angle + (_rng.NextDouble() - 0.5) * 0.5;
-            var dist = config[i].dist + (_rng.NextDouble() - 0.5) * 50;
-            var speed = config[i].speed + (_rng.NextDouble() - 0.5) * 6.0;
-            var perpAngle = angle + Math.PI / 2;
+            angles[i] = config[i].angle + (_rng.NextDouble() - 0.5) * 0.5;
+            dists[i] = config[i].dist + (_rng.NextDouble() - 0.5) * 50;
+            planets[i].X = Math.Cos(angles[i]) * dists[i];
+            planets[i].Y = Math.Sin(angles[i]) * dists[i];
+        }
 
-            planets[i].X = cx + Math.Cos(angle) * dist;
-            planets[i].Y = cy + Math.Sin(angle) * dist;
-            planets[i].Vx = Math.Cos(perpAngle) * speed;
-            planets[i].Vy = Math.Sin(perpAngle) * speed;
+        for (var i = 0; i < planets.Length; i++)
+        {
+            double ax = 0, ay = 0;
+            for (var j = 0; j < planets.Length; j++)
+            {
+                if (i == j) continue;
+                var dx = planets[j].X - planets[i].X;
+                var dy = planets[j].Y - planets[i].Y;
+                var rSq = dx * dx + dy * dy + Softening * Softening;
+                var invR3 = 1.0 / (Math.Sqrt(rSq) * rSq);
+                ax += G * planets[j].Mass * invR3 * dx;
+                ay += G * planets[j].Mass * invR3 * dy;
+            }
+
+            // Komponenta ubrzanja prema središtu sustava i pripadna orbitalna brzina.
+            var rx = planets[i].X / dists[i];
+            var ry = planets[i].Y / dists[i];
+            var aIn = Math.Max(-(ax * rx + ay * ry), 0.01);
+            var k = 0.80 + _rng.NextDouble() * 0.2; // 0.80–1.00 × orbitalne
+            var speed = k * Math.Sqrt(aIn * dists[i]);
+
+            planets[i].Vx = direction * -ry * speed;
+            planets[i].Vy = direction * rx * speed;
+            planets[i].X += cx;
+            planets[i].Y += cy;
         }
     }
 
-    private static void StepRK4(PlanetState[] planets)
+    private static void StepRK4(PlanetState[] planets, double g)
     {
         var n = planets.Length;
         var state = new double[n * 4];
@@ -268,7 +313,7 @@ public class ThreeBodyGameService
                     var dy = s[jdx + 1] - s[idx + 1];
                     var rSq = dx * dx + dy * dy + Softening * Softening;
                     var invR3 = 1.0 / (Math.Sqrt(rSq) * rSq);
-                    var force = G * planets[j].Mass * invR3;
+                    var force = g * planets[j].Mass * invR3;
                     ax += force * dx;
                     ay += force * dy;
                 }
