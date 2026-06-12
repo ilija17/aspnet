@@ -1,6 +1,7 @@
 using aspnet.Data;
 using aspnet.Models;
 using aspnet.Repositories;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,9 @@ if (File.Exists(envFile))
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"));
 
 builder.Services.AddDbContext<CasinoDbContext>(options =>
     options.UseSqlServer(

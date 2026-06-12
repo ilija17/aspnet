@@ -45,7 +45,9 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - uploads:/app/wwwroot/uploads
+      - keys:/app/keys
     restart: unless-stopped
 
 volumes:
   uploads:
+  keys:
