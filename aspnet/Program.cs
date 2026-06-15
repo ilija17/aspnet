@@ -28,8 +28,13 @@ if (File.Exists(envFile))
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Ključeve čuvamo u "keys" mapi relativnoj na content root. U Dockeru je
+// content root /app, pa ovo ostaje /app/keys (named volume + chown iz
+// Dockerfilea). Lokalno (dotnet run) to je .../aspnet/keys, koji je zapisiv —
+// hardkodirani /app nije postojao niti se mogao stvoriti pa je padala zaštita
+// (antiforgery/DataProtection) na lokalnom pokretanju.
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"));
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
 
 builder.Services.AddDbContext<CasinoDbContext>(options =>
     options.UseSqlServer(

@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Lokalni DataProtection ključevi (generiraju se pri pokretanju)
+aspnet/keys/
