@@ -5,31 +5,182 @@ const PROFILE_URL = "/Account/Profile";
 const REELS = 5;
 const ROWS = 3;
 
-// Visual presentation for each symbol key. Picture symbols use emoji; the card
-// ranks render as styled plaques. `lady` is wild + scatter and always special.
+// Visual presentation for each symbol key. Every tile is ORIGINAL inline-SVG
+// art in the charm/ornate-card genre — no emoji, no bare letters, and nothing
+// traced from any real Novomatic game. `lady` is wild + scatter and special.
+//
+// High "charm" symbols → detailed icon tiles.
+// Low symbols (ace/king/queen/jack/ten) → ornate gold playing-card faces.
 const SYMBOL_ART = {
-  lady: { glyph: "💃", kind: "lady" },
-  clover: { glyph: "🍀", kind: "pic" },
-  ladybug: { glyph: "🐞", kind: "pic" },
-  horseshoe: { glyph: "🧲", kind: "pic" },
-  coin: { glyph: "🪙", kind: "pic" },
-  ace: { glyph: "A", kind: "card ace" },
-  king: { glyph: "K", kind: "card king" },
-  queen: { glyph: "Q", kind: "card queen" },
-  jack: { glyph: "J", kind: "card jack" },
-  ten: { glyph: "10", kind: "card ten" },
+  lady: { kind: "lady", svg: svgLady },
+  clover: { kind: "pic charm clover", svg: svgClover },
+  ladybug: { kind: "pic charm ladybug", svg: svgLadybug },
+  horseshoe: { kind: "pic charm horseshoe", svg: svgHorseshoe },
+  coin: { kind: "pic charm coin", svg: svgCoin },
+  ace: { kind: "card ace", svg: () => svgCard("A", "heart") },
+  king: { kind: "card king", svg: () => svgCard("K", "spade") },
+  queen: { kind: "card queen", svg: () => svgCard("Q", "diamond") },
+  jack: { kind: "card jack", svg: () => svgCard("J", "club") },
+  ten: { kind: "card ten", svg: () => svgCard("10", "heart") },
 };
 
 // Fallback symbol order, only used to build idle reels before the first state.
 const FALLBACK_KEYS = ["lady", "clover", "ladybug", "horseshoe", "coin", "ace", "king", "queen", "jack", "ten"];
 
+// ============================================
+// ORIGINAL SYMBOL ART (inline SVG, self-contained)
+// ============================================
+
+// Ornate card-rank face: gilded rank glyph on a gem-cut card with a suit
+// flourish. Original design — not copied from any commercial slot art.
+function svgCard(rank, suit) {
+  const suitPaths = {
+    heart: "M16 13.4c-1.4-3-6.2-2.6-6.2 1.1 0 2.7 3.4 5 6.2 7 2.8-2 6.2-4.3 6.2-7 0-3.7-4.8-4.1-6.2-1.1z",
+    diamond: "M16 7l5.4 8L16 23l-5.4-8z",
+    spade: "M16 7c2.2 3 6.2 5 6.2 8.4 0 2.4-2 3.8-3.9 3.4.3 1.4 1 2.4 2.1 3.2h-8.8c1.1-.8 1.8-1.8 2.1-3.2-1.9.4-3.9-1-3.9-3.4C9.8 12 13.8 10 16 7z",
+    club: "M16 8.2a2.9 2.9 0 1 1-2.4 4.5 2.9 2.9 0 1 1-1.1 5.4 2.9 2.9 0 1 1 6.9 0 2.9 2.9 0 1 1-1.1-5.4A2.9 2.9 0 0 1 16 8.2zM15 19h2c-.1 1.5.4 2.7 1.6 3.6h-5.2c1.2-.9 1.7-2.1 1.6-3.6z",
+  };
+  const fs = rank.length > 1 ? 26 : 34;
+  return `
+  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="cardface" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#26304f"/>
+        <stop offset="1" stop-color="#0f1326"/>
+      </linearGradient>
+      <linearGradient id="gildrank" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff3c4"/>
+        <stop offset="0.5" stop-color="#ffd24a"/>
+        <stop offset="1" stop-color="#b9831f"/>
+      </linearGradient>
+    </defs>
+    <rect x="4" y="3" width="48" height="50" rx="8" fill="url(#cardface)" stroke="#ffd24a" stroke-opacity="0.55" stroke-width="2"/>
+    <rect x="7" y="6" width="42" height="44" rx="6" fill="none" stroke="#ffd24a" stroke-opacity="0.22"/>
+    <path d="M11 10c4-2 8-2 12 0M45 46c-4 2-8 2-12 0" stroke="#ffd24a" stroke-opacity="0.4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <g transform="translate(28 14) scale(0.42)" fill="url(#gildrank)" opacity="0.9">
+      <path d="${suitPaths[suit]}" transform="translate(-16 -15)"/>
+    </g>
+    <text x="28" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="${fs}" fill="url(#gildrank)" stroke="#7a5410" stroke-width="0.8">${rank}</text>
+  </svg>`;
+}
+
+// Four-leaf clover charm.
+function svgClover() {
+  return `
+  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+    <defs><radialGradient id="leaf" cx="0.4" cy="0.35" r="0.8">
+      <stop offset="0" stop-color="#b6ff7a"/><stop offset="1" stop-color="#2f8a35"/>
+    </radialGradient></defs>
+    <g transform="translate(28 27)">
+      <g fill="url(#leaf)" stroke="#1c5c22" stroke-width="1.2">
+        <path d="M0 -2C-3 -13 -16 -11 -13 -2 -11 4 -3 4 0 -2z"/>
+        <path d="M2 0C13 -3 11 -16 2 -13 -4 -11 -4 -3 2 0z"/>
+        <path d="M0 2C3 13 16 11 13 2 11 -4 3 -4 0 2z"/>
+        <path d="M-2 0C-13 3 -11 16 -2 13 4 11 4 3 -2 0z"/>
+      </g>
+      <path d="M1 2C3 10 4 16 5 20" stroke="#2f8a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="2.4" fill="#e9ffce"/>
+    </g>
+  </svg>`;
+}
+
+// Ladybug charm.
+function svgLadybug() {
+  return `
+  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+    <defs><radialGradient id="shell" cx="0.4" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#ff7a7a"/><stop offset="1" stop-color="#c11616"/>
+    </radialGradient></defs>
+    <g transform="translate(28 29)">
+      <ellipse cx="0" cy="0" rx="16" ry="17" fill="url(#shell)" stroke="#7a0d0d" stroke-width="1.5"/>
+      <path d="M0 -17V16" stroke="#1a0606" stroke-width="2"/>
+      <circle cx="0" cy="-14" r="6" fill="#160606"/>
+      <g fill="#2a0808">
+        <circle cx="-7" cy="-4" r="2.6"/><circle cx="7" cy="-4" r="2.6"/>
+        <circle cx="-9" cy="5" r="2.4"/><circle cx="9" cy="5" r="2.4"/>
+        <circle cx="-5" cy="11" r="2.2"/><circle cx="5" cy="11" r="2.2"/>
+      </g>
+      <circle cx="-2.4" cy="-15" r="1.3" fill="#ffd24a"/>
+      <circle cx="2.4" cy="-15" r="1.3" fill="#ffd24a"/>
+    </g>
+  </svg>`;
+}
+
+// Lucky horseshoe charm.
+function svgHorseshoe() {
+  return `
+  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+    <defs><linearGradient id="shoe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
+    </linearGradient></defs>
+    <path d="M16 46V28a12 12 0 0 1 24 0v18" fill="none" stroke="url(#shoe)" stroke-width="7" stroke-linecap="round"/>
+    <path d="M16 46V28a12 12 0 0 1 24 0v18" fill="none" stroke="#7a5410" stroke-opacity="0.45" stroke-width="7.6" stroke-linecap="round" transform="translate(0 1)" style="mix-blend-mode:multiply"/>
+    <g fill="#3a2a08">
+      <circle cx="20" cy="40" r="1.5"/><circle cx="36" cy="40" r="1.5"/>
+      <circle cx="18.5" cy="32" r="1.5"/><circle cx="37.5" cy="32" r="1.5"/>
+      <circle cx="22" cy="25" r="1.5"/><circle cx="34" cy="25" r="1.5"/>
+    </g>
+  </svg>`;
+}
+
+// Gold coin charm.
+function svgCoin() {
+  return `
+  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+    <defs><radialGradient id="coing" cx="0.4" cy="0.35" r="0.85">
+      <stop offset="0" stop-color="#fff6cf"/><stop offset="0.6" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
+    </radialGradient></defs>
+    <circle cx="28" cy="28" r="20" fill="url(#coing)" stroke="#7a5410" stroke-width="2"/>
+    <circle cx="28" cy="28" r="15" fill="none" stroke="#7a5410" stroke-opacity="0.5" stroke-width="1.5"/>
+    <text x="28" y="37" text-anchor="middle" font-family="Georgia, serif" font-weight="900" font-size="22" fill="#7a5410">$</text>
+  </svg>`;
+}
+
+// Lucky Lady — the shimmering gold wild + scatter. Original stylised charm
+// portrait (gem + radiant crown), clearly distinct from the card and pip art.
+function svgLady() {
+  return `
+  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="ladyhalo" cx="0.5" cy="0.4" r="0.7">
+        <stop offset="0" stop-color="#fff7d6"/><stop offset="0.6" stop-color="#ffd24a"/><stop offset="1" stop-color="#b07c1c"/>
+      </radialGradient>
+      <linearGradient id="ladygem" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffb3e6"/><stop offset="1" stop-color="#9b2fcf"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(28 28)">
+      <g class="lady-rays" stroke="url(#ladyhalo)" stroke-width="1.6" stroke-linecap="round">
+        ${Array.from({ length: 12 }, (_, i) => {
+          const a = (i * Math.PI) / 6;
+          const x1 = Math.cos(a) * 17, y1 = Math.sin(a) * 17;
+          const x2 = Math.cos(a) * 23, y2 = Math.sin(a) * 23;
+          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+        }).join("")}
+      </g>
+      <circle cx="0" cy="0" r="16" fill="url(#ladyhalo)" stroke="#7a5410" stroke-width="1.5"/>
+      <path d="M-11 -7l4 5 5-7 5 7 4-5-2 9h-18z" fill="#ffe9a3" stroke="#7a5410" stroke-width="0.8"/>
+      <path d="M0 -1l6 10-6 5-6-5z" fill="url(#ladygem)" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/>
+      <circle cx="0" cy="3" r="1.6" fill="#fff7d6"/>
+    </g>
+  </svg>`;
+}
+
 let serverState = null;
 let lastRenderedVersion = -1;
-let selectedBet = null; // client-side: chosen total bet
+let selectedBet = null; // client-side: chosen total bet (decimal)
 let busy = false; // a POST is in flight
 let spinning = false; // a full round (incl. free spins) is replaying
 let showResultBanner = false;
 let audioContext;
+
+// Spin-speed mode: "normal" | "fast" | "instant" (persisted in localStorage).
+let speedMode = "normal";
+
+// Autospin sequence state.
+let autoActive = false;
+let autoRemaining = 0; // remaining paid spins; -1 === infinite/until-stop
+let autoSelectedCount = 10; // currently selected count button value
 
 const ui = {
   table: document.getElementById("table"),
@@ -52,10 +203,23 @@ const ui = {
   status: document.getElementById("status"),
   roundResult: document.getElementById("round-result"),
   betDisplay: document.getElementById("bet-display"),
-  chips: document.getElementById("chips"),
+  betValue: document.getElementById("bet-value"),
+  betDown: document.getElementById("bet-down"),
+  betUp: document.getElementById("bet-up"),
+  betMin: document.getElementById("bet-min"),
+  betMax: document.getElementById("bet-max"),
   spinBtn: document.getElementById("spin-btn"),
   paytable: document.getElementById("paytable"),
   vfxLayer: document.getElementById("vfx-layer"),
+  // Speed control
+  speedControl: document.getElementById("speed-control"),
+  speedModes: Array.from(document.querySelectorAll(".speed-mode")),
+  // Autospin
+  autospin: document.getElementById("autospin"),
+  autospinBtn: document.getElementById("autospin-btn"),
+  autostopBtn: document.getElementById("autostop-btn"),
+  autospinRemaining: document.getElementById("autospin-remaining"),
+  autoCounts: Array.from(document.querySelectorAll(".auto-count")),
 };
 
 // reelCells[reel][row] -> the .cell element currently visible in that position.
@@ -66,7 +230,13 @@ const reelCells = [];
 // ============================================
 
 function symbolArt(key) {
-  return SYMBOL_ART[key] || { glyph: key, kind: "pic" };
+  return SYMBOL_ART[key] || { kind: "pic", svg: () => `<span class="sym-fallback">${key}</span>` };
+}
+
+function paintPip(pip, key) {
+  const art = symbolArt(key);
+  pip.className = `pip ${art.kind}`;
+  pip.innerHTML = typeof art.svg === "function" ? art.svg() : art.svg || "";
 }
 
 function makeCell(key) {
@@ -74,9 +244,7 @@ function makeCell(key) {
   cell.className = "cell";
   cell.dataset.key = key;
   const pip = document.createElement("span");
-  const art = symbolArt(key);
-  pip.className = `pip ${art.kind}`;
-  pip.textContent = art.glyph;
+  paintPip(pip, key);
   cell.appendChild(pip);
   return cell;
 }
@@ -87,6 +255,7 @@ function buildReels(initialGrid) {
   for (let r = 0; r < REELS; r += 1) {
     const reel = document.createElement("div");
     reel.className = "reel";
+    reel.dataset.reelIndex = String(r);
     const strip = document.createElement("div");
     strip.className = "reel-strip";
     reel.appendChild(strip);
@@ -108,10 +277,7 @@ buildReels(null);
 
 function setCellSymbol(cell, key) {
   cell.dataset.key = key;
-  const art = symbolArt(key);
-  const pip = cell.querySelector(".pip");
-  pip.className = `pip ${art.kind}`;
-  pip.textContent = art.glyph;
+  paintPip(cell.querySelector(".pip"), key);
 }
 
 function setReelGrid(grid) {
@@ -213,7 +379,7 @@ function applyServerState(state) {
 }
 
 async function refreshState() {
-  if (busy || spinning) {
+  if (busy || spinning || autoActive) {
     return;
   }
   try {
@@ -230,22 +396,40 @@ async function refreshState() {
 // PLAYER ACTIONS
 // ============================================
 
+const BET_LADDER_FALLBACK = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+
 function allowedBets() {
   const list = serverState?.allowedBets;
-  return Array.isArray(list) && list.length ? list : [10, 20, 50, 100, 200];
+  return (Array.isArray(list) && list.length ? list : BET_LADDER_FALLBACK).map(Number);
+}
+
+// Index of `value` in the allowed-bet ladder, with a cents-level tolerance so
+// decimal round-trips (e.g. 0.1) match reliably.
+function betIndex(value) {
+  const bets = allowedBets();
+  const v = Number(value);
+  for (let i = 0; i < bets.length; i += 1) {
+    if (Math.abs(bets[i] - v) < 0.0001) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 async function setBet(amount) {
-  if (busy || spinning || !serverState) {
+  if (busy || spinning || autoActive || !serverState) {
+    return;
+  }
+  if (betIndex(amount) < 0) {
     return;
   }
   busy = true;
-  selectedBet = amount;
+  selectedBet = Number(amount);
   playSound("bet");
   triggerActionFx("bet");
-  renderChips();
+  renderBetSelector();
   try {
-    applyServerState(await apiPost("bet", { amount }));
+    applyServerState(await apiPost("bet", { amount: Number(amount) }));
   } catch (error) {
     if (!(error instanceof HandledApiError)) {
       console.error("Slot error:", error);
@@ -257,9 +441,22 @@ async function setBet(amount) {
   }
 }
 
+// Walk the allowed-bet ladder by `dir` (−1/+1) from the current bet.
+function stepBet(dir) {
+  const bets = allowedBets();
+  let idx = betIndex(effectiveBet());
+  if (idx < 0) {
+    idx = 0;
+  }
+  const next = Math.min(bets.length - 1, Math.max(0, idx + dir));
+  if (next !== idx) {
+    setBet(bets[next]);
+  }
+}
+
 async function spin() {
   if (busy || spinning || !serverState || !serverState.canSpin) {
-    return;
+    return false;
   }
   busy = true;
   spinning = true;
@@ -284,7 +481,7 @@ async function spin() {
       console.error("Slot error:", error);
       setStatus("Something went wrong. Try again.", true);
     }
-    return;
+    return false;
   }
 
   busy = false;
@@ -295,7 +492,7 @@ async function spin() {
     showResultBanner = true;
     applyServerState(result);
     updateControls();
-    return;
+    return { ok: true, feature: false };
   }
 
   await playRound(round);
@@ -312,6 +509,8 @@ async function spin() {
   } else {
     playSound("lose");
   }
+
+  return { ok: true, feature: !!round.featureTriggered };
 }
 
 // ============================================
@@ -319,6 +518,20 @@ async function spin() {
 // ============================================
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Per-mode animation timings. Fast ≈ half of Normal; Instant skips travel.
+const SPEED_PROFILES = {
+  normal: { spinUp: 240, sustain: 520, firstStop: 360, stagger: 170, settle: 320, anticip: 460, betweenFree: 360, winHold: 950, noWinHold: 520 },
+  fast: { spinUp: 120, sustain: 240, firstStop: 180, stagger: 85, settle: 200, anticip: 240, betweenFree: 180, winHold: 520, noWinHold: 280 },
+  instant: { spinUp: 0, sustain: 0, firstStop: 0, stagger: 0, settle: 0, anticip: 0, betweenFree: 90, winHold: 360, noWinHold: 160 },
+};
+
+function speed() {
+  return SPEED_PROFILES[speedMode] || SPEED_PROFILES.normal;
+}
+
+const FX_KEYS = ["lady", "clover", "ladybug", "horseshoe", "coin", "ace", "king", "queen", "jack", "ten"];
+const randKey = () => FX_KEYS[(Math.random() * FX_KEYS.length) | 0];
 
 async function playRound(round) {
   let runningWin = 0;
@@ -336,7 +549,7 @@ async function playRound(round) {
     for (let i = 0; i < freeSpins.length; i += 1) {
       showFreeBanner(freeSpins.length - i);
       runningWin = await playSpin(freeSpins[i], runningWin, { free: true });
-      await sleep(360);
+      await sleep(speed().betweenFree);
     }
     hideFreeBanner();
     setReelsFeature(false);
@@ -379,26 +592,127 @@ async function playSpin(spin, runningWin, { free }) {
         : "No win on this spin."
   );
 
-  await sleep(lineWins.length > 0 || spin.scatterCount >= 3 ? 950 : 520);
+  const sp = speed();
+  await sleep(lineWins.length > 0 || spin.scatterCount >= 3 ? sp.winHold : sp.noWinHold);
   return runningWin;
 }
 
-// Animate every reel: spin a blur, then stop reels one-by-one left to right.
+// Animate every reel like a real machine: quick acceleration, a sustained
+// fast blur with a rolling random-symbol strip scrolling upward, then a
+// left-to-right staggered deceleration that snaps onto the final `grid` with
+// an elastic settle and a per-reel stop click. Anticipation slows the last
+// reels if 2 scatter Ladies have already landed.
 async function spinReelsTo(grid) {
   const reelEls = Array.from(ui.reels.querySelectorAll(".reel"));
+  const sp = speed();
+
+  // Instant mode: no reel travel, just reveal the final grid.
+  if (speedMode === "instant") {
+    setReelGrid(grid);
+    reelEls.forEach((reel) => reelStopBounce(reel));
+    playSound("reelStop");
+    return;
+  }
+
+  const strips = reelEls.map((reel) => reel.querySelector(".reel-strip"));
+
+  // Build a tall rolling strip per reel: a run of random buffer rows above the
+  // 3 final rows, so the visible window cycles many symbols before settling.
+  const BUFFER = 14;
+  strips.forEach((strip, r) => {
+    strip.style.transition = "none";
+    strip.style.transform = "translateY(0)";
+    strip.innerHTML = "";
+    for (let i = 0; i < BUFFER; i += 1) {
+      strip.appendChild(makeCell(randKey()));
+    }
+    for (let row = 0; row < ROWS; row += 1) {
+      const cell = makeCell(grid[r][row]);
+      strip.appendChild(cell);
+      reelCells[r][row] = cell; // re-point logical cell to the settled tile
+    }
+  });
+
   reelEls.forEach((reel) => reel.classList.add("spinning"));
   spinReelWhir();
 
+  // Acceleration then sustained fast scroll (shared phase for all reels).
+  await sleep(sp.spinUp + sp.sustain);
+
+  // Track how many scatter Ladies have landed on already-stopped reels.
+  let scattersLanded = 0;
+
   for (let r = 0; r < REELS; r += 1) {
-    await sleep(r === 0 ? 360 : 150);
-    // Drop in the final symbols for this reel as it "stops".
-    for (let row = 0; row < ROWS; row += 1) {
-      setCellSymbol(reelCells[r][row], grid[r][row]);
+    let gap = r === 0 ? sp.firstStop : sp.stagger;
+    // Anticipation: with 2 ladies already showing, drag out the remaining stops.
+    const anticipating = scattersLanded === 2 && r >= 2;
+    if (anticipating) {
+      gap += sp.anticip;
+      reelEls[r].classList.add("anticipate");
     }
+    await sleep(gap);
+
+    // Stop the continuous roll before the settle transition so our inline
+    // transform isn't fighting the keyframe animation.
     reelEls[r].classList.remove("spinning");
+
+    // Settle this reel onto its final 3 rows: animate the strip up so the last
+    // ROWS cells land in the window, then snap the DOM back to the resting set.
+    await settleReel(reelEls[r], strips[r], grid[r], sp);
+
+    reelEls[r].classList.remove("anticipate");
     reelStopBounce(reelEls[r]);
     playSound("reelStop");
+
+    if (grid[r].includes("lady")) {
+      scattersLanded += 1;
+    }
   }
+}
+
+// Scroll the rolling strip up so its bottom ROWS cells settle into the window,
+// then rebuild the reel to exactly the 3 final cells with an elastic bounce.
+function settleReel(reelEl, strip, column, sp) {
+  return new Promise((resolve) => {
+    const cells = strip.children;
+    const cellH = cells.length ? cells[0].getBoundingClientRect().height : 0;
+    const total = cells.length;
+    // Distance to bring the last ROWS rows into view.
+    const targetY = -(total - ROWS) * cellH;
+
+    const reelIdx = Number(reelEl.dataset.reelIndex);
+    const finish = () => {
+      strip.style.transition = "none";
+      strip.style.transform = "translateY(0)";
+      strip.innerHTML = "";
+      for (let row = 0; row < ROWS; row += 1) {
+        const cell = makeCell(column[row]);
+        strip.appendChild(cell);
+        reelCells[reelIdx][row] = cell;
+      }
+      resolve();
+    };
+
+    if (!cellH || speedMode === "instant") {
+      finish();
+      return;
+    }
+
+    strip.style.transition = `transform ${sp.settle + 120}ms cubic-bezier(0.18, 0.9, 0.24, 1.06)`;
+    // next frame so the transition applies
+    requestAnimationFrame(() => {
+      strip.style.transform = `translateY(${targetY}px)`;
+    });
+    let done = false;
+    const onEnd = () => {
+      if (done) return;
+      done = true;
+      strip.removeEventListener("transitionend", onEnd);
+      finish();
+    };
+    strip.addEventListener("transitionend", onEnd);
+    setTimeout(onEnd, sp.settle + 260); // safety fallback
+  });
 }
 
 function flagScatters(grid) {
@@ -562,54 +876,47 @@ function setStatus(text, danger = false) {
 
 function effectiveBet() {
   const fromServer = Number(serverState?.selectedBet);
-  if (allowedBets().includes(fromServer)) {
+  if (betIndex(fromServer) >= 0) {
     return fromServer;
   }
-  if (allowedBets().includes(selectedBet)) {
-    return selectedBet;
+  if (betIndex(selectedBet) >= 0) {
+    return Number(selectedBet);
   }
   return allowedBets()[0];
 }
 
-function renderChips() {
+// −/+ stepper that walks the allowed-bet ladder, with Min/Max shortcuts.
+function renderBetSelector() {
   const bets = allowedBets();
   const active = effectiveBet();
-  // Rebuild only if the set of chips changed.
-  const want = bets.join(",");
-  if (ui.chips.dataset.bets !== want) {
-    ui.chips.dataset.bets = want;
-    ui.chips.innerHTML = "";
-    bets.forEach((amount) => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "chip";
-      chip.dataset.bet = String(amount);
-      chip.textContent = `$${amount}`;
-      chip.addEventListener("click", () => {
-        if (chip.disabled) {
-          return;
-        }
-        animateChipSelect(chip);
-        setBet(amount);
-      });
-      ui.chips.appendChild(chip);
-    });
-  }
-  Array.from(ui.chips.children).forEach((chip) => {
-    const value = Number(chip.dataset.bet);
-    chip.classList.toggle("active", value === active);
-    const tooDear = serverState ? value > Number(serverState.balance) && value !== active : false;
-    chip.disabled = busy || spinning || tooDear;
-  });
+  const idx = betIndex(active);
+  const locked = busy || spinning || autoActive;
+
+  ui.betValue.textContent = formatMoney(active);
+  const overBalance = serverState ? active > Number(serverState.balance) : false;
+  ui.betValue.classList.toggle("over-balance", overBalance);
+
+  ui.betDown.disabled = locked || idx <= 0;
+  ui.betUp.disabled = locked || idx >= bets.length - 1;
+  ui.betMin.disabled = locked || idx <= 0;
+  ui.betMax.disabled = locked || idx >= bets.length - 1;
 }
 
 function updateControls() {
-  renderChips();
+  renderBetSelector();
   const bet = effectiveBet();
   const insufficient = serverState ? Number(serverState.balance) < bet : false;
   ui.spinBtn.disabled =
-    busy || spinning || !serverState || !serverState.canSpin || insufficient;
+    busy || spinning || autoActive || !serverState || !serverState.canSpin || insufficient;
   ui.spinBtn.textContent = spinning ? "Spinning…" : insufficient ? "No Funds" : "Spin";
+
+  // Autospin start is unavailable while a spin/sequence runs or funds are short.
+  ui.autospinBtn.disabled =
+    busy || spinning || autoActive || !serverState || !serverState.canSpin || insufficient;
+  ui.autoCounts.forEach((b) => {
+    b.disabled = autoActive;
+    b.classList.toggle("active", Number(b.dataset.count) === autoSelectedCount);
+  });
 }
 
 function render(force = false) {
@@ -623,16 +930,16 @@ function render(force = false) {
 
   ui.playerName.textContent = serverState.playerName || "—";
   ui.balance.textContent = `Balance: ${formatMoney(serverState.balance)}`;
-  ui.totalBet.textContent = `Bet: $${effectiveBet()}`;
+  ui.totalBet.textContent = `Bet: ${formatMoney(effectiveBet())}`;
   ui.spinsCount.textContent = `Spins: ${serverState.spins ?? 0}`;
   ui.featureCount.textContent = `Features: ${serverState.featureHits ?? 0}`;
   animateBalanceChange(ui.balance);
 
-  if (allowedBets().includes(Number(serverState.selectedBet))) {
+  if (betIndex(Number(serverState.selectedBet)) >= 0) {
     selectedBet = Number(serverState.selectedBet);
   }
 
-  ui.betDisplay.textContent = `Total Bet: $${effectiveBet()} · Line Bet: ${formatMoney(effectiveBet() / 10)}`;
+  ui.betDisplay.textContent = `Total Bet: ${formatMoney(effectiveBet())} · Line Bet: ${formatMoney(effectiveBet() / 10)}`;
 
   // Paint the resting grid only when not mid-spin (state syncs / focus refetch).
   if (!spinning && serverState.lastGrid && Array.isArray(serverState.lastGrid)) {
@@ -684,12 +991,10 @@ function renderPaytable() {
       card.classList.add("special");
     }
 
-    const art = symbolArt(sym.key);
     const symBox = document.createElement("div");
     symBox.className = "pay-symbol";
     const pip = document.createElement("span");
-    pip.className = `pip ${art.kind}`;
-    pip.textContent = art.glyph;
+    paintPip(pip, sym.key);
     symBox.appendChild(pip);
 
     const info = document.createElement("div");
@@ -968,6 +1273,139 @@ ui.spinBtn.addEventListener("click", () => {
   spin();
 });
 
+// --- Bet stepper ---
+ui.betDown.addEventListener("click", () => stepBet(-1));
+ui.betUp.addEventListener("click", () => stepBet(1));
+ui.betMin.addEventListener("click", () => setBet(allowedBets()[0]));
+ui.betMax.addEventListener("click", () => {
+  const bets = allowedBets();
+  setBet(bets[bets.length - 1]);
+});
+
+// ============================================
+// SPEED CONTROL (Normal / Fast / Instant, persisted)
+// ============================================
+
+function setSpeed(mode) {
+  speedMode = ["normal", "fast", "instant"].includes(mode) ? mode : "normal";
+  try {
+    localStorage.setItem("slot.speed", speedMode);
+  } catch {
+    /* storage unavailable */
+  }
+  ui.speedModes.forEach((b) => b.classList.toggle("active", b.dataset.speed === speedMode));
+}
+
+ui.speedModes.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setSpeed(btn.dataset.speed);
+    playSound("button");
+  });
+});
+
+(function initSpeed() {
+  let saved = "normal";
+  try {
+    saved = localStorage.getItem("slot.speed") || "normal";
+  } catch {
+    /* ignore */
+  }
+  setSpeed(saved);
+})();
+
+// ============================================
+// AUTOSPIN
+// ============================================
+
+function updateAutospinUi() {
+  ui.autospinBtn.classList.toggle("hidden", autoActive);
+  ui.autostopBtn.classList.toggle("hidden", !autoActive);
+  ui.autospinRemaining.textContent = autoRemaining < 0 ? "∞" : String(autoRemaining);
+  ui.autospin?.classList.toggle("running", autoActive);
+}
+
+function stopAutospin(reason) {
+  if (!autoActive) {
+    return;
+  }
+  autoActive = false;
+  autoRemaining = 0;
+  updateAutospinUi();
+  updateControls();
+  if (reason) {
+    setStatus(reason);
+  }
+}
+
+async function startAutospin() {
+  if (autoActive || busy || spinning || !serverState || !serverState.canSpin) {
+    return;
+  }
+  autoActive = true;
+  autoRemaining = autoSelectedCount; // -1 === infinite
+  updateAutospinUi();
+  updateControls();
+  runAutospinLoop();
+}
+
+async function runAutospinLoop() {
+  while (autoActive) {
+    // Stop if balance can't cover the next bet.
+    const bet = effectiveBet();
+    if (!serverState || Number(serverState.balance) < bet || !serverState.canSpin) {
+      stopAutospin("Autospin stopped — insufficient funds.");
+      return;
+    }
+    if (autoRemaining === 0) {
+      stopAutospin("Autospin complete.");
+      return;
+    }
+
+    updateAutospinUi();
+    const outcome = await spin(); // resolves after the whole round (incl. free spins) replays
+    if (!autoActive) {
+      // Stopped mid-spin by the user; let the in-flight round finish, then bail.
+      return;
+    }
+    if (!outcome || !outcome.ok) {
+      stopAutospin("Autospin stopped.");
+      return;
+    }
+
+    // Count this paid spin (free spins inside the round are not charged).
+    if (autoRemaining > 0) {
+      autoRemaining -= 1;
+    }
+    updateAutospinUi();
+
+    // Brief breath between rounds (respecting speed).
+    await sleep(speedMode === "instant" ? 120 : 260);
+  }
+}
+
+ui.autoCounts.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (autoActive) {
+      return;
+    }
+    autoSelectedCount = Number(btn.dataset.count);
+    ui.autoCounts.forEach((b) => b.classList.toggle("active", b === btn));
+  });
+});
+
+ui.autospinBtn.addEventListener("click", () => {
+  animateButtonPress(ui.autospinBtn);
+  startAutospin();
+});
+
+ui.autostopBtn.addEventListener("click", () => {
+  animateButtonPress(ui.autostopBtn);
+  stopAutospin("Autospin stopped.");
+});
+
+// Default selected autospin count highlight.
+ui.autoCounts.forEach((b) => b.classList.toggle("active", Number(b.dataset.count) === autoSelectedCount));
+
 // Singleplayer: fetch once on load and after each action; re-sync on focus.
 (async function init() {
   await refreshState();
@@ -1006,10 +1444,6 @@ function animateButtonGlow(el) {
   });
 }
 
-function animateChipSelect(el) {
-  if (!window.anime) return;
-  anime({ targets: el, scale: [1, 1.2, 1], duration: 300, easing: "easeOutBack" });
-}
 
 function animateStatusPulse(el) {
   if (!window.anime) return;

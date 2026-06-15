@@ -29,8 +29,10 @@ public class SlotGameService
 
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
 
-    // Ulozi su ukupni; line bet = ukupni / 10 (mora biti djeljiv s 10).
-    public static readonly int[] AllowedBets = { 10, 20, 50, 100, 200 };
+    // Ulozi su ukupni (raspon $0.10–$100); line bet = ukupni / 10.
+    public static readonly decimal[] AllowedBets =
+        { 0.10m, 0.20m, 0.50m, 1m, 2m, 5m, 10m, 20m, 50m, 100m };
+    private const decimal DefaultBet = 1m;
 
     // ── Simboli ───────────────────────────────────────────────────────────
     // Indeks 0 = Lady (wild + scatter). Ostalo: 4 "charm" visoka simbola pa
@@ -238,7 +240,7 @@ public class SlotGameService
         public DateTime LastSeenUtc;
         public long Version;
         public string Status = "Pick your bet and spin the charms.";
-        public int SelectedBet = AllowedBets[0];
+        public decimal SelectedBet = DefaultBet;
         public decimal LastWin;
         public int Spins;
         public int FeatureHits;
@@ -253,7 +255,7 @@ public class SlotGameService
 
     public SlotStateDTO GetState(int playerId) => Mutate(playerId, (_, _, _) => { });
 
-    public SlotStateDTO SetBet(int playerId, int amount)
+    public SlotStateDTO SetBet(int playerId, decimal amount)
         => Mutate(playerId, (s, _, p) =>
         {
             if (!AllowedBets.Contains(amount))
@@ -264,7 +266,7 @@ public class SlotGameService
             s.SelectedBet = amount;
             s.Status = amount > p.Balance
                 ? "Bet too high for your balance."
-                : $"Bet set to ${amount}. Spin to play.";
+                : $"Bet set to ${amount:0.00}. Spin to play.";
         });
 
     public SlotStateDTO Spin(int playerId)

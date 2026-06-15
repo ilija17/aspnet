@@ -42,7 +42,7 @@ public record SlotRoundDTO(
     decimal BaseWin,            // dobitak osnovnog spina
     decimal FreeWin,            // zbroj free-spin dobitaka
     decimal TotalWin,
-    int BetAmount,
+    decimal BetAmount,
     string Result);             // "win" | "loss"
 
 public record SlotStateDTO(
@@ -50,8 +50,8 @@ public record SlotStateDTO(
     string Status,
     string PlayerName,
     decimal Balance,            // stvarni Player.Balance iz baze
-    int SelectedBet,            // ukupni ulog (line bet = ukupni / 10)
-    int[] AllowedBets,
+    decimal SelectedBet,        // ukupni ulog (line bet = ukupni / 10)
+    decimal[] AllowedBets,
     List<SlotSymbolDTO> Symbols,
     int[][] Paylines,           // 10 linija, svaka [redak po stupcu] 0..2
     int Reels,

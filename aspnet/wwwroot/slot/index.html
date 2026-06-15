@@ -57,8 +57,29 @@
 
           <section class="bankroll-panel">
             <p id="bet-display" class="bet">Total Bet: —</p>
-            <div class="chips" id="chips" role="group" aria-label="Bet amounts"></div>
+
+            <div class="bet-selector" id="bet-selector" role="group" aria-label="Bet amount">
+              <button id="bet-min" class="bet-step bet-step-text" type="button" title="Minimum bet">Min</button>
+              <button id="bet-down" class="bet-step" type="button" aria-label="Lower bet">−</button>
+              <span id="bet-value" class="bet-value" aria-live="polite">$0.00</span>
+              <button id="bet-up" class="bet-step" type="button" aria-label="Raise bet">+</button>
+              <button id="bet-max" class="bet-step bet-step-text" type="button" title="Maximum bet">Max</button>
+            </div>
+
             <div class="actions">
+              <div class="autospin" id="autospin">
+                <div class="autospin-counts" id="autospin-counts" role="group" aria-label="Autospin count">
+                  <button class="auto-count" type="button" data-count="10">10</button>
+                  <button class="auto-count" type="button" data-count="25">25</button>
+                  <button class="auto-count" type="button" data-count="50">50</button>
+                  <button class="auto-count" type="button" data-count="100">100</button>
+                  <button class="auto-count" type="button" data-count="-1" title="Until stopped">∞</button>
+                </div>
+                <button id="autospin-btn" class="btn btn-accent" type="button">Autospin</button>
+                <button id="autostop-btn" class="btn btn-stop hidden" type="button">
+                  Stop <span id="autospin-remaining" class="auto-remaining">0</span>
+                </button>
+              </div>
               <button id="spin-btn" class="btn btn-primary">Spin</button>
             </div>
           </section>
@@ -78,6 +99,15 @@
         </div>
       </section>
     </main>
+
+    <div id="speed-control" class="speed-control" role="group" aria-label="Spin speed">
+      <span class="speed-label">Speed</span>
+      <div class="speed-modes">
+        <button class="speed-mode" type="button" data-speed="normal">Normal</button>
+        <button class="speed-mode" type="button" data-speed="fast">Fast</button>
+        <button class="speed-mode" type="button" data-speed="instant">Instant</button>
+      </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
     <script src="script.js"></script>

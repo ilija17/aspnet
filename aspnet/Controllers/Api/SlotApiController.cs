@@ -24,7 +24,7 @@ public class SlotApiController : ControllerBase
         _players = players;
     }
 
-    public record SlotBetRequest(int? Amount);
+    public record SlotBetRequest(decimal? Amount);
 
     private Player? FindPlayer()
     {
