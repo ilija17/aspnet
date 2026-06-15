@@ -115,6 +115,7 @@ builder.Services.AddScoped<aspnet.Services.MailService>();
 builder.Services.AddSingleton<aspnet.Services.BlackjackGameService>();
 builder.Services.AddSingleton<aspnet.Services.RouletteGameService>();
 builder.Services.AddSingleton<aspnet.Services.ThreeBodyGameService>();
+builder.Services.AddSingleton<aspnet.Services.SlotGameService>();
 
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);

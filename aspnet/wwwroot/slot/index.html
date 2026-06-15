@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lucky Lady Slots</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="top-bar">
+        <h1>Lucky Lady Slots</h1>
+        <div class="player-info" aria-live="polite">
+          <span id="player-name" class="player-name">—</span>
+          <span id="balance" class="balance">Balance: —</span>
+          <span id="total-bet" class="total-bet">Bet: —</span>
+        </div>
+        <div class="scoreboard" aria-live="polite">
+          <span id="spins-count">Spins: 0</span>
+          <span id="feature-count">Features: 0</span>
+          <button id="mute-btn" class="mute-btn" type="button" aria-pressed="false" title="Mute / unmute">🔊</button>
+        </div>
+      </section>
+
+      <section id="gate" class="gate-panel hidden" aria-live="polite">
+        <p id="gate-message"></p>
+        <a id="gate-link" class="btn btn-primary" href="#"></a>
+      </section>
+
+      <section id="table" class="table" aria-label="Slot machine">
+        <div class="table-rail"></div>
+        <div class="table-inner">
+          <div class="warning-strip" aria-hidden="true">Lucky Lady // 5 Reels · 10 Lines · 3+ from the Left // Good Luck</div>
+          <div class="hud-grid" aria-hidden="true"></div>
+          <div id="vfx-layer" aria-hidden="true"></div>
+
+          <section class="cabinet" aria-label="Reels">
+            <div id="free-banner" class="free-banner hidden" aria-live="polite">
+              <span class="free-banner-title">FREE SPINS</span>
+              <span id="free-banner-count" class="free-banner-count">0</span>
+            </div>
+
+            <div class="reels-frame">
+              <div id="reels" class="reels" aria-label="Reel grid"></div>
+              <svg id="payline-overlay" class="payline-overlay" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div id="win-meter" class="win-meter hidden" aria-live="polite">
+                <span class="win-meter-label">WIN</span>
+                <span id="win-meter-value" class="win-meter-value">$0.00</span>
+              </div>
+            </div>
+          </section>
+
+          <article class="status-panel">
+            <p id="status">Connecting…</p>
+            <p id="round-result" class="round-result hidden" aria-live="polite"></p>
+          </article>
+
+          <section class="bankroll-panel">
+            <p id="bet-display" class="bet">Total Bet: —</p>
+            <div class="chips" id="chips" role="group" aria-label="Bet amounts"></div>
+            <div class="actions">
+              <button id="spin-btn" class="btn btn-primary">Spin</button>
+            </div>
+          </section>
+
+          <section class="paytable-panel" aria-label="Paytable">
+            <header class="paytable-header">
+              <h2>Paytable</h2>
+              <span class="paytable-note">Pays are line-bet multiples · Line bet = Total ÷ 10</span>
+            </header>
+            <div id="paytable" class="paytable"></div>
+            <p class="paytable-rules">
+              <strong>Lucky Lady</strong> is <strong>wild</strong> (substitutes for any symbol on a line)
+              <em>and</em> <strong>scatter</strong>: land 3+ anywhere to win the
+              <strong>Feature — 15 Free Spins</strong> at the triggering bet. Free spins can retrigger.
+            </p>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

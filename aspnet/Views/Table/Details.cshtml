@@ -8,6 +8,7 @@
     {
         aspnet.Models.GameType.Blackjack => "/kocka/index.html",
         aspnet.Models.GameType.Roulette  => "/rulet/index.html",
+        aspnet.Models.GameType.Slots     => "/slot/index.html",
         _ => Model.Game.Name is not null && Model.Game.Name.Contains("Three Body", StringComparison.OrdinalIgnoreCase)
             ? "/threebody/index.html"
             : null

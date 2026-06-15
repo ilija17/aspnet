@@ -8,6 +8,7 @@
     {
         aspnet.Models.GameType.Blackjack => "/kocka/index.html",
         aspnet.Models.GameType.Roulette  => "/rulet/index.html",
+        aspnet.Models.GameType.Slots     => "/slot/index.html",
         _ => null
     };
 
@@ -85,6 +86,7 @@ $(function () {
         var n = (gameName || '').toLowerCase();
         if (n.indexOf('blackjack') !== -1) return '/kocka/index.html';
         if (n.indexOf('roulette') !== -1 || n.indexOf('rulet') !== -1) return '/rulet/index.html';
+        if (n.indexOf('slot') !== -1) return '/slot/index.html';
         if (n.indexOf('threebody') !== -1 || n.indexOf('three body') !== -1) return '/threebody/index.html';
         return null;
     }

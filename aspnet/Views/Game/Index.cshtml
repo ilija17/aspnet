@@ -7,6 +7,7 @@
     {
         aspnet.Models.GameType.Blackjack => "/kocka/index.html",
         aspnet.Models.GameType.Roulette  => "/rulet/index.html",
+        aspnet.Models.GameType.Slots     => "/slot/index.html",
         _ => null
     };
 
@@ -77,6 +78,7 @@ $(function () {
         var t = (type || '').toLowerCase();
         if (t === 'blackjack') return '/kocka/index.html';
         if (t === 'roulette') return '/rulet/index.html';
+        if (t.indexOf('slot') !== -1) return '/slot/index.html';
         if (t && t.toLowerCase().indexOf('threebody') !== -1) return '/threebody/index.html';
         return null;
     }
