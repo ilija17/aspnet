@@ -26,13 +26,17 @@ public record SlotLineWinDTO(
     int[] Cells);        // dužina = Count; redak po stupcu 0..Count-1
 
 // Jedan spin (osnovni ili free). Grid je [stupac][redak] ključeva simbola.
+// FreeSpinsAdded = koliko je free spinova ovaj spin dodijelio (osnovni spin:
+// 15 kod triggera; free spin: retrigger 1→+1, 2→+2, 3+→+15), da klijent može
+// prikazivati "spin X / Y" s rastućim ukupnim brojem.
 public record SlotSpinDTO(
     string[][] Grid,
     List<SlotLineWinDTO> LineWins,
     int ScatterCount,
     decimal ScatterWin,
     decimal SpinWin,
-    bool Free);
+    bool Free,
+    int FreeSpinsAdded);
 
 // Rezultat cijele runde — popunjen samo u odgovoru na /spin.
 public record SlotRoundDTO(
@@ -44,6 +48,25 @@ public record SlotRoundDTO(
     decimal TotalWin,
     decimal BetAmount,
     string Result);             // "win" | "loss"
+
+// Karta izvučena u gamble (crveno/crno) rundi.
+public record SlotGambleCardDTO(
+    string Rank,             // "2".."10", "J", "Q", "K", "A"
+    string Suit,             // "hearts" | "diamonds" | "spades" | "clubs"
+    string Color);           // "red" | "black"
+
+// Stanje gamble (double-or-nothing) igre. Nakon dobitnog spina Offer = zadnji
+// dobitak; prvi pick prebacuje Offer s balansa u Stake. Pogodak boje duplira
+// Stake (može se nastaviti ili pokupiti), promašaj gubi sve.
+public record SlotGambleDTO(
+    decimal Offer,               // dobitak dostupan za gamble (0 = ništa)
+    decimal Stake,               // trenutni iznos u igri (0 = nije aktivno)
+    bool Active,                 // je li gamble u tijeku (Stake na stolu)
+    int Step,                    // broj odigranih pickova u ovoj gamble rundi
+    SlotGambleCardDTO? LastCard, // zadnja izvučena karta
+    string? LastPick,            // "red" | "black" — zadnji odabir igrača
+    bool? LastWon,               // je li zadnji pick pogođen
+    List<SlotGambleCardDTO> History); // izvučene karte ove runde, redom
 
 public record SlotStateDTO(
     long Version,
@@ -61,4 +84,5 @@ public record SlotStateDTO(
     int Spins,
     int FeatureHits,
     bool CanSpin,
+    SlotGambleDTO Gamble,       // stanje red/black gamble igre
     SlotRoundDTO? Round);       // null osim u odgovoru na /spin

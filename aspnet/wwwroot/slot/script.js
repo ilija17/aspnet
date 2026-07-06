@@ -182,6 +182,10 @@ let autoActive = false;
 let autoRemaining = 0; // remaining paid spins; -1 === infinite/until-stop
 let autoSelectedCount = 10; // currently selected count button value
 
+// Red/black gamble (double-or-nothing) UI state.
+let gambleOpen = false; // the gamble panel is showing
+let gambleBusy = false; // a gamble POST / reveal animation is in flight
+
 const ui = {
   table: document.getElementById("table"),
   gate: document.getElementById("gate"),
@@ -220,6 +224,20 @@ const ui = {
   autostopBtn: document.getElementById("autostop-btn"),
   autospinRemaining: document.getElementById("autospin-remaining"),
   autoCounts: Array.from(document.querySelectorAll(".auto-count")),
+  // Gamble (red/black)
+  gamblePanel: document.getElementById("gamble-panel"),
+  gambleStakeLabel: document.getElementById("gamble-stake-label"),
+  gambleStakeValue: document.getElementById("gamble-stake-value"),
+  gambleCard: document.getElementById("gamble-card"),
+  gambleCardInner: document.querySelector("#gamble-card .gamble-card-inner"),
+  gambleCardFront: document.getElementById("gamble-card-front"),
+  gambleCardRank: document.getElementById("gamble-card-rank"),
+  gambleCardSuit: document.getElementById("gamble-card-suit"),
+  gambleMsg: document.getElementById("gamble-msg"),
+  gambleRed: document.getElementById("gamble-red"),
+  gambleBlack: document.getElementById("gamble-black"),
+  gambleCollect: document.getElementById("gamble-collect"),
+  gambleHistory: document.getElementById("gamble-history"),
 };
 
 // reelCells[reel][row] -> the .cell element currently visible in that position.
@@ -510,6 +528,13 @@ async function spin() {
     playSound("lose");
   }
 
+  // Manual winning spins: offer the red/black gamble (never during autospin —
+  // autospin just keeps spinning and the next spin clears the offer).
+  const gamble = result.gamble;
+  if (!autoActive && round.result === "win" && gamble && Number(gamble.offer) > 0) {
+    openGambleOffer(gamble);
+  }
+
   return { ok: true, feature: !!round.featureTriggered };
 }
 
@@ -541,16 +566,27 @@ async function playRound(round) {
   // Base spin.
   runningWin = await playSpin(round.spins[0], runningWin, { free: false });
 
-  // Feature: replay the free spins with distinct presentation.
+  // Feature: replay the free spins with distinct presentation. The banner
+  // shows "Spin X / Y" where Y grows as retriggers land (freeSpinsAdded).
   if (round.featureTriggered && round.spins.length > 1) {
-    await announceFeature(round.freeSpinsAwarded);
+    const initialAward = Number(round.spins[0].freeSpinsAdded) || 15;
+    await announceFeature(initialAward);
     setReelsFeature(true);
+    startFreeSpinMusic();
+    let totalAwarded = initialAward;
     const freeSpins = round.spins.slice(1);
     for (let i = 0; i < freeSpins.length; i += 1) {
-      showFreeBanner(freeSpins.length - i);
+      showFreeBanner(i + 1, totalAwarded);
       runningWin = await playSpin(freeSpins[i], runningWin, { free: true });
+      const added = Number(freeSpins[i].freeSpinsAdded) || 0;
+      if (added > 0) {
+        totalAwarded += added;
+        showFreeBanner(i + 1, totalAwarded);
+        await announceRetrigger(added);
+      }
       await sleep(speed().betweenFree);
     }
+    stopFreeSpinMusic();
     hideFreeBanner();
     setReelsFeature(false);
   }
@@ -558,7 +594,11 @@ async function playRound(round) {
 
 async function playSpin(spin, runningWin, { free }) {
   clearCellStates();
-  await spinReelsTo(spin.grid);
+  if (free) {
+    await starRevealTo(spin.grid);
+  } else {
+    await spinReelsTo(spin.grid);
+  }
 
   // Highlight scatters (lucky ladies anywhere).
   if (spin.scatterCount >= 3) {
@@ -597,11 +637,23 @@ async function playSpin(spin, runningWin, { free }) {
   return runningWin;
 }
 
-// Animate every reel like a real machine: quick acceleration, a sustained
-// fast blur with a rolling random-symbol strip scrolling upward, then a
-// left-to-right staggered deceleration that snaps onto the final `grid` with
-// an elastic settle and a per-reel stop click. Anticipation slows the last
-// reels if 2 scatter Ladies have already landed.
+// Animate every reel like a real machine, with one continuous JS-driven
+// transform per strip: the strip keeps the CURRENTLY visible symbols in the
+// window on frame 1 (no spawn pop), accelerates, cruises with motion blur —
+// symbols falling DOWNWARD through the window like a physical reel — then the
+// reels stop left-to-right with a gentle overshoot-and-settle bounce onto the
+// final `grid`. The old version handed off between a looping CSS keyframe and
+// an inline transform, which snapped the strip to a cell boundary at the
+// moment of the handoff — that was the visible glitch.
+// Anticipation slows the remaining reels once 2 scatter Ladies have landed.
+const SETTLE_BACK = 1.2; // easeOutBack overshoot strength for the reel settle
+
+function easeOutBackGentle(t) {
+  const c1 = SETTLE_BACK;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
 async function spinReelsTo(grid) {
   const reelEls = Array.from(ui.reels.querySelectorAll(".reel"));
   const sp = speed();
@@ -614,74 +666,100 @@ async function spinReelsTo(grid) {
     return;
   }
 
-  const strips = reelEls.map((reel) => reel.querySelector(".reel-strip"));
+  const cellH = reelCells[0][0] ? reelCells[0][0].getBoundingClientRect().height : 0;
+  if (!cellH) {
+    // Layout not measurable (hidden tab etc.) — just show the result.
+    setReelGrid(grid);
+    playSound("reelStop");
+    return;
+  }
 
-  // Build a tall rolling strip per reel: a run of random buffer rows above the
-  // 3 final rows, so the visible window cycles many symbols before settling.
-  const BUFFER = 14;
-  strips.forEach((strip, r) => {
-    strip.style.transition = "none";
-    strip.style.transform = "translateY(0)";
-    strip.innerHTML = "";
-    for (let i = 0; i < BUFFER; i += 1) {
-      strip.appendChild(makeCell(randKey()));
-    }
-    for (let row = 0; row < ROWS; row += 1) {
-      const cell = makeCell(grid[r][row]);
-      strip.appendChild(cell);
-      reelCells[r][row] = cell; // re-point logical cell to the settled tile
-    }
-  });
-
-  reelEls.forEach((reel) => reel.classList.add("spinning"));
   spinReelWhir();
 
-  // Acceleration then sustained fast scroll (shared phase for all reels).
-  await sleep(sp.spinUp + sp.sustain);
-
-  // Track how many scatter Ladies have landed on already-stopped reels.
-  let scattersLanded = 0;
-
+  // Anticipation is known up front (the final grid is already decided):
+  // once 2 Ladies sit on earlier reels, later reels drag out their stop.
+  let ladies = 0;
+  const anticipates = [];
   for (let r = 0; r < REELS; r += 1) {
-    let gap = r === 0 ? sp.firstStop : sp.stagger;
-    // Anticipation: with 2 ladies already showing, drag out the remaining stops.
-    const anticipating = scattersLanded === 2 && r >= 2;
-    if (anticipating) {
-      gap += sp.anticip;
-      reelEls[r].classList.add("anticipate");
-    }
-    await sleep(gap);
-
-    // Stop the continuous roll before the settle transition so our inline
-    // transform isn't fighting the keyframe animation.
-    reelEls[r].classList.remove("spinning");
-
-    // Settle this reel onto its final 3 rows: animate the strip up so the last
-    // ROWS cells land in the window, then snap the DOM back to the resting set.
-    await settleReel(reelEls[r], strips[r], grid[r], sp);
-
-    reelEls[r].classList.remove("anticipate");
-    reelStopBounce(reelEls[r]);
-    playSound("reelStop");
-
-    if (grid[r].includes("lady")) {
-      scattersLanded += 1;
-    }
+    anticipates.push(ladies >= 2 && r >= 2);
+    if (grid[r].includes("lady")) ladies += 1;
   }
+
+  const msPerCell = speedMode === "fast" ? 42 : 58; // cruise pace per symbol
+  let extraDelay = 0;
+  const runs = [];
+  for (let r = 0; r < REELS; r += 1) {
+    if (anticipates[r]) {
+      extraDelay += sp.anticip;
+    }
+    runs.push(
+      spinOneReel(reelEls[r], grid[r], {
+        spinUp: Math.max(80, sp.spinUp),
+        cruise: sp.sustain + sp.firstStop + sp.stagger * r + extraDelay,
+        settle: sp.settle + 180,
+        cellH,
+        vmaxBase: cellH / msPerCell,
+        anticipating: anticipates[r],
+        anticipDur: sp.anticip,
+      })
+    );
+  }
+  await Promise.all(runs);
 }
 
-// Scroll the rolling strip up so its bottom ROWS cells settle into the window,
-// then rebuild the reel to exactly the 3 final cells with an elastic bounce.
-function settleReel(reelEl, strip, column, sp) {
+// One reel: quadratic spin-up → linear cruise → easeOutBack settle, all as a
+// single translateY tween so velocity is continuous at every phase boundary.
+function spinOneReel(reelEl, column, cfg) {
   return new Promise((resolve) => {
-    const cells = strip.children;
-    const cellH = cells.length ? cells[0].getBoundingClientRect().height : 0;
-    const total = cells.length;
-    // Distance to bring the last ROWS rows into view.
-    const targetY = -(total - ROWS) * cellH;
-
+    const { spinUp, cruise, settle, cellH, vmaxBase } = cfg;
+    const strip = reelEl.querySelector(".reel-strip");
     const reelIdx = Number(reelEl.dataset.reelIndex);
+    const currentKeys = reelCells[reelIdx].map((cell) => cell.dataset.key || randKey());
+
+    // Snap total travel to a whole number of cells so the final rows land
+    // exactly in the window, then derive the exact cruise velocity from it.
+    const timeFactor = 0.5 * spinUp + cruise + settle / (SETTLE_BACK + 3);
+    const cells = Math.max(6, Math.min(80, Math.round((vmaxBase * timeFactor) / cellH)));
+    const travel = cells * cellH;
+    const v = travel / timeFactor;
+    const distAccel = 0.5 * v * spinUp;
+    const distSettle = (v * settle) / (SETTLE_BACK + 3);
+    const cruiseDist = travel - distAccel - distSettle;
+    const totalDur = spinUp + cruise + settle;
+
+    // Rebuild the strip for downward travel, top to bottom: one spare row (it
+    // peeks in during the settle overshoot), the final column, random filler,
+    // then the currently visible symbols — the window starts parked on those,
+    // so frame 1 is pixel-identical to the resting reel. The strip is
+    // absolutely positioned (see .reel-strip), so its length never stretches
+    // the reel window.
+    const startOffset = (cells + 1) * cellH; // window sits on the current symbols
+    strip.style.transition = "none";
+    strip.innerHTML = "";
+    strip.appendChild(makeCell(randKey()));
+    for (let row = 0; row < ROWS; row += 1) {
+      strip.appendChild(makeCell(column[row]));
+    }
+    for (let i = 0; i < cells - ROWS; i += 1) {
+      strip.appendChild(makeCell(randKey()));
+    }
+    currentKeys.forEach((key) => strip.appendChild(makeCell(key)));
+    strip.style.transform = `translateY(${-startOffset}px)`;
+
+    if (cfg.anticipating) {
+      const glowAt = Math.max(0, totalDur - settle - cfg.anticipDur);
+      setTimeout(() => reelEl.classList.add("anticipate"), glowAt);
+    }
+
+    reelEl.classList.add("spinning");
+
+    let finished = false;
     const finish = () => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      reelEl.classList.remove("spinning", "anticipate");
       strip.style.transition = "none";
       strip.style.transform = "translateY(0)";
       strip.innerHTML = "";
@@ -690,28 +768,43 @@ function settleReel(reelEl, strip, column, sp) {
         strip.appendChild(cell);
         reelCells[reelIdx][row] = cell;
       }
+      reelStopBounce(reelEl);
+      playSound("reelStop");
       resolve();
     };
 
-    if (!cellH || speedMode === "instant") {
-      finish();
-      return;
-    }
-
-    strip.style.transition = `transform ${sp.settle + 120}ms cubic-bezier(0.18, 0.9, 0.24, 1.06)`;
-    // next frame so the transition applies
-    requestAnimationFrame(() => {
-      strip.style.transform = `translateY(${targetY}px)`;
-    });
-    let done = false;
-    const onEnd = () => {
-      if (done) return;
-      done = true;
-      strip.removeEventListener("transitionend", onEnd);
-      finish();
+    const start = performance.now();
+    const frame = (now) => {
+      if (finished) {
+        return;
+      }
+      const t = now - start;
+      if (t >= totalDur) {
+        finish();
+        return;
+      }
+      let y;
+      if (t <= spinUp) {
+        y = (0.5 * v * t * t) / spinUp;
+      } else if (t <= spinUp + cruise) {
+        y = distAccel + v * (t - spinUp);
+      } else {
+        const s = (t - spinUp - cruise) / settle;
+        y = distAccel + cruiseDist + distSettle * easeOutBackGentle(s);
+        // Drop the motion blur early in the settle so the symbols land readable.
+        if (s > 0.12) {
+          reelEl.classList.remove("spinning");
+        }
+      }
+      // y grows 0 → travel; mapping it against startOffset moves the strip
+      // downward from the current symbols onto the finals (which end at
+      // translateY(-cellH), the row right under the spare overshoot cell).
+      strip.style.transform = `translateY(${y - startOffset}px)`;
+      requestAnimationFrame(frame);
     };
-    strip.addEventListener("transitionend", onEnd);
-    setTimeout(onEnd, sp.settle + 260); // safety fallback
+    requestAnimationFrame(frame);
+    // Safety net (rAF pauses in background tabs): never leave a reel hanging.
+    setTimeout(finish, totalDur + 400);
   });
 }
 
@@ -834,9 +927,10 @@ function setReelsFeature(on) {
   }
 }
 
-function showFreeBanner(remaining) {
+// "Spin X / Y" — Y is the total awarded so far and grows on retriggers.
+function showFreeBanner(current, total) {
   ui.freeBanner.classList.remove("hidden");
-  ui.freeBannerCount.textContent = String(remaining);
+  ui.freeBannerCount.textContent = `Spin ${current} / ${total}`;
   animateFreeBannerTick();
 }
 
@@ -855,6 +949,288 @@ async function announceFeature(awarded) {
   ui.roundResult.textContent = "";
   ui.roundResult.className = "round-result hidden";
 }
+
+// Celebratory "+1 / +2 / +15 FREE SPINS" pop when a free spin retriggers.
+async function announceRetrigger(added) {
+  playSound("feature");
+  triggerActionFx("scatter");
+  const pop = document.createElement("div");
+  pop.className = "retrigger-pop";
+  pop.textContent = `+${added} FREE SPIN${added === 1 ? "" : "S"}`;
+  (ui.reelsFrame || ui.reels).appendChild(pop);
+  const hold = speedMode === "instant" ? 420 : speedMode === "fast" ? 700 : 1150;
+  await sleep(hold);
+  pop.classList.add("out");
+  setTimeout(() => pop.remove(), 400);
+}
+
+// ============================================
+// STARRY FREE-SPIN REVEAL
+// In free spins the result appears under a twinkling star field: every cell
+// is covered, then the covers fade away one at a time — left-to-right by
+// column and bottom-to-top within each column — revealing the symbols.
+// ============================================
+
+function makeStarCover(cell) {
+  const cover = document.createElement("div");
+  cover.className = "star-cover";
+  for (let i = 0; i < 6; i += 1) {
+    const star = document.createElement("span");
+    star.className = "star";
+    star.style.left = `${8 + Math.random() * 78}%`;
+    star.style.top = `${8 + Math.random() * 78}%`;
+    star.style.animationDelay = `${(Math.random() * 1.2).toFixed(2)}s`;
+    star.style.animationDuration = `${(0.8 + Math.random() * 0.9).toFixed(2)}s`;
+    cover.appendChild(star);
+  }
+  cell.appendChild(cover);
+  return cover;
+}
+
+async function starRevealTo(grid) {
+  setReelGrid(grid);
+  // Instant mode: no reveal choreography, results show immediately.
+  if (speedMode === "instant") {
+    playSound("reelStop");
+    return;
+  }
+
+  const per = speedMode === "fast" ? 45 : 85; // gap between cell reveals
+  const lead = speedMode === "fast" ? 160 : 300; // shimmer before the first reveal
+  const covers = [];
+  for (let r = 0; r < REELS; r += 1) {
+    for (let row = 0; row < ROWS; row += 1) {
+      covers.push(makeStarCover(reelCells[r][row]));
+    }
+  }
+  void ui.reels.offsetWidth; // commit covers before any starts fading
+  playSound("sparkle");
+
+  const reveals = [];
+  let order = 0;
+  for (let r = 0; r < REELS; r += 1) {
+    for (let row = ROWS - 1; row >= 0; row -= 1) {
+      const cover = covers[r * ROWS + row];
+      const delay = lead + order * per;
+      order += 1;
+      reveals.push(
+        new Promise((res) => {
+          setTimeout(() => {
+            cover.classList.add("reveal");
+            playSound("coin");
+            setTimeout(() => {
+              cover.remove();
+              res();
+            }, 320);
+          }, delay);
+        })
+      );
+    }
+  }
+  await Promise.all(reveals);
+}
+
+// ============================================
+// GAMBLE — red/black double-or-nothing on the last win.
+// Styled and animated like the blackjack table (wwwroot/kocka): white playing
+// cards with a flip reveal, purple-striped card backs, felt panel. The first
+// pick moves the offer from the balance into the stake; each correct colour
+// doubles it, a wrong one loses everything; Collect banks the stake anytime.
+// ============================================
+
+const SUIT_GLYPHS = { hearts: "♥", diamonds: "♦", spades: "♠", clubs: "♣" };
+
+function renderGambleHistory(history) {
+  ui.gambleHistory.innerHTML = "";
+  (history || []).forEach((card) => {
+    const el = document.createElement("span");
+    el.className = `gamble-mini-card${card.color === "red" ? " red" : ""}`;
+    el.innerHTML = `<b>${card.rank}</b><i>${SUIT_GLYPHS[card.suit] || "?"}</i>`;
+    ui.gambleHistory.appendChild(el);
+  });
+}
+
+function setGambleStake(amount, label) {
+  ui.gambleStakeLabel.textContent = label;
+  ui.gambleStakeValue.textContent = formatMoney(amount);
+}
+
+// Return the card face-down without a visible reverse-flip; optionally play
+// the deal-in slide for a freshly drawn card.
+function resetGambleCard(deal) {
+  ui.gambleCardInner.style.transition = "none";
+  ui.gambleCard.classList.remove("flipped", "won", "lost");
+  void ui.gambleCardInner.offsetWidth;
+  ui.gambleCardInner.style.transition = "";
+  ui.gambleCardRank.textContent = "";
+  ui.gambleCardSuit.textContent = "";
+  ui.gambleCardFront.classList.remove("red");
+  if (deal) {
+    ui.gambleCard.classList.remove("dealt");
+    void ui.gambleCard.offsetWidth;
+    ui.gambleCard.classList.add("dealt");
+  }
+}
+
+function showGambleCardFace(card) {
+  ui.gambleCardRank.textContent = card.rank;
+  ui.gambleCardSuit.textContent = SUIT_GLYPHS[card.suit] || "?";
+  ui.gambleCardFront.classList.toggle("red", card.color === "red");
+  ui.gambleCard.classList.add("flipped");
+}
+
+function updateGambleButtons() {
+  const active = !!(serverState && serverState.gamble && serverState.gamble.active);
+  ui.gambleRed.disabled = gambleBusy;
+  ui.gambleBlack.disabled = gambleBusy;
+  ui.gambleCollect.disabled = gambleBusy;
+  ui.gambleCollect.textContent = active
+    ? `Collect ${formatMoney(serverState.gamble.stake)}`
+    : "Keep Win";
+}
+
+function openGamblePanelBase() {
+  gambleOpen = true;
+  gambleBusy = false;
+  ui.gamblePanel.classList.remove("hidden", "lost");
+}
+
+// Fresh offer right after a winning manual spin (nothing staked yet).
+function openGambleOffer(gamble) {
+  openGamblePanelBase();
+  setGambleStake(Number(gamble.offer || 0), "Your win");
+  ui.gambleMsg.textContent = "Pick a colour to double it — or keep the win.";
+  renderGambleHistory([]);
+  resetGambleCard(false);
+  updateGambleButtons();
+  playSound("bet");
+}
+
+// Re-attach to a gamble already in progress (stake on the table).
+function openGambleActive(gamble) {
+  openGamblePanelBase();
+  setGambleStake(Number(gamble.stake || 0), "On the table");
+  renderGambleHistory(gamble.history);
+  if (gamble.lastCard) {
+    showGambleCardFace(gamble.lastCard);
+  } else {
+    resetGambleCard(false);
+  }
+  ui.gambleMsg.textContent = "Double again or collect.";
+  updateGambleButtons();
+}
+
+function closeGamblePanel() {
+  gambleOpen = false;
+  gambleBusy = false;
+  ui.gamblePanel.classList.add("hidden");
+  ui.gamblePanel.classList.remove("lost");
+  updateControls();
+}
+
+async function pickGamble(choice) {
+  if (!gambleOpen || gambleBusy) {
+    return;
+  }
+  gambleBusy = true;
+  updateGambleButtons();
+  resetGambleCard(true); // slide in a fresh face-down card
+  playSound("button");
+
+  let state;
+  try {
+    state = await apiPost("gamble", { choice });
+  } catch (error) {
+    gambleBusy = false;
+    updateGambleButtons();
+    if (!(error instanceof HandledApiError)) {
+      console.error("Slot error:", error);
+      setStatus("Something went wrong. Try again.", true);
+    }
+    return;
+  }
+
+  const gamble = state.gamble || {};
+  const card = gamble.lastCard;
+
+  // The pick was refused (expired session, nothing to gamble, …): the server
+  // set a status message and drew no card — just sync state and close.
+  if (gamble.lastWon !== true && gamble.lastWon !== false) {
+    applyServerState(state);
+    closeGamblePanel();
+    return;
+  }
+
+  await sleep(380); // beat of suspense while the card sits face-down
+  if (card) {
+    showGambleCardFace(card);
+    playSound("reelStop"); // flip snap
+    await sleep(520);
+  }
+  renderGambleHistory(gamble.history);
+  applyServerState(state); // balance / status / version sync
+
+  if (gamble.lastWon) {
+    playSound("win");
+    ui.gambleCard.classList.add("won");
+    setGambleStake(Number(gamble.stake || 0), "On the table");
+    ui.gambleMsg.textContent = `Correct! ${formatMoney(gamble.stake)} on the table — double again or collect.`;
+    gambleBusy = false;
+    updateGambleButtons();
+  } else {
+    // Wrong colour — the whole stake is gone.
+    playSound("lose");
+    ui.gambleCard.classList.add("lost");
+    ui.gamblePanel.classList.add("lost");
+    setGambleStake(0, "Lost");
+    ui.gambleMsg.textContent = "Wrong colour — the stake is gone.";
+    updateGambleButtons();
+    await sleep(1500);
+    closeGamblePanel();
+  }
+}
+
+async function collectGamble() {
+  if (!gambleOpen || gambleBusy) {
+    return;
+  }
+  playSound("button");
+  const active = !!(serverState && serverState.gamble && serverState.gamble.active);
+  if (!active) {
+    // Offer stage: the win is already on the balance — just decline and close.
+    closeGamblePanel();
+    return;
+  }
+
+  gambleBusy = true;
+  updateGambleButtons();
+  let state;
+  try {
+    state = await apiPost("gamble/collect", {});
+  } catch (error) {
+    gambleBusy = false;
+    updateGambleButtons();
+    if (!(error instanceof HandledApiError)) {
+      console.error("Slot error:", error);
+      setStatus("Something went wrong. Try again.", true);
+    }
+    return;
+  }
+
+  applyServerState(state);
+  playSound("win");
+  triggerActionFx("win");
+  const collected = Number(state.lastWin || 0);
+  setGambleStake(collected, "Collected");
+  ui.gambleMsg.textContent = `Collected ${formatMoney(collected)}!`;
+  gambleBusy = false;
+  await sleep(900);
+  closeGamblePanel();
+}
+
+ui.gambleRed.addEventListener("click", () => pickGamble("red"));
+ui.gambleBlack.addEventListener("click", () => pickGamble("black"));
+ui.gambleCollect.addEventListener("click", () => collectGamble());
 
 // ============================================
 // RENDERING (version-gated)
@@ -966,6 +1342,12 @@ function render(force = false) {
 
   if (serverState.status && !spinning) {
     setStatus(serverState.status);
+  }
+
+  // Re-attach to an in-progress gamble (page reload / focus re-sync): the
+  // stake is still on the table server-side, so bring the panel back up.
+  if (serverState.gamble && serverState.gamble.active && !gambleOpen && !spinning) {
+    openGambleActive(serverState.gamble);
   }
 }
 
@@ -1235,6 +1617,11 @@ const SOUND_CUES = {
     playTone(220, 0.14, "sine", 0.05);
     playTone(160, 0.2, "triangle", 0.04, 0.12);
   },
+  sparkle: () => {
+    playTone(1568, 0.12, "triangle", 0.03);
+    playTone(2093, 0.14, "triangle", 0.025, 0.08);
+    playTone(2637, 0.18, "sine", 0.02, 0.16);
+  },
 };
 
 function playSound(kind) {
@@ -1249,11 +1636,142 @@ function spinReelWhir() {
   playSound("spin");
 }
 
+// ============================================
+// FLORAL FREE-SPINS MUSIC — a gentle pastoral melody loop synthesized with
+// WebAudio (no external audio files). Starts with the feature, stops after,
+// and respects the mute button: muting silences it instantly and stops the
+// scheduler; unmuting mid-feature picks the loop back up.
+// ============================================
+
+const music = { active: false, timer: null, gain: null };
+const MUSIC_VOLUME = 0.9;
+
+// F-major pentatonic garden stroll, 32 gentle steps (~10 s per loop).
+const FLORAL_STEP = 0.32; // seconds per melody step
+const FLORAL_MELODY = [
+  349.23, 440.0, 523.25, 587.33, 523.25, 440.0, 392.0, 440.0,
+  349.23, 440.0, 523.25, 698.46, 587.33, 523.25, 440.0, 392.0,
+  293.66, 349.23, 440.0, 523.25, 440.0, 349.23, 329.63, 349.23,
+  392.0, 440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0,
+];
+// One soft pad root every 8 steps: F3, C3, D3, F3.
+const FLORAL_BASS = [174.61, 130.81, 146.83, 174.61];
+
+function musicContext() {
+  if (!window.AudioContext && !window.webkitAudioContext) {
+    return null;
+  }
+  if (!audioContext) {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    audioContext = new AudioCtor();
+  }
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+  return audioContext;
+}
+
+function musicNote(ctx, freq, at, dur, type, vol) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, at);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(vol, at + 0.06);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  osc.connect(gain);
+  gain.connect(music.gain);
+  osc.start(at);
+  osc.stop(at + dur + 0.05);
+}
+
+function scheduleFloralLoop() {
+  if (!music.active || muted) {
+    return;
+  }
+  const ctx = musicContext();
+  if (!ctx) {
+    return;
+  }
+  if (!music.gain) {
+    music.gain = ctx.createGain();
+    music.gain.gain.value = MUSIC_VOLUME;
+    music.gain.connect(ctx.destination);
+  }
+
+  const t0 = ctx.currentTime + 0.05;
+  FLORAL_MELODY.forEach((freq, i) => {
+    const at = t0 + i * FLORAL_STEP;
+    musicNote(ctx, freq, at, FLORAL_STEP * 1.6, "triangle", 0.035);
+    // Airy octave echo on the off-beats — the "floral" shimmer.
+    if (i % 4 === 2) {
+      musicNote(ctx, freq * 2, at + FLORAL_STEP * 0.5, FLORAL_STEP * 0.9, "sine", 0.012);
+    }
+    // Soft pad: root + fifth held under each 8-step phrase.
+    if (i % 8 === 0) {
+      const bass = FLORAL_BASS[(i / 8) % FLORAL_BASS.length];
+      musicNote(ctx, bass, at, FLORAL_STEP * 7.5, "sine", 0.03);
+      musicNote(ctx, bass * 1.5, at, FLORAL_STEP * 7.5, "sine", 0.016);
+    }
+  });
+
+  const loopMs = FLORAL_MELODY.length * FLORAL_STEP * 1000;
+  music.timer = setTimeout(scheduleFloralLoop, loopMs - 120);
+}
+
+function startFreeSpinMusic() {
+  if (music.active) {
+    return;
+  }
+  music.active = true;
+  scheduleFloralLoop();
+}
+
+function stopFreeSpinMusic() {
+  music.active = false;
+  if (music.timer) {
+    clearTimeout(music.timer);
+    music.timer = null;
+  }
+  if (music.gain && audioContext) {
+    // Fade the tail out instead of cutting scheduled notes dead.
+    const gainNode = music.gain;
+    const now = audioContext.currentTime;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+    gainNode.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+    setTimeout(() => {
+      try {
+        gainNode.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+    }, 700);
+    music.gain = null;
+  }
+}
+
 function setMuted(value) {
   muted = value;
   ui.muteBtn.classList.toggle("muted", muted);
   ui.muteBtn.textContent = muted ? "🔇" : "🔊";
   ui.muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+
+  // Free-spins music: silence instantly on mute, resume the loop on unmute.
+  if (muted) {
+    if (music.timer) {
+      clearTimeout(music.timer);
+      music.timer = null;
+    }
+    if (music.gain) {
+      music.gain.gain.value = 0;
+    }
+  } else if (music.active) {
+    if (music.gain && audioContext) {
+      music.gain.gain.setValueAtTime(MUSIC_VOLUME, audioContext.currentTime);
+    }
+    scheduleFloralLoop();
+  }
 }
 
 ui.muteBtn.addEventListener("click", () => {

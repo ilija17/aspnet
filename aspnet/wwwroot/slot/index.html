@@ -37,7 +37,7 @@
           <section class="cabinet" aria-label="Reels">
             <div id="free-banner" class="free-banner hidden" aria-live="polite">
               <span class="free-banner-title">FREE SPINS</span>
-              <span id="free-banner-count" class="free-banner-count">0</span>
+              <span id="free-banner-count" class="free-banner-count">Spin 1 / 15</span>
             </div>
 
             <div class="reels-frame">
@@ -93,8 +93,49 @@
             <p class="paytable-rules">
               <strong>Lucky Lady</strong> is <strong>wild</strong> (substitutes for any symbol on a line)
               <em>and</em> <strong>scatter</strong>: land 3+ anywhere to win the
-              <strong>Feature — 15 Free Spins</strong> at the triggering bet. Free spins can retrigger.
+              <strong>Feature — 15 Free Spins</strong> at the triggering bet.
+              During free spins <em>every</em> Lady retriggers: <strong>1 Lady → +1 spin</strong>,
+              <strong>2 Ladies → +2</strong>, <strong>3+ Ladies → +15</strong> (up to 300 free spins total).
+              After any winning spin you can <strong>gamble</strong> the win on <em>Red or Black</em>:
+              a correct card colour <strong>doubles</strong> the amount — keep doubling or collect at any
+              time — a wrong colour loses it all.
             </p>
+          </section>
+
+          <section id="gamble-panel" class="gamble-panel hidden" aria-label="Gamble — red or black" aria-live="polite">
+            <div class="gamble-table">
+              <header class="gamble-head">
+                <h2>Red or Black?</h2>
+                <p class="gamble-sub">Guess the next card's colour to double your money</p>
+              </header>
+
+              <div class="gamble-stake">
+                <span id="gamble-stake-label" class="gamble-stake-label">Your win</span>
+                <span id="gamble-stake-value" class="gamble-stake-value">$0.00</span>
+              </div>
+
+              <div class="gamble-card-zone">
+                <div id="gamble-card" class="gamble-card">
+                  <div class="gamble-card-inner">
+                    <div class="gamble-face gamble-back" aria-hidden="true"><span>?</span></div>
+                    <div id="gamble-card-front" class="gamble-face gamble-front">
+                      <span id="gamble-card-rank" class="rank"></span>
+                      <span id="gamble-card-suit" class="suit"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p id="gamble-msg" class="gamble-msg"></p>
+
+              <div class="gamble-actions">
+                <button id="gamble-red" class="btn gamble-red-btn" type="button">Red ♥</button>
+                <button id="gamble-black" class="btn gamble-black-btn" type="button">Black ♠</button>
+                <button id="gamble-collect" class="btn btn-primary" type="button">Keep Win</button>
+              </div>
+
+              <div id="gamble-history" class="gamble-history" aria-label="Cards drawn this round"></div>
+            </div>
           </section>
         </div>
       </section>

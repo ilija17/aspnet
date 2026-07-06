@@ -54,4 +54,19 @@ public class SlotApiController : ControllerBase
 
     [HttpPost("spin")]
     public ActionResult<SlotStateDTO> Spin() => WithPlayer(_game.Spin);
+
+    public record SlotGambleRequest(string? Choice);
+
+    // Red/black gamble zadnjeg dobitka: prvi pick ulaže dobitak, pogodak
+    // duplira, promašaj gubi sve; /gamble/collect kupi trenutni ulog.
+    [HttpPost("gamble")]
+    public ActionResult<SlotStateDTO> Gamble([FromBody] SlotGambleRequest req)
+    {
+        if (req.Choice is not ("red" or "black"))
+            return BadRequest(new { error = "choice must be \"red\" or \"black\"." });
+        return WithPlayer(id => _game.Gamble(id, req.Choice));
+    }
+
+    [HttpPost("gamble/collect")]
+    public ActionResult<SlotStateDTO> CollectGamble() => WithPlayer(_game.CollectGamble);
 }

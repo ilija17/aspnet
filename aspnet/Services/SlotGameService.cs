@@ -22,10 +22,21 @@ public class SlotGameService
     private const int ScatterTrigger = 3;
     private const int MaxTotalFreeSpins = 300; // tvrdi limit protiv runaway retriggera
 
+    // Retrigger tijekom free spinova: već 1 Lady dodaje spinove.
+    // 1 → +1, 2 → +2, 3+ → +15.
+    private static int RetriggerAward(int scatters) => scatters switch
+    {
+        1 => 1,
+        2 => 2,
+        >= ScatterTrigger => FreeSpinsPerTrigger,
+        _ => 0
+    };
+
     // Globalni množitelj svih dobitaka kojim se RTP namješta na ~120%.
     // Dobitci skaliraju linearno pa je: RtpScale = 1.20 / izmjereni_bazni_RTP.
     // Vrijednost potvrđena SlotRtpTests (RTP ostaje u [1.15, 1.25]).
-    public const decimal RtpScale = 1.7613m;
+    // Re-tunean nakon uvođenja retriggera 1→+1 / 2→+2 / 3+→+15.
+    public const decimal RtpScale = 1.2764m;
 
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
 
@@ -187,34 +198,37 @@ public class SlotGameService
 
         var grid = SpinGrid(rng);
         var (lineWins, scatterWin, scatterCount, baseTotal) = Evaluate(grid, totalBet);
-        spins.Add(BuildSpin(grid, lineWins, scatterWin, scatterCount, baseTotal, free: false));
 
         var triggered = scatterCount >= ScatterTrigger;
         var remaining = triggered ? FreeSpinsPerTrigger : 0;
         var awarded = remaining;
         decimal freeWin = 0;
 
+        spins.Add(BuildSpin(grid, lineWins, scatterWin, scatterCount, baseTotal, free: false, freeSpinsAdded: awarded));
+
         while (remaining > 0 && awarded <= MaxTotalFreeSpins)
         {
             remaining--;
             var fg = SpinGrid(rng);
             var (fl, fsc, fScatter, fTotal) = Evaluate(fg, totalBet);
-            spins.Add(BuildSpin(fg, fl, fsc, fScatter, fTotal, free: true));
             freeWin += fTotal;
 
-            // Retrigger: 3+ Lady tijekom free spina dodaje još 15 (do limita).
-            if (fScatter >= ScatterTrigger && awarded < MaxTotalFreeSpins)
+            // Retrigger: svaka Lady tijekom free spina dodaje spinove
+            // (1→+1, 2→+2, 3+→+15), do tvrdog limita.
+            var add = Math.Min(RetriggerAward(fScatter), MaxTotalFreeSpins - awarded);
+            if (add > 0)
             {
-                var add = Math.Min(FreeSpinsPerTrigger, MaxTotalFreeSpins - awarded);
                 remaining += add;
                 awarded += add;
             }
+
+            spins.Add(BuildSpin(fg, fl, fsc, fScatter, fTotal, free: true, freeSpinsAdded: add));
         }
 
         return (spins, awarded, triggered, baseTotal, freeWin);
     }
 
-    private static SlotSpinDTO BuildSpin(int[][] grid, List<LineWin> lineWins, decimal scatterWin, int scatterCount, decimal total, bool free)
+    private static SlotSpinDTO BuildSpin(int[][] grid, List<LineWin> lineWins, decimal scatterWin, int scatterCount, decimal total, bool free, int freeSpinsAdded)
     {
         var keyGrid = new string[Reels][];
         for (var r = 0; r < Reels; r++)
@@ -228,7 +242,7 @@ public class SlotGameService
             .Select(w => new SlotLineWinDTO(w.Line, Symbols[w.SymbolIndex].Key, w.Count, Round2(w.Amount), w.Cells))
             .ToList();
 
-        return new SlotSpinDTO(keyGrid, lineDtos, scatterCount, Round2(scatterWin), Round2(total), free);
+        return new SlotSpinDTO(keyGrid, lineDtos, scatterCount, Round2(scatterWin), Round2(total), free, freeSpinsAdded);
     }
 
     private static decimal Round2(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
@@ -244,6 +258,30 @@ public class SlotGameService
         public decimal LastWin;
         public int Spins;
         public int FeatureHits;
+
+        // Red/black gamble: Offer = zadnji dobitak dostupan za gamble; prvi
+        // pick ga skida s balansa u Stake. Pogodak duplira Stake, promašaj
+        // gubi sve; Collect vraća Stake na balans.
+        public decimal GambleOffer;
+        public decimal GambleStake;
+        public bool GambleActive;
+        public int GambleStep;
+        public SlotGambleCardDTO? GambleLastCard;
+        public string? GambleLastPick;
+        public bool? GambleLastWon;
+        public List<SlotGambleCardDTO> GambleHistory = new();
+
+        public void ResetGamble()
+        {
+            GambleOffer = 0;
+            GambleStake = 0;
+            GambleActive = false;
+            GambleStep = 0;
+            GambleLastCard = null;
+            GambleLastPick = null;
+            GambleLastWon = null;
+            GambleHistory = new List<SlotGambleCardDTO>();
+        }
     }
 
     private readonly object _sync = new();
@@ -275,12 +313,19 @@ public class SlotGameService
 
         var state = Mutate(playerId, (s, db, p) =>
         {
+            if (s.GambleActive)
+            {
+                s.Status = "Finish your gamble first — collect or pick a color.";
+                return;
+            }
+
             if (s.SelectedBet > p.Balance)
             {
                 s.Status = "Insufficient balance for this bet.";
                 return;
             }
 
+            s.ResetGamble(); // novi spin poništava neiskorištenu gamble ponudu
             p.Balance -= s.SelectedBet;
             AddTransaction(db, p.Id, TransactionType.Bet, s.SelectedBet);
 
@@ -296,6 +341,7 @@ public class SlotGameService
             s.Spins++;
             if (triggered) s.FeatureHits++;
             s.LastWin = totalWin;
+            s.GambleOffer = totalWin; // dobitak se može gambleati (red/black)
 
             s.Status = triggered
                 ? $"Feature! {awarded} free spins paid ${totalWin:0.##}."
@@ -316,6 +362,88 @@ public class SlotGameService
 
         return state with { Round = round };
     }
+
+    // ── Red/black gamble (double or nothing) ───────────────────────────────
+
+    private static readonly string[] GambleRanks =
+        { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+    private static readonly string[] GambleSuits = { "hearts", "diamonds", "spades", "clubs" };
+
+    // Prvi pick prebacuje ponudu (zadnji dobitak) s balansa u ulog; svaki
+    // pogodak boje duplira ulog, promašaj gubi sve. Fer 50/50, EV-neutralno.
+    public SlotStateDTO Gamble(int playerId, string choice)
+        => Mutate(playerId, (s, db, p) =>
+        {
+            var pick = choice?.Trim().ToLowerInvariant();
+            if (pick is not ("red" or "black"))
+            {
+                s.Status = "Pick red or black.";
+                return;
+            }
+
+            if (!s.GambleActive)
+            {
+                if (s.GambleOffer <= 0)
+                {
+                    s.Status = "Nothing to gamble — win a spin first.";
+                    return;
+                }
+                if (s.GambleOffer > p.Balance)
+                {
+                    s.Status = "Balance too low to stake the gamble.";
+                    return;
+                }
+                p.Balance -= s.GambleOffer;
+                AddTransaction(db, p.Id, TransactionType.Bet, s.GambleOffer);
+                s.GambleStake = s.GambleOffer;
+                s.GambleOffer = 0;
+                s.GambleActive = true;
+            }
+
+            var suit = GambleSuits[_rng.Next(GambleSuits.Length)];
+            var card = new SlotGambleCardDTO(
+                GambleRanks[_rng.Next(GambleRanks.Length)],
+                suit,
+                suit is "hearts" or "diamonds" ? "red" : "black");
+
+            s.GambleStep++;
+            s.GambleLastCard = card;
+            s.GambleLastPick = pick;
+            s.GambleHistory.Add(card);
+
+            if (card.Color == pick)
+            {
+                s.GambleLastWon = true;
+                s.GambleStake = Round2(s.GambleStake * 2);
+                s.Status = $"{Cap(card.Color)} — correct! ${s.GambleStake:0.00} on the table. Double or collect?";
+            }
+            else
+            {
+                s.GambleLastWon = false;
+                var lost = s.GambleStake;
+                s.GambleStake = 0;
+                s.GambleActive = false;
+                s.Status = $"{Cap(card.Color)} — wrong. ${lost:0.00} gone. Spin again!";
+            }
+        });
+
+    public SlotStateDTO CollectGamble(int playerId)
+        => Mutate(playerId, (s, db, p) =>
+        {
+            if (!s.GambleActive || s.GambleStake <= 0)
+            {
+                s.Status = "No gamble to collect.";
+                return;
+            }
+            var amount = s.GambleStake;
+            p.Balance += amount;
+            AddTransaction(db, p.Id, TransactionType.Win, amount);
+            s.LastWin = amount;
+            s.ResetGamble();
+            s.Status = $"Collected ${amount:0.00}. Spin to play.";
+        });
+
+    private static string Cap(string s) => char.ToUpperInvariant(s[0]) + s[1..];
 
     private SlotStateDTO Mutate(int playerId, Action<GameSession, CasinoDbContext, Player> action)
     {
@@ -364,7 +492,16 @@ public class SlotGameService
             LastWin: s.LastWin,
             Spins: s.Spins,
             FeatureHits: s.FeatureHits,
-            CanSpin: s.SelectedBet <= p.Balance,
+            CanSpin: s.SelectedBet <= p.Balance && !s.GambleActive,
+            Gamble: new SlotGambleDTO(
+                Offer: s.GambleOffer,
+                Stake: s.GambleStake,
+                Active: s.GambleActive,
+                Step: s.GambleStep,
+                LastCard: s.GambleLastCard,
+                LastPick: s.GambleLastPick,
+                LastWon: s.GambleLastWon,
+                History: s.GambleHistory.ToList()),
             Round: null);
 
     private static void AddTransaction(CasinoDbContext db, int playerId, TransactionType type, decimal amount)
