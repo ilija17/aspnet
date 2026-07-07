@@ -309,6 +309,12 @@
 
                 <button id="spin-btn" class="btn btn-spin" type="button">Spin</button>
 
+                <button id="gamble-btn" class="btn btn-gamble" type="button" disabled
+                        title="Gamble your last win on Red or Black">
+                  <span class="gamble-btn-label">Gamble</span>
+                  <span class="gamble-btn-suits" aria-hidden="true"><b class="suit-red">♥</b><b class="suit-black">♠</b></span>
+                </button>
+
                 <div class="buy-wrap">
                   <button id="buy-btn" class="btn btn-buy" type="button">
                     <span class="buy-title">Buy Bonus</span>
@@ -338,6 +344,11 @@
                     Stop <span id="autospin-remaining" class="auto-remaining">0</span>
                   </button>
                 </div>
+                <label class="auto-gamble-toggle" for="auto-gamble-prompt"
+                       title="When checked, the Red or Black gamble opens by itself after every winning spin. Unchecked, wins bank as usual — use the Gamble button to double them.">
+                  <input type="checkbox" id="auto-gamble-prompt" />
+                  <span>Auto-gamble prompt</span>
+                </label>
                 <p id="status" class="status-line">Connecting…</p>
               </div>
             </div>
@@ -482,43 +493,46 @@
           </p>
         </section>
 
-        <section id="gamble-panel" class="gamble-panel hidden" aria-label="Gamble — red or black" aria-live="polite">
-          <div class="gamble-table">
-            <header class="gamble-head">
-              <h2>Red or Black?</h2>
-              <p class="gamble-sub">Guess the next card's colour to double your money</p>
-            </header>
-
-            <div class="gamble-stake">
-              <span id="gamble-stake-label" class="gamble-stake-label">Your win</span>
-              <span id="gamble-stake-value" class="gamble-stake-value">$0.00</span>
-            </div>
-
-            <div class="gamble-card-zone">
-              <div id="gamble-card" class="gamble-card">
-                <div class="gamble-card-inner">
-                  <div class="gamble-face gamble-back" aria-hidden="true"><span>☘</span></div>
-                  <div id="gamble-card-front" class="gamble-face gamble-front">
-                    <span id="gamble-card-rank" class="rank"></span>
-                    <span id="gamble-card-suit" class="suit"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p id="gamble-msg" class="gamble-msg"></p>
-
-            <div class="gamble-actions">
-              <button id="gamble-red" class="btn gamble-red-btn" type="button">Red ♥</button>
-              <button id="gamble-black" class="btn gamble-black-btn" type="button">Black ♠</button>
-              <button id="gamble-collect" class="btn btn-primary" type="button">Keep Win</button>
-            </div>
-
-            <div id="gamble-history" class="gamble-history" aria-label="Cards drawn this round"></div>
-          </div>
-        </section>
       </section>
     </main>
+
+    <!-- Floating red/black gamble overlay — fixed above the whole cabinet -->
+    <section id="gamble-panel" class="gamble-panel hidden" role="dialog" aria-modal="true"
+             aria-label="Gamble — red or black" aria-live="polite">
+      <div class="gamble-table">
+        <header class="gamble-head">
+          <h2>Red or Black?</h2>
+          <p class="gamble-sub">Guess the next card's colour to double your money</p>
+        </header>
+
+        <div class="gamble-stake">
+          <span id="gamble-stake-label" class="gamble-stake-label">Your win</span>
+          <span id="gamble-stake-value" class="gamble-stake-value">$0.00</span>
+        </div>
+
+        <div class="gamble-card-zone">
+          <div id="gamble-card" class="gamble-card">
+            <div class="gamble-card-inner">
+              <div class="gamble-face gamble-back" aria-hidden="true"><span>☘</span></div>
+              <div id="gamble-card-front" class="gamble-face gamble-front">
+                <span id="gamble-card-rank" class="rank"></span>
+                <span id="gamble-card-suit" class="suit"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p id="gamble-msg" class="gamble-msg"></p>
+
+        <div class="gamble-actions">
+          <button id="gamble-red" class="btn gamble-red-btn" type="button">Red ♥</button>
+          <button id="gamble-black" class="btn gamble-black-btn" type="button">Black ♠</button>
+          <button id="gamble-collect" class="btn btn-primary" type="button">Keep Win</button>
+        </div>
+
+        <div id="gamble-history" class="gamble-history" aria-label="Cards drawn this round"></div>
+      </div>
+    </section>
 
     <div id="vfx-layer" aria-hidden="true"></div>
     <div id="banner-layer" class="banner-layer" aria-live="polite"></div>

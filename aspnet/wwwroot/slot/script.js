@@ -270,6 +270,7 @@ let autoSelectedCount = 10;
 
 let gambleOpen = false;
 let gambleBusy = false;
+let autoGamblePrompt = false; // auto-open the gamble panel after a winning spin (persisted)
 
 const ui = {
   game: document.getElementById("game"),
@@ -300,6 +301,8 @@ const ui = {
   betMin: document.getElementById("bet-min"),
   betMax: document.getElementById("bet-max"),
   spinBtn: document.getElementById("spin-btn"),
+  gambleBtn: document.getElementById("gamble-btn"),
+  autoGambleToggle: document.getElementById("auto-gamble-prompt"),
   buyBtn: document.getElementById("buy-btn"),
   buyCost: document.getElementById("buy-cost"),
   buyConfirm: document.getElementById("buy-confirm"),
@@ -695,9 +698,11 @@ async function playPaidRound(endpoint) {
     playSound("lose");
   }
 
-  // Manual winning rounds: offer the red/black gamble (never in autospin).
+  // Manual winning rounds: auto-open the red/black gamble only when the
+  // player opted in (never in autospin). Otherwise the win banks and the
+  // Gamble button stays lit while the offer lasts.
   const gamble = result.gamble;
-  if (!autoActive && round.result === "win" && gamble && Number(gamble.offer) > 0) {
+  if (autoGamblePrompt && !autoActive && round.result === "win" && gamble && Number(gamble.offer) > 0) {
     openGambleOffer(gamble);
   }
 
@@ -1236,7 +1241,6 @@ function openGamblePanelBase() {
   gambleOpen = true;
   gambleBusy = false;
   ui.gamblePanel.classList.remove("hidden", "lost");
-  ui.gamblePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function openGambleOffer(gamble) {
@@ -1372,6 +1376,77 @@ ui.gambleRed.addEventListener("click", () => pickGamble("red"));
 ui.gambleBlack.addEventListener("click", () => pickGamble("black"));
 ui.gambleCollect.addEventListener("click", () => collectGamble());
 
+// — Gamble button (next to Spin): opens the overlay while an offer or an
+//   in-progress red/black round is available. —
+
+ui.gambleBtn.addEventListener("click", () => {
+  if (ui.gambleBtn.disabled || gambleOpen) {
+    return;
+  }
+  const gamble = serverState?.gamble;
+  if (!gamble) {
+    return;
+  }
+  animateButtonPress(ui.gambleBtn);
+  playSound("button");
+  if (gamble.active) {
+    openGambleActive(gamble);
+  } else if (Number(gamble.offer) > 0) {
+    openGambleOffer(gamble);
+  }
+});
+
+// — Dismissing the overlay (Escape / backdrop click) acts like "Keep Win",
+//   but only when it is safe: a pick or collect in flight (gambleBusy —
+//   including the forced post-loss hold) simply ignores the dismissal. —
+
+function tryDismissGamble() {
+  if (!gambleOpen || gambleBusy) {
+    return;
+  }
+  collectGamble();
+}
+
+ui.gamblePanel.addEventListener("click", (e) => {
+  if (e.target === ui.gamblePanel) {
+    tryDismissGamble();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && gambleOpen) {
+    e.preventDefault();
+    tryDismissGamble();
+  }
+});
+
+// — Auto-gamble prompt checkbox (persisted; default off) —
+
+function setAutoGamblePrompt(on) {
+  autoGamblePrompt = !!on;
+  ui.autoGambleToggle.checked = autoGamblePrompt;
+  try {
+    localStorage.setItem("slot.autoGamblePrompt", autoGamblePrompt ? "1" : "0");
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+ui.autoGambleToggle.addEventListener("change", () => {
+  setAutoGamblePrompt(ui.autoGambleToggle.checked);
+  playSound("button");
+});
+
+(function initAutoGamblePrompt() {
+  let saved = "0";
+  try {
+    saved = localStorage.getItem("slot.autoGamblePrompt") || "0";
+  } catch {
+    /* ignore */
+  }
+  setAutoGamblePrompt(saved === "1");
+})();
+
 // ============================================================
 // RENDERING (version-gated)
 // ============================================================
@@ -1410,6 +1485,12 @@ function updateControls() {
 
   ui.spinBtn.disabled = lockedOut || !serverState?.canSpin || insufficient;
   ui.spinBtn.textContent = spinning ? "Spinning…" : insufficient ? "No Funds" : "Spin";
+
+  // Gamble is available while last spin's win is still on offer, or while
+  // a red/black round is in progress (the server voids offers on new spins).
+  const gamble = serverState?.gamble;
+  const gambleAvailable = !!gamble && (Number(gamble.offer) > 0 || gamble.active === true);
+  ui.gambleBtn.disabled = lockedOut || !gambleAvailable;
 
   ui.buyBtn.disabled = lockedOut || !serverState?.canBuy;
   if (ui.buyBtn.disabled && !ui.buyConfirm.classList.contains("hidden")) {
