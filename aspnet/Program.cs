@@ -262,32 +262,32 @@ app.MapGet("/mcp-info", () => Results.Content($$"""
     <h2 class="section-title">🛠 Available Tools</h2>
 
     <div class="card">
-        <h3>SearchAll</h3>
+        <h3>search_all</h3>
         <p class="desc">Searches across all entities (Casinos, Players, Games, Tables, Employees, Reservations, Transactions) and returns matching results grouped by type.</p>
         <div class="meta"><span>Query:</span><span>string q, int limit = 5</span></div>
     </div>
     <div class="card">
-        <h3>GetEntityCounts</h3>
+        <h3>get_entity_counts</h3>
         <p class="desc">Returns a summary of database entity counts (row counts for each table).</p>
         <div class="meta"><span>Parameters:</span><span>none</span></div>
     </div>
     <div class="card">
-        <h3>ListCasinos</h3>
+        <h3>list_casinos</h3>
         <p class="desc">Returns a list of all casinos with their IDs, names, and addresses.</p>
         <div class="meta"><span>Parameters:</span><span>none</span></div>
     </div>
     <div class="card">
-        <h3>ListPlayers</h3>
+        <h3>list_players</h3>
         <p class="desc">Returns a list of all players with their IDs, names, emails, and balances.</p>
         <div class="meta"><span>Parameters:</span><span>none</span></div>
     </div>
     <div class="card">
-        <h3>GetTableAvailability</h3>
+        <h3>get_table_availability</h3>
         <p class="desc">Returns all tables grouped by casino, showing which are available.</p>
         <div class="meta"><span>Parameters:</span><span>none</span></div>
     </div>
     <div class="card">
-        <h3>GetDatabaseSchema</h3>
+        <h3>get_database_schema</h3>
         <p class="desc">Returns the database schema and application route map for the Casino Management System.</p>
         <div class="meta"><span>Parameters:</span><span>none</span></div>
     </div>

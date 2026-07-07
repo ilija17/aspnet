@@ -33,6 +33,29 @@ public class SearchController : Controller
         _transactions = transactions;
     }
 
+    /// Statički popis stranica/izbornika da pretraga pokriva i navigaciju,
+    /// ne samo podatke. Id je 0 jer stranice nemaju entitet u bazi.
+    private static readonly (string Title, string Subtitle, string Url)[] Pages =
+    [
+        ("Početna",      "Naslovna stranica",              "/"),
+        ("Kasina",       "Popis i upravljanje kasinima",   "/kasina"),
+        ("Stolovi",      "Popis i upravljanje stolovima",  "/stolovi"),
+        ("Igre",         "Popis i upravljanje igrama",     "/igre"),
+        ("Igrači",       "Popis i upravljanje igračima",   "/igraci"),
+        ("Djelatnici",   "Popis i upravljanje djelatnicima", "/djelatnici"),
+        ("Rezervacije",  "Popis i upravljanje rezervacijama", "/rezervacije"),
+        ("Transakcije",  "Popis transakcija",              "/transakcije"),
+        ("Playground",   "Casino igre",                    "/playground"),
+        ("Vision",       "Vision stranica",                "/vision"),
+        ("Blackjack",    "Igra — blackjack",               "/kocka/index.html"),
+        ("Rulet",        "Igra — rulet",                   "/rulet/index.html"),
+        ("Slot",         "Igra — slot",                    "/slot/index.html"),
+        ("Three Body",   "Igra — three body",              "/threebody/index.html"),
+        ("Moj profil",   "Profil prijavljenog korisnika",  "/Account/Profile"),
+        ("Prijava",      "Prijava korisnika",              "/Account/Login"),
+        ("Registracija", "Registracija korisnika",         "/Account/Register"),
+    ];
+
     [HttpGet("")]
     public IActionResult Index(string q, int limit = 5)
     {
@@ -40,6 +63,19 @@ public class SearchController : Controller
             return Json(new GlobalSearchResultDTO());
 
         var hits = new List<SearchHitDTO>();
+
+        hits.AddRange(Pages
+            .Where(p => p.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+                     || p.Url.Contains(q, StringComparison.OrdinalIgnoreCase))
+            .Take(limit)
+            .Select(p => new SearchHitDTO
+            {
+                Type = "Stranice",
+                Id = 0,
+                Title = p.Title,
+                Subtitle = p.Subtitle,
+                Url = p.Url
+            }));
 
         hits.AddRange(_casinos.Search(q).Take(limit).Select(c => new SearchHitDTO
         {
