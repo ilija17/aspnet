@@ -43,7 +43,8 @@ public class TransactionController : Controller
         var results = _repo.Search(q).Select(t => new
         {
             id = t.Id,
-            player = $"{t.Player?.FirstName} {t.Player?.LastName}",
+            playerId = t.PlayerId,
+            playerName = $"{t.Player?.FirstName} {t.Player?.LastName}",
             amount = t.Amount,
             type = t.Type.ToString(),
             createdAt = t.CreatedAt.ToString("dd.MM.yyyy HH:mm")

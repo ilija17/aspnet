@@ -230,6 +230,182 @@ public class ChatToolService
                     },
                     required = new[] { "reservationId" }
                 }));
+
+            // ── Casino CRUD ───────────────────────────────────────────────────
+            tools.Add(Tool("create_casino",
+                "Staff only: create a new casino. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        name = new { type = "string", description = "Casino name, max 200 characters." },
+                        address = new { type = "string", description = "Full address, max 300 characters." },
+                        licenseNumber = new { type = "string", description = "License number, max 50 characters." },
+                        foundedDate = new { type = "string", description = "ISO date of founding, e.g. 2020-01-15." }
+                    },
+                    required = new[] { "name", "address", "licenseNumber", "foundedDate" }
+                }));
+            tools.Add(Tool("update_casino",
+                "Staff only: update casino fields. Only provided fields change. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        casinoId = new { type = "integer", description = "Casino id." },
+                        name = new { type = "string", description = "New name, max 200 characters." },
+                        address = new { type = "string", description = "New address, max 300 characters." },
+                        licenseNumber = new { type = "string", description = "New license number, max 50 characters." },
+                        foundedDate = new { type = "string", description = "New ISO founding date." }
+                    },
+                    required = new[] { "casinoId" }
+                }));
+            tools.Add(Tool("delete_casino",
+                "Staff only: delete a casino by id. Cannot be undone. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        casinoId = new { type = "integer", description = "Casino id to delete." }
+                    },
+                    required = new[] { "casinoId" }
+                }));
+
+            // ── Game CRUD ─────────────────────────────────────────────────────
+            tools.Add(Tool("create_game",
+                "Staff only: create a new game type. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        name = new { type = "string", description = "Game name, max 100 characters." },
+                        type = new { type = "string", @enum = GameTypeNames, description = "Game type." },
+                        minBet = new { type = "number", description = "Minimum bet, 0.01 to 1000000. Default 1." },
+                        maxBet = new { type = "number", description = "Maximum bet, 0.01 to 1000000. Default 100." },
+                        description = new { type = "string", description = "Optional description, max 500 characters." }
+                    },
+                    required = new[] { "name", "type" }
+                }));
+            tools.Add(Tool("update_game",
+                "Staff only: update game fields. Only provided fields change. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        gameId = new { type = "integer", description = "Game id." },
+                        name = new { type = "string", description = "New name, max 100 characters." },
+                        type = new { type = "string", @enum = GameTypeNames, description = "New game type." },
+                        minBet = new { type = "number", description = "New minimum bet." },
+                        maxBet = new { type = "number", description = "New maximum bet." },
+                        description = new { type = "string", description = "New description." }
+                    },
+                    required = new[] { "gameId" }
+                }));
+            tools.Add(Tool("delete_game",
+                "Staff only: delete a game by id. Cannot be undone. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        gameId = new { type = "integer", description = "Game id to delete." }
+                    },
+                    required = new[] { "gameId" }
+                }));
+
+            // ── Employee CRUD ──────────────────────────────────────────────────
+            tools.Add(Tool("create_employee",
+                "Staff only: create a new employee. casinoId must reference an existing casino. " +
+                "Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        firstName = new { type = "string", description = "First name, max 100 characters." },
+                        lastName = new { type = "string", description = "Last name, max 100 characters." },
+                        position = new { type = "string", description = "Job position, e.g. Dealer, Cashier, Manager, Pit Boss." },
+                        casinoId = new { type = "integer", description = "Id of the casino they work at." }
+                    },
+                    required = new[] { "firstName", "lastName", "position", "casinoId" }
+                }));
+            tools.Add(Tool("update_employee",
+                "Staff only: update employee fields. Only provided fields change. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        employeeId = new { type = "integer", description = "Employee id." },
+                        firstName = new { type = "string" },
+                        lastName = new { type = "string" },
+                        position = new { type = "string" },
+                        casinoId = new { type = "integer", description = "Move employee to a different casino." }
+                    },
+                    required = new[] { "employeeId" }
+                }));
+            tools.Add(Tool("delete_employee",
+                "Staff only: delete an employee by id. Cannot be undone. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        employeeId = new { type = "integer", description = "Employee id to delete." }
+                    },
+                    required = new[] { "employeeId" }
+                }));
+
+            // ── Table CRUD (create + delete, update already exists) ────────────
+            tools.Add(Tool("create_table",
+                "Staff only: create a new table in a casino. casinoId and gameId must reference existing records. " +
+                "Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        tableNumber = new { type = "integer", description = "Table number, must be positive." },
+                        casinoId = new { type = "integer", description = "Id of the casino." },
+                        gameId = new { type = "integer", description = "Id of the game played at this table." },
+                        isAvailable = new { type = "boolean", description = "Whether the table is available. Default true." },
+                        minBet = new { type = "number", description = "Minimum bet. Default 10." },
+                        maxBet = new { type = "number", description = "Maximum bet. Default 500." }
+                    },
+                    required = new[] { "tableNumber", "casinoId", "gameId" }
+                }));
+            tools.Add(Tool("delete_table",
+                "Staff only: delete a table by id. Cannot be undone. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        tableId = new { type = "integer", description = "Table id to delete." }
+                    },
+                    required = new[] { "tableId" }
+                }));
+
+            // ── Player CRUD (create new; update already exists) ─────────────────
+            tools.Add(Tool("create_player",
+                "Staff only: create a new player. Only call when the user explicitly asks.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        firstName = new { type = "string", description = "First name, max 100 characters." },
+                        lastName = new { type = "string", description = "Last name, max 100 characters." },
+                        email = new { type = "string", description = "Email address (unique per player)." },
+                        dateOfBirth = new { type = "string", description = "ISO date of birth, e.g. 1990-05-20." },
+                        balance = new { type = "number", description = "Initial balance, must be 0 or greater. Default 0." }
+                    },
+                    required = new[] { "firstName", "lastName", "email", "dateOfBirth" }
+                }));
         }
 
         return tools;
@@ -560,6 +736,264 @@ public class ChatToolService
                 return Json(new { ok = true, deletedReservationId = reservationId });
             }
 
+            case "create_casino":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetString(args, "name") is not { Length: > 0 } casinoName) return Error("name is required.");
+                if (casinoName.Length > 200) return Error("name must be at most 200 characters.");
+                if (GetString(args, "address") is not { Length: > 0 } address) return Error("address is required.");
+                if (address.Length > 300) return Error("address must be at most 300 characters.");
+                if (GetString(args, "licenseNumber") is not { Length: > 0 } licenseNumber) return Error("licenseNumber is required.");
+                if (licenseNumber.Length > 50) return Error("licenseNumber must be at most 50 characters.");
+                if (GetDate(args, "foundedDate") is not DateTime foundedDate) return Error("foundedDate is required (ISO date).");
+
+                var casino = new Casino
+                {
+                    Name = casinoName, Address = address, LicenseNumber = licenseNumber, FoundedDate = foundedDate
+                };
+                _db.Casinos.Add(casino);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, casino.Id, casino.Name, casino.LicenseNumber, casino.FoundedDate });
+            }
+
+            case "update_casino":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "casinoId") is not int casinoId) return Error("casinoId is required.");
+                var casino = await _db.Casinos.FirstOrDefaultAsync(c => c.Id == casinoId);
+                if (casino is null) return Error($"Casino {casinoId} not found.");
+
+                if (GetString(args, "name") is { Length: > 0 } n)
+                {
+                    if (n.Length > 200) return Error("name must be at most 200 characters.");
+                    casino.Name = n;
+                }
+                if (GetString(args, "address") is { Length: > 0 } a)
+                {
+                    if (a.Length > 300) return Error("address must be at most 300 characters.");
+                    casino.Address = a;
+                }
+                if (GetString(args, "licenseNumber") is { Length: > 0 } lic)
+                {
+                    if (lic.Length > 50) return Error("licenseNumber must be at most 50 characters.");
+                    casino.LicenseNumber = lic;
+                }
+                if (GetDate(args, "foundedDate") is DateTime fd) casino.FoundedDate = fd;
+
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, casino.Id, casino.Name, casino.LicenseNumber, casino.FoundedDate });
+            }
+
+            case "delete_casino":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "casinoId") is not int casinoId) return Error("casinoId is required.");
+                var casino = await _db.Casinos.FirstOrDefaultAsync(c => c.Id == casinoId);
+                if (casino is null) return Error($"Casino {casinoId} not found.");
+                _db.Casinos.Remove(casino);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, deletedCasinoId = casinoId });
+            }
+
+            case "create_game":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetString(args, "name") is not { Length: > 0 } gameName) return Error("name is required.");
+                if (gameName.Length > 100) return Error("name must be at most 100 characters.");
+                if (ParseGameType(GetString(args, "type")) is not { } gameType) return Error($"type must be one of: {string.Join(", ", GameTypeNames)}.");
+
+                var minBet = GetDecimal(args, "minBet") ?? 1m;
+                var maxBet = GetDecimal(args, "maxBet") ?? 100m;
+                if (minBet is < 0.01m or > 1_000_000m || maxBet is < 0.01m or > 1_000_000m)
+                    return Error("Bets must be between 0.01 and 1000000.");
+                if (minBet > maxBet) return Error("minBet cannot be greater than maxBet.");
+
+                var description = GetString(args, "description") ?? string.Empty;
+                if (description.Length > 500) return Error("description must be at most 500 characters.");
+
+                var game = new Game
+                {
+                    Name = gameName, Type = gameType, MinBet = minBet, MaxBet = maxBet, Description = description
+                };
+                _db.Games.Add(game);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, game.Id, game.Name, Type = game.Type.ToString(), game.MinBet, game.MaxBet, game.Description });
+            }
+
+            case "update_game":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "gameId") is not int gameId) return Error("gameId is required.");
+                var game = await _db.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+                if (game is null) return Error($"Game {gameId} not found.");
+
+                if (GetString(args, "name") is { Length: > 0 } n)
+                {
+                    if (n.Length > 100) return Error("name must be at most 100 characters.");
+                    game.Name = n;
+                }
+                if (ParseGameType(GetString(args, "type")) is { } gt) game.Type = gt;
+                if (GetDecimal(args, "minBet") is decimal mb)
+                {
+                    if (mb is < 0.01m or > 1_000_000m) return Error("minBet must be between 0.01 and 1000000.");
+                    game.MinBet = mb;
+                }
+                if (GetDecimal(args, "maxBet") is decimal xb)
+                {
+                    if (xb is < 0.01m or > 1_000_000m) return Error("maxBet must be between 0.01 and 1000000.");
+                    game.MaxBet = xb;
+                }
+                if (game.MinBet > game.MaxBet) return Error("minBet cannot be greater than maxBet.");
+                if (GetString(args, "description") is { } desc)
+                {
+                    if (desc.Length > 500) return Error("description must be at most 500 characters.");
+                    game.Description = desc;
+                }
+
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, game.Id, game.Name, Type = game.Type.ToString(), game.MinBet, game.MaxBet, game.Description });
+            }
+
+            case "delete_game":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "gameId") is not int gameId) return Error("gameId is required.");
+                var game = await _db.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+                if (game is null) return Error($"Game {gameId} not found.");
+                _db.Games.Remove(game);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, deletedGameId = gameId });
+            }
+
+            case "create_employee":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetString(args, "firstName") is not { Length: > 0 } firstName) return Error("firstName is required.");
+                if (firstName.Length > 100) return Error("firstName must be at most 100 characters.");
+                if (GetString(args, "lastName") is not { Length: > 0 } lastName) return Error("lastName is required.");
+                if (lastName.Length > 100) return Error("lastName must be at most 100 characters.");
+                if (GetString(args, "position") is not { Length: > 0 } position) return Error("position is required.");
+                if (position.Length > 100) return Error("position must be at most 100 characters.");
+                if (GetInt(args, "casinoId") is not int casinoId) return Error("casinoId is required.");
+                if (!await _db.Casinos.AnyAsync(c => c.Id == casinoId)) return Error($"Casino {casinoId} not found.");
+
+                var employee = new Employee
+                {
+                    FirstName = firstName, LastName = lastName, Position = position, CasinoId = casinoId
+                };
+                _db.Employees.Add(employee);
+                await _db.SaveChangesAsync();
+                await _db.Entry(employee).Reference(e => e.Casino).LoadAsync();
+                return Json(new { ok = true, employee.Id, employee.FirstName, employee.LastName, employee.Position, Casino = employee.Casino.Name });
+            }
+
+            case "update_employee":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "employeeId") is not int employeeId) return Error("employeeId is required.");
+                var employee = await _db.Employees.Include(e => e.Casino).FirstOrDefaultAsync(e => e.Id == employeeId);
+                if (employee is null) return Error($"Employee {employeeId} not found.");
+
+                if (GetString(args, "firstName") is { Length: > 0 } fn)
+                {
+                    if (fn.Length > 100) return Error("firstName must be at most 100 characters.");
+                    employee.FirstName = fn;
+                }
+                if (GetString(args, "lastName") is { Length: > 0 } ln)
+                {
+                    if (ln.Length > 100) return Error("lastName must be at most 100 characters.");
+                    employee.LastName = ln;
+                }
+                if (GetString(args, "position") is { Length: > 0 } pos)
+                {
+                    if (pos.Length > 100) return Error("position must be at most 100 characters.");
+                    employee.Position = pos;
+                }
+                if (GetInt(args, "casinoId") is int cid)
+                {
+                    if (!await _db.Casinos.AnyAsync(c => c.Id == cid)) return Error($"Casino {cid} not found.");
+                    employee.CasinoId = cid;
+                }
+
+                await _db.SaveChangesAsync();
+                await _db.Entry(employee).Reference(e => e.Casino).LoadAsync();
+                return Json(new { ok = true, employee.Id, employee.FirstName, employee.LastName, employee.Position, Casino = employee.Casino.Name });
+            }
+
+            case "delete_employee":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "employeeId") is not int employeeId) return Error("employeeId is required.");
+                var employee = await _db.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
+                if (employee is null) return Error($"Employee {employeeId} not found.");
+                _db.Employees.Remove(employee);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, deletedEmployeeId = employeeId });
+            }
+
+            case "create_table":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "tableNumber") is not int tableNumber || tableNumber < 1) return Error("tableNumber must be a positive integer.");
+                if (GetInt(args, "casinoId") is not int casinoId) return Error("casinoId is required.");
+                if (!await _db.Casinos.AnyAsync(c => c.Id == casinoId)) return Error($"Casino {casinoId} not found.");
+                if (GetInt(args, "gameId") is not int gameId) return Error("gameId is required.");
+                if (!await _db.Games.AnyAsync(g => g.Id == gameId)) return Error($"Game {gameId} not found.");
+
+                var isAvailable = GetBool(args, "isAvailable") ?? true;
+                var minBet = GetDecimal(args, "minBet") ?? 10m;
+                var maxBet = GetDecimal(args, "maxBet") ?? 500m;
+                if (minBet is < 0.01m or > 1_000_000m || maxBet is < 0.01m or > 1_000_000m)
+                    return Error("Bets must be between 0.01 and 1000000.");
+                if (minBet > maxBet) return Error("minBet cannot be greater than maxBet.");
+
+                var table = new Table
+                {
+                    TableNumber = tableNumber, IsAvailable = isAvailable, MinBet = minBet, MaxBet = maxBet,
+                    CasinoId = casinoId, GameId = gameId
+                };
+                _db.Tables.Add(table);
+                await _db.SaveChangesAsync();
+                await _db.Entry(table).Reference(t => t.Casino).LoadAsync();
+                await _db.Entry(table).Reference(t => t.Game).LoadAsync();
+                return Json(new { ok = true, table.Id, table.TableNumber, table.IsAvailable, table.MinBet, table.MaxBet, Casino = table.Casino.Name, Game = table.Game.Name });
+            }
+
+            case "delete_table":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetInt(args, "tableId") is not int tableId) return Error("tableId is required.");
+                var table = await _db.Tables.FirstOrDefaultAsync(t => t.Id == tableId);
+                if (table is null) return Error($"Table {tableId} not found.");
+                _db.Tables.Remove(table);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, deletedTableId = tableId });
+            }
+
+            case "create_player":
+            {
+                if (!user.IsStaff) return Forbidden();
+                if (GetString(args, "firstName") is not { Length: > 0 } firstName) return Error("firstName is required.");
+                if (firstName.Length > 100) return Error("firstName must be at most 100 characters.");
+                if (GetString(args, "lastName") is not { Length: > 0 } lastName) return Error("lastName is required.");
+                if (lastName.Length > 100) return Error("lastName must be at most 100 characters.");
+                if (GetString(args, "email") is not { Length: > 0 } email) return Error("email is required.");
+                if (!email.Contains('@')) return Error("email is not a valid address.");
+                if (GetDate(args, "dateOfBirth") is not DateTime dob) return Error("dateOfBirth is required (ISO date).");
+
+                var balance = GetDecimal(args, "balance") ?? 0;
+                if (balance < 0) return Error("balance must be 0 or greater.");
+
+                var player = new Player
+                {
+                    FirstName = firstName, LastName = lastName, Email = email,
+                    DateOfBirth = dob, Balance = balance
+                };
+                _db.Players.Add(player);
+                await _db.SaveChangesAsync();
+                return Json(new { ok = true, player.Id, player.FirstName, player.LastName, player.Email, player.Balance, DateOfBirth = player.DateOfBirth.Date });
+            }
+
             default:
                 return Error($"Unknown tool '{name}'.");
         }
@@ -625,9 +1059,13 @@ public class ChatToolService
     }
 
     private static readonly string[] TransactionTypeNames = Enum.GetNames<TransactionType>();
+    private static readonly string[] GameTypeNames = Enum.GetNames<GameType>();
 
     private static TransactionType? ParseTransactionType(string? value) =>
         Enum.TryParse<TransactionType>(value, ignoreCase: true, out var t) ? t : null;
+
+    private static GameType? ParseGameType(string? value) =>
+        Enum.TryParse<GameType>(value, ignoreCase: true, out var t) ? t : null;
 
     private static string NoPlayerProfile(ChatUserContext user) =>
         Error($"No player profile is linked to the account email '{user.Email}'.");

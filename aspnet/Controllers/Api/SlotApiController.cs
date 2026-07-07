@@ -55,6 +55,11 @@ public class SlotApiController : ControllerBase
     [HttpPost("spin")]
     public ActionResult<SlotStateDTO> Spin() => WithPlayer(_game.Spin);
 
+    // Feature Buy: plati FeatureBuyMultiplier × ulog i odmah pokreni
+    // Hold & Win bonus s 3 zajamčene Charm Ball kugle.
+    [HttpPost("buy")]
+    public ActionResult<SlotStateDTO> Buy() => WithPlayer(_game.BuyFeature);
+
     public record SlotGambleRequest(string? Choice);
 
     // Red/black gamble zadnjeg dobitka: prvi pick ulaže dobitak, pogodak

@@ -745,4 +745,278 @@ const PerformativeUI = (() => {
     };
 })();
 
-$(function () { PerformativeUI.init(); });
+/* ── GlobalSearch — AJAX-powered cross-entity search in navbar ──
+   Debounced fetch to /pretraga?q=QUERY&limit=5, keyboard nav,
+   grouped results dropdown, Escape / outside-click to close.  ── */
+class GlobalSearch {
+    constructor(wrapper) {
+        this.wrapper = wrapper;
+        this.input = wrapper.querySelector('.global-search-input');
+        this.dropdown = wrapper.querySelector('.global-search-dropdown');
+        if (!this.input || !this.dropdown) return;
+
+        this.debounceMs = 300;
+        this.minChars = 2;
+        this.debounceTimer = null;
+        this.abortController = null;
+        this.activeIndex = -1;
+
+        this._bind();
+    }
+
+    _esc(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    _bind() {
+        this.input.addEventListener('input', () => this._onInput());
+        this.input.addEventListener('keydown', (e) => this._onKeydown(e));
+        this.input.addEventListener('focus', () => {
+            var q = this.input.value.trim();
+            if (q.length >= this.minChars) this._fetch();
+        });
+        document.addEventListener('click', (e) => this._onOutsideClick(e));
+    }
+
+    _onInput() {
+        clearTimeout(this.debounceTimer);
+        var q = this.input.value.trim();
+        if (q.length < this.minChars) {
+            this._close();
+            return;
+        }
+        var self = this;
+        this.debounceTimer = setTimeout(function () { self._fetch(); }, this.debounceMs);
+    }
+
+    _onKeydown(e) {
+        var hits = this.dropdown.querySelectorAll('.global-search-hit');
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            this._close();
+            this.input.blur();
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            this.activeIndex = Math.min(this.activeIndex + 1, hits.length - 1);
+            this._highlight();
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.activeIndex = Math.max(this.activeIndex - 1, -1);
+            this._highlight();
+            return;
+        }
+        if (e.key === 'Enter' && this.activeIndex >= 0 && hits[this.activeIndex]) {
+            e.preventDefault();
+            var href = hits[this.activeIndex].getAttribute('href');
+            if (href) window.location.href = href;
+        }
+    }
+
+    _highlight() {
+        var hits = this.dropdown.querySelectorAll('.global-search-hit');
+        hits.forEach(function (h) { h.classList.remove('keyboard-active'); });
+        if (this.activeIndex >= 0 && hits[this.activeIndex]) {
+            hits[this.activeIndex].classList.add('keyboard-active');
+            hits[this.activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    _onOutsideClick(e) {
+        if (!this.wrapper.contains(e.target)) {
+            this._close();
+        }
+    }
+
+    _close() {
+        this.dropdown.classList.remove('open');
+        this.dropdown.innerHTML = '';
+        this.activeIndex = -1;
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+    }
+
+    _showLoading() {
+        this.dropdown.innerHTML = '<div class="global-search-loading">Pretražujem…</div>';
+        this.dropdown.classList.add('open');
+    }
+
+    _fetch() {
+        var q = this.input.value.trim();
+        if (q.length < this.minChars) return;
+
+        if (this.abortController) this.abortController.abort();
+        this.abortController = new AbortController();
+
+        this.activeIndex = -1;
+        this._showLoading();
+
+        var self = this;
+        var url = '/pretraga?q=' + encodeURIComponent(q) + '&limit=5';
+
+        fetch(url, { signal: this.abortController.signal })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                self._render(data.hits || []);
+            })
+            .catch(function (err) {
+                if (err.name === 'AbortError') return;
+                self.dropdown.innerHTML =
+                    '<div class="global-search-no-results">Greška pri pretrazi.</div>';
+                self.dropdown.classList.add('open');
+            });
+    }
+
+    _render(hits) {
+        if (!hits || hits.length === 0) {
+            this.dropdown.innerHTML =
+                '<div class="global-search-no-results">Nema rezultata za "' +
+                this._esc(this.input.value.trim()) + '".</div>';
+            this.dropdown.classList.add('open');
+            return;
+        }
+
+        var groups = {};
+        var typeOrder = [];
+        hits.forEach(function (h) {
+            if (!groups[h.type]) {
+                groups[h.type] = [];
+                typeOrder.push(h.type);
+            }
+            groups[h.type].push(h);
+        });
+
+        var canonicalOrder = ['Casinos', 'Players', 'Games', 'Tables', 'Employees', 'Reservations', 'Transactions'];
+        typeOrder.sort(function (a, b) {
+            var ai = canonicalOrder.indexOf(a), bi = canonicalOrder.indexOf(b);
+            if (ai === -1) ai = 999; if (bi === -1) bi = 999;
+            return ai - bi;
+        });
+
+        var html = '';
+        var esc = this._esc;
+        typeOrder.forEach(function (type) {
+            var group = groups[type];
+            if (!group) return;
+            html += '<div class="global-search-group">' + esc(type) + '</div>';
+            group.forEach(function (hit) {
+                html += '<a class="global-search-hit" href="' + esc(hit.url) + '">';
+                html += '<div class="global-search-hit-title">' + esc(hit.title) + '</div>';
+                html += '<div class="global-search-hit-subtitle">' + esc(hit.subtitle) + '</div>';
+                html += '</a>';
+            });
+        });
+
+        this.dropdown.innerHTML = html;
+        this.dropdown.classList.add('open');
+    }
+}
+
+/* ── BannerDismiss — dismiss sticky banner, persist in localStorage ── */
+class BannerDismiss {
+    constructor(bannerEl) {
+        this.banner = bannerEl;
+        if (!this.banner) return;
+        this.storageKey = 'cms_banner_dismissed';
+        this._init();
+    }
+
+    _init() {
+        if (localStorage.getItem(this.storageKey) === '1') {
+            document.body.classList.add('banner-hidden');
+        }
+
+        var dismissBtn = this.banner.querySelector('.banner-dismiss');
+        if (!dismissBtn) return;
+
+        var self = this;
+        dismissBtn.addEventListener('click', function () {
+            document.body.classList.add('banner-hidden');
+            localStorage.setItem(self.storageKey, '1');
+        });
+    }
+}
+
+/* ── MobileNav — hamburger menu toggle for screens ≤1099px ────
+   Toggles the .nav-links list, handles outside-click,
+   link-click, and Escape key to close. Animated via CSS.       ── */
+class MobileNav {
+    constructor(toggleBtn, navLinks) {
+        this.toggleBtn = toggleBtn;
+        this.navLinks = navLinks;
+        if (!this.toggleBtn || !this.navLinks) return;
+        this._bind();
+    }
+
+    _open() {
+        this.navLinks.classList.add('open');
+        this.toggleBtn.setAttribute('aria-expanded', 'true');
+    }
+
+    _close() {
+        this.navLinks.classList.remove('open');
+        this.toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    _toggle() {
+        if (this.navLinks.classList.contains('open')) {
+            this._close();
+        } else {
+            this._open();
+        }
+    }
+
+    _bind() {
+        var self = this;
+
+        this.toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            self._toggle();
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!self.navLinks.classList.contains('open')) return;
+            var insideNav = e.target.closest('.top-bar');
+            if (!insideNav) self._close();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && self.navLinks.classList.contains('open')) {
+                self._close();
+                self.toggleBtn.focus();
+            }
+        });
+
+        this.navLinks.querySelectorAll('.nav-link, .nav-dropdown-item, .nav-auth-item .btn, .nav-auth-item .user-chip').forEach(function (link) {
+            link.addEventListener('click', function () {
+                setTimeout(function () { self._close(); }, 80);
+            });
+        });
+    }
+}
+
+$(function () {
+    PerformativeUI.init();
+
+    new BannerDismiss(document.getElementById('stickyBanner'));
+
+    var searchWrapper = document.querySelector('.global-search-wrapper');
+    if (searchWrapper) new GlobalSearch(searchWrapper);
+
+    var toggleBtn = document.querySelector('.nav-toggle');
+    var navLinks = document.querySelector('.nav-links');
+    if (toggleBtn && navLinks) new MobileNav(toggleBtn, navLinks);
+});

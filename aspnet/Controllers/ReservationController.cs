@@ -56,9 +56,11 @@ public class ReservationController : Controller
         var results = _repo.Search(q).Select(r => new
         {
             id = r.Id,
-            player = $"{r.Player?.FirstName} {r.Player?.LastName}",
-            table = $"Stol #{r.Table?.TableNumber}",
-            casino = r.Table?.Casino?.Name,
+            playerId = r.PlayerId,
+            playerName = $"{r.Player?.FirstName} {r.Player?.LastName}",
+            tableNumber = r.Table?.TableNumber,
+            casinoName = r.Table?.Casino?.Name,
+            gameName = r.Table?.Game?.Name,
             reservedAt = r.ReservedAt.ToString("dd.MM.yyyy HH:mm")
         });
         return Json(results);

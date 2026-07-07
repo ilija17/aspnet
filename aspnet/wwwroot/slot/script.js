@@ -1,3 +1,10 @@
+// ============================================================
+// LUCKY LADY'S CHARM BALL — Hold & Win slot client
+// The server resolves the whole round (base spin + optional
+// Charm Bonus) in one POST; this client only plays back the
+// recording. No win is ever computed client-side.
+// ============================================================
+
 const API_BASE = "/api/slot";
 const LOGIN_URL = "/Account/Login?returnUrl=/slot/index.html";
 const PROFILE_URL = "/Account/Profile";
@@ -5,226 +12,311 @@ const PROFILE_URL = "/Account/Profile";
 const REELS = 5;
 const ROWS = 3;
 
-// Visual presentation for each symbol key. Every tile is ORIGINAL inline-SVG
-// art in the charm/ornate-card genre — no emoji, no bare letters, and nothing
-// traced from any real Novomatic game. `lady` is wild + scatter and special.
-//
-// High "charm" symbols → detailed icon tiles.
-// Low symbols (ace/king/queen/jack/ten) → ornate gold playing-card faces.
-const SYMBOL_ART = {
-  lady: { kind: "lady", svg: svgLady },
-  clover: { kind: "pic charm clover", svg: svgClover },
-  ladybug: { kind: "pic charm ladybug", svg: svgLadybug },
-  horseshoe: { kind: "pic charm horseshoe", svg: svgHorseshoe },
-  coin: { kind: "pic charm coin", svg: svgCoin },
-  ace: { kind: "card ace", svg: () => svgCard("A", "heart") },
-  king: { kind: "card king", svg: () => svgCard("K", "spade") },
-  queen: { kind: "card queen", svg: () => svgCard("Q", "diamond") },
-  jack: { kind: "card jack", svg: () => svgCard("J", "club") },
-  ten: { kind: "card ten", svg: () => svgCard("10", "heart") },
-};
+// ============================================================
+// SYMBOL ART — original inline SVG, casino-grade glossy tiles.
+// Keys match the server catalogue exactly.
+// ============================================================
 
-// Fallback symbol order, only used to build idle reels before the first state.
-const FALLBACK_KEYS = ["lady", "clover", "ladybug", "horseshoe", "coin", "ace", "king", "queen", "jack", "ten"];
+// Shared shamrock path centred on (0,0), ~10px radius.
+const SHAMROCK =
+  "M0 0c-2.4-5.5-9.5-3.2-7 2.4 1.5 3.1 5.4 3.1 7-2.4zm0 0c5.5-2.4 3.2-9.5-2.4-7-3.1 1.5-3.1 5.4 2.4 7zm0 0c2.4 5.5 9.5 3.2 7-2.4-1.5-3.1-5.4-3.1-7 2.4zm0 0c-5.5 2.4-3.2 9.5 2.4 7 3.1-1.5 3.1-5.4-2.4-7z";
 
-// ============================================
-// ORIGINAL SYMBOL ART (inline SVG, self-contained)
-// ============================================
-
-// Ornate card-rank face: gilded rank glyph on a gem-cut card with a suit
-// flourish. Original design — not copied from any commercial slot art.
-function svgCard(rank, suit) {
-  const suitPaths = {
-    heart: "M16 13.4c-1.4-3-6.2-2.6-6.2 1.1 0 2.7 3.4 5 6.2 7 2.8-2 6.2-4.3 6.2-7 0-3.7-4.8-4.1-6.2-1.1z",
-    diamond: "M16 7l5.4 8L16 23l-5.4-8z",
-    spade: "M16 7c2.2 3 6.2 5 6.2 8.4 0 2.4-2 3.8-3.9 3.4.3 1.4 1 2.4 2.1 3.2h-8.8c1.1-.8 1.8-1.8 2.1-3.2-1.9.4-3.9-1-3.9-3.4C9.8 12 13.8 10 16 7z",
-    club: "M16 8.2a2.9 2.9 0 1 1-2.4 4.5 2.9 2.9 0 1 1-1.1 5.4 2.9 2.9 0 1 1 6.9 0 2.9 2.9 0 1 1-1.1-5.4A2.9 2.9 0 0 1 16 8.2zM15 19h2c-.1 1.5.4 2.7 1.6 3.6h-5.2c1.2-.9 1.7-2.1 1.6-3.6z",
-  };
-  const fs = rank.length > 1 ? 26 : 34;
-  return `
-  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
-    <defs>
-      <linearGradient id="cardface" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#26304f"/>
-        <stop offset="1" stop-color="#0f1326"/>
-      </linearGradient>
-      <linearGradient id="gildrank" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#fff3c4"/>
-        <stop offset="0.5" stop-color="#ffd24a"/>
-        <stop offset="1" stop-color="#b9831f"/>
-      </linearGradient>
-    </defs>
-    <rect x="4" y="3" width="48" height="50" rx="8" fill="url(#cardface)" stroke="#ffd24a" stroke-opacity="0.55" stroke-width="2"/>
-    <rect x="7" y="6" width="42" height="44" rx="6" fill="none" stroke="#ffd24a" stroke-opacity="0.22"/>
-    <path d="M11 10c4-2 8-2 12 0M45 46c-4 2-8 2-12 0" stroke="#ffd24a" stroke-opacity="0.4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    <g transform="translate(28 14) scale(0.42)" fill="url(#gildrank)" opacity="0.9">
-      <path d="${suitPaths[suit]}" transform="translate(-16 -15)"/>
-    </g>
-    <text x="28" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="${fs}" fill="url(#gildrank)" stroke="#7a5410" stroke-width="0.8">${rank}</text>
-  </svg>`;
-}
-
-// Four-leaf clover charm.
-function svgClover() {
-  return `
-  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
-    <defs><radialGradient id="leaf" cx="0.4" cy="0.35" r="0.8">
-      <stop offset="0" stop-color="#b6ff7a"/><stop offset="1" stop-color="#2f8a35"/>
-    </radialGradient></defs>
-    <g transform="translate(28 27)">
-      <g fill="url(#leaf)" stroke="#1c5c22" stroke-width="1.2">
-        <path d="M0 -2C-3 -13 -16 -11 -13 -2 -11 4 -3 4 0 -2z"/>
-        <path d="M2 0C13 -3 11 -16 2 -13 -4 -11 -4 -3 2 0z"/>
-        <path d="M0 2C3 13 16 11 13 2 11 -4 3 -4 0 2z"/>
-        <path d="M-2 0C-13 3 -11 16 -2 13 4 11 4 3 -2 0z"/>
-      </g>
-      <path d="M1 2C3 10 4 16 5 20" stroke="#2f8a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      <circle cx="0" cy="0" r="2.4" fill="#e9ffce"/>
-    </g>
-  </svg>`;
-}
-
-// Ladybug charm.
-function svgLadybug() {
-  return `
-  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
-    <defs><radialGradient id="shell" cx="0.4" cy="0.3" r="0.9">
-      <stop offset="0" stop-color="#ff7a7a"/><stop offset="1" stop-color="#c11616"/>
-    </radialGradient></defs>
-    <g transform="translate(28 29)">
-      <ellipse cx="0" cy="0" rx="16" ry="17" fill="url(#shell)" stroke="#7a0d0d" stroke-width="1.5"/>
-      <path d="M0 -17V16" stroke="#1a0606" stroke-width="2"/>
-      <circle cx="0" cy="-14" r="6" fill="#160606"/>
-      <g fill="#2a0808">
-        <circle cx="-7" cy="-4" r="2.6"/><circle cx="7" cy="-4" r="2.6"/>
-        <circle cx="-9" cy="5" r="2.4"/><circle cx="9" cy="5" r="2.4"/>
-        <circle cx="-5" cy="11" r="2.2"/><circle cx="5" cy="11" r="2.2"/>
-      </g>
-      <circle cx="-2.4" cy="-15" r="1.3" fill="#ffd24a"/>
-      <circle cx="2.4" cy="-15" r="1.3" fill="#ffd24a"/>
-    </g>
-  </svg>`;
-}
-
-// Lucky horseshoe charm.
-function svgHorseshoe() {
-  return `
-  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
-    <defs><linearGradient id="shoe" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
-    </linearGradient></defs>
-    <path d="M16 46V28a12 12 0 0 1 24 0v18" fill="none" stroke="url(#shoe)" stroke-width="7" stroke-linecap="round"/>
-    <path d="M16 46V28a12 12 0 0 1 24 0v18" fill="none" stroke="#7a5410" stroke-opacity="0.45" stroke-width="7.6" stroke-linecap="round" transform="translate(0 1)" style="mix-blend-mode:multiply"/>
-    <g fill="#3a2a08">
-      <circle cx="20" cy="40" r="1.5"/><circle cx="36" cy="40" r="1.5"/>
-      <circle cx="18.5" cy="32" r="1.5"/><circle cx="37.5" cy="32" r="1.5"/>
-      <circle cx="22" cy="25" r="1.5"/><circle cx="34" cy="25" r="1.5"/>
-    </g>
-  </svg>`;
-}
-
-// Gold coin charm.
-function svgCoin() {
-  return `
-  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
-    <defs><radialGradient id="coing" cx="0.4" cy="0.35" r="0.85">
-      <stop offset="0" stop-color="#fff6cf"/><stop offset="0.6" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
-    </radialGradient></defs>
-    <circle cx="28" cy="28" r="20" fill="url(#coing)" stroke="#7a5410" stroke-width="2"/>
-    <circle cx="28" cy="28" r="15" fill="none" stroke="#7a5410" stroke-opacity="0.5" stroke-width="1.5"/>
-    <text x="28" y="37" text-anchor="middle" font-family="Georgia, serif" font-weight="900" font-size="22" fill="#7a5410">$</text>
-  </svg>`;
-}
-
-// Lucky Lady — the shimmering gold wild + scatter. Original stylised charm
-// portrait (gem + radiant crown), clearly distinct from the card and pip art.
+// The Lucky Lady — WILD and top pay. A gilded portrait medallion.
 function svgLady() {
   return `
-  <svg viewBox="0 0 56 56" class="sym-svg" aria-hidden="true">
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
     <defs>
-      <radialGradient id="ladyhalo" cx="0.5" cy="0.4" r="0.7">
-        <stop offset="0" stop-color="#fff7d6"/><stop offset="0.6" stop-color="#ffd24a"/><stop offset="1" stop-color="#b07c1c"/>
+      <linearGradient id="sl-frame" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
+      </linearGradient>
+      <linearGradient id="sl-hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c04d1c"/><stop offset="1" stop-color="#6e2408"/>
+      </linearGradient>
+      <linearGradient id="sl-skin" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f9ddc2"/><stop offset="1" stop-color="#e8b48e"/>
+      </linearGradient>
+      <radialGradient id="sl-back" cx="0.5" cy="0.35" r="0.85">
+        <stop offset="0" stop-color="#1c6b3a"/><stop offset="1" stop-color="#052c14"/>
       </radialGradient>
-      <linearGradient id="ladygem" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#ffb3e6"/><stop offset="1" stop-color="#9b2fcf"/>
+    </defs>
+    <circle cx="32" cy="30" r="26" fill="url(#sl-back)" stroke="url(#sl-frame)" stroke-width="3"/>
+    <circle cx="32" cy="30" r="22.6" fill="none" stroke="#7a5410" stroke-width="0.8" opacity="0.7"/>
+    <g>
+      <path d="M32 12 C18 13 14 26 16 38 C17 44 20 48 24 50 C21 42 20 32 22 25 L42 25 C44 32 43 42 40 50 C44 48 47 44 48 38 C50 26 46 13 32 12 Z" fill="url(#sl-hair)"/>
+      <ellipse cx="32" cy="29" rx="9.6" ry="11" fill="url(#sl-skin)"/>
+      <path d="M23 26 C23 17 41 17 41 26 C38 21 35 20 32 20.5 C29 20 26 21 23 26 Z" fill="url(#sl-hair)"/>
+      <path d="M25.5 18.5 L28 14.5 L30.5 17.5 L32 13 L33.5 17.5 L36 14.5 L38.5 18.5 C34 16.8 30 16.8 25.5 18.5 Z" fill="url(#sl-frame)" stroke="#7a5410" stroke-width="0.5"/>
+      <circle cx="32" cy="16" r="1.3" fill="#2ecc71"/>
+      <ellipse cx="28.4" cy="28.4" rx="1.7" ry="1.15" fill="#fff"/>
+      <ellipse cx="35.6" cy="28.4" rx="1.7" ry="1.15" fill="#fff"/>
+      <circle cx="28.5" cy="28.5" r="0.85" fill="#2e8b57"/>
+      <circle cx="35.5" cy="28.5" r="0.85" fill="#2e8b57"/>
+      <path d="M26.4 26.6 C27.5 25.7 29.5 25.7 30.4 26.5" stroke="#5e1d07" stroke-width="0.7" fill="none"/>
+      <path d="M33.6 26.5 C34.5 25.7 36.5 25.7 37.6 26.6" stroke="#5e1d07" stroke-width="0.7" fill="none"/>
+      <path d="M29.2 34.6 q2.8 2.3 5.6 0 q-2.8 1.4 -5.6 0 Z" fill="#c93a52"/>
+      <path d="M32 30.5 q-0.8 1.8 0.4 2.4" stroke="#d69a70" stroke-width="0.55" fill="none"/>
+    </g>
+    <path d="M12 44 L52 44 L48 54 L16 54 Z" fill="url(#sl-frame)" stroke="#7a5410" stroke-width="1"/>
+    <text x="32" y="52" text-anchor="middle" font-family="Georgia, serif" font-weight="900" font-size="8.5" letter-spacing="2" fill="#4a2f06">WILD</text>
+  </svg>`;
+}
+
+// The Charm Ball — SCATTER. A glowing golden orb; a value plate
+// (cash or MINI/MAJOR/GRAND) is overlaid in HTML when it lands.
+function svgCharm() {
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="sc-ball" cx="0.35" cy="0.28" r="0.9">
+        <stop offset="0" stop-color="#fff8d8"/><stop offset="0.5" stop-color="#ffcf3f"/><stop offset="1" stop-color="#8f6112"/>
+      </radialGradient>
+      <radialGradient id="sc-halo" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#ffe98f" stop-opacity="0.8"/><stop offset="1" stop-color="#ffe98f" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="32" cy="32" r="30" fill="url(#sc-halo)"/>
+    <g stroke="#ffe98f" stroke-width="1.6" stroke-linecap="round" opacity="0.85">
+      <line x1="32" y1="4" x2="32" y2="10"/><line x1="32" y1="54" x2="32" y2="60"/>
+      <line x1="4" y1="32" x2="10" y2="32"/><line x1="54" y1="32" x2="60" y2="32"/>
+      <line x1="12" y1="12" x2="16.5" y2="16.5"/><line x1="47.5" y1="47.5" x2="52" y2="52"/>
+      <line x1="52" y1="12" x2="47.5" y2="16.5"/><line x1="16.5" y1="47.5" x2="12" y2="52"/>
+    </g>
+    <circle cx="32" cy="32" r="20" fill="url(#sc-ball)" stroke="#6e4a0d" stroke-width="1.6"/>
+    <circle cx="32" cy="32" r="16.6" fill="none" stroke="#fff3c4" stroke-width="0.8" opacity="0.5"/>
+    <path fill="#1c6b2c" transform="translate(32 26.5)" d="${SHAMROCK}"/>
+    <ellipse cx="24.5" cy="22.5" rx="6.4" ry="3.6" fill="#fff" opacity="0.55" transform="rotate(-26 24.5 22.5)"/>
+  </svg>`;
+}
+
+// Pot of Gold under a rainbow.
+function svgPotOfGold() {
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="sp-pot" cx="0.38" cy="0.28" r="0.95">
+        <stop offset="0" stop-color="#585868"/><stop offset="1" stop-color="#101016"/>
+      </radialGradient>
+      <linearGradient id="sp-coin" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
       </linearGradient>
     </defs>
-    <g transform="translate(28 28)">
-      <g class="lady-rays" stroke="url(#ladyhalo)" stroke-width="1.6" stroke-linecap="round">
-        ${Array.from({ length: 12 }, (_, i) => {
-          const a = (i * Math.PI) / 6;
-          const x1 = Math.cos(a) * 17, y1 = Math.sin(a) * 17;
-          const x2 = Math.cos(a) * 23, y2 = Math.sin(a) * 23;
-          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
-        }).join("")}
+    <g fill="none" stroke-linecap="round" opacity="0.9">
+      <path d="M10 30 A22 22 0 0 1 54 30" stroke="#e8534a" stroke-width="3.4"/>
+      <path d="M13.4 30 A18.6 18.6 0 0 1 50.6 30" stroke="#ffb63d" stroke-width="3.2"/>
+      <path d="M16.8 30 A15.2 15.2 0 0 1 47.2 30" stroke="#4fae5f" stroke-width="3"/>
+      <path d="M20.2 30 A11.8 11.8 0 0 1 43.8 30" stroke="#4f8fd4" stroke-width="2.8"/>
+    </g>
+    <g fill="url(#sp-coin)" stroke="#7a5410" stroke-width="0.7">
+      <circle cx="24" cy="31" r="5"/><circle cx="33" cy="28" r="5.6"/><circle cx="41" cy="31" r="4.8"/>
+      <circle cx="28" cy="33" r="4.6"/><circle cx="37" cy="33" r="4.4"/>
+    </g>
+    <path d="M15 36 C11 52 53 52 49 36 C54 33 10 33 15 36 Z" fill="url(#sp-pot)"/>
+    <ellipse cx="32" cy="35.4" rx="18.4" ry="4" fill="#2b2b34"/>
+    <path d="M18 42 C22 46 42 46 46 42" stroke="#6a6a7c" stroke-width="1.4" fill="none" opacity="0.6"/>
+    <path d="M44 20 l1.7 4.1 4.1 1.7 -4.1 1.7 -1.7 4.1 -1.7 -4.1 -4.1 -1.7 4.1 -1.7 Z" fill="#fff7d0" opacity="0.9"/>
+  </svg>`;
+}
+
+// Four-Leaf Clover with dew.
+function svgClover() {
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="s4-leaf" cx="0.38" cy="0.32" r="0.85">
+        <stop offset="0" stop-color="#b6ff7a"/><stop offset="0.6" stop-color="#4fae3c"/><stop offset="1" stop-color="#23701f"/>
+      </radialGradient>
+    </defs>
+    <g transform="translate(32 30)">
+      <g fill="url(#s4-leaf)" stroke="#175217" stroke-width="1.2" stroke-linejoin="round">
+        <path d="M-1 -2 C-6 -16 -20 -12 -15 -2 C-12 4 -4 4 -1 -2 Z"/>
+        <path d="M2 -1 C16 -6 12 -20 2 -15 C-4 -12 -4 -4 2 -1 Z"/>
+        <path d="M1 2 C6 16 20 12 15 2 C12 -4 4 -4 1 2 Z"/>
+        <path d="M-2 1 C-16 6 -12 20 -2 15 C4 12 4 4 -2 1 Z"/>
       </g>
-      <circle cx="0" cy="0" r="16" fill="url(#ladyhalo)" stroke="#7a5410" stroke-width="1.5"/>
-      <path d="M-11 -7l4 5 5-7 5 7 4-5-2 9h-18z" fill="#ffe9a3" stroke="#7a5410" stroke-width="0.8"/>
-      <path d="M0 -1l6 10-6 5-6-5z" fill="url(#ladygem)" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/>
-      <circle cx="0" cy="3" r="1.6" fill="#fff7d6"/>
+      <g stroke="#dff7c0" stroke-width="0.9" opacity="0.75" fill="none">
+        <path d="M-3 -4 L-11 -8"/><path d="M4 -3 L8 -11"/><path d="M3 4 L11 8"/><path d="M-4 3 L-8 11"/>
+      </g>
+      <path d="M2 3 C4 12 6 18 8 24" stroke="#2f7a2a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="2.6" fill="#eaffce"/>
+      <circle cx="-8" cy="-9" r="2.2" fill="#ffffff" opacity="0.75"/>
     </g>
   </svg>`;
 }
+
+// Golden Horseshoe, points up for luck.
+function svgHorseshoe() {
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="sh-gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#fff3c4"/><stop offset="0.45" stop-color="#ffd24a"/><stop offset="1" stop-color="#96691a"/>
+      </linearGradient>
+    </defs>
+    <path d="M18 52 V30 a14 14 0 0 1 28 0 V52" fill="none" stroke="#5a3c0a" stroke-width="10.6" stroke-linecap="round" opacity="0.9"/>
+    <path d="M18 52 V30 a14 14 0 0 1 28 0 V52" fill="none" stroke="url(#sh-gold)" stroke-width="8.4" stroke-linecap="round"/>
+    <path d="M20.8 50 V30.5 a11.2 11.2 0 0 1 22.4 0 V50" fill="none" stroke="#fff7d0" stroke-width="1.1" opacity="0.55"/>
+    <rect x="13.4" y="47" width="9.2" height="7" rx="2" fill="url(#sh-gold)" stroke="#5a3c0a" stroke-width="1"/>
+    <rect x="41.4" y="47" width="9.2" height="7" rx="2" fill="url(#sh-gold)" stroke="#5a3c0a" stroke-width="1"/>
+    <g fill="#4a2f06">
+      <circle cx="18" cy="42" r="1.5"/><circle cx="46" cy="42" r="1.5"/>
+      <circle cx="18.8" cy="33" r="1.5"/><circle cx="45.2" cy="33" r="1.5"/>
+      <circle cx="24" cy="23.5" r="1.5"/><circle cx="40" cy="23.5" r="1.5"/>
+      <circle cx="32" cy="20.4" r="1.5"/>
+    </g>
+  </svg>`;
+}
+
+// Golden Bell with a glossy shoulder.
+function svgBell() {
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="sb-gold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#96691a"/>
+      </linearGradient>
+      <radialGradient id="sb-shine" cx="0.32" cy="0.22" r="0.8">
+        <stop offset="0" stop-color="#fff" stop-opacity="0.85"/><stop offset="0.4" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="32" cy="10.6" r="3.6" fill="url(#sb-gold)" stroke="#6e4a0d" stroke-width="1"/>
+    <path d="M32 11 C18 12 16 27 16 35 C16 42 12.5 45.5 10.6 47.5 L53.4 47.5 C51.5 45.5 48 42 48 35 C48 27 46 12 32 11 Z"
+          fill="url(#sb-gold)" stroke="#6e4a0d" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M32 11 C18 12 16 27 16 35 C16 42 12.5 45.5 10.6 47.5 L53.4 47.5 C51.5 45.5 48 42 48 35 C48 27 46 12 32 11 Z" fill="url(#sb-shine)"/>
+    <path d="M17.5 32.5 C26 34.5 38 34.5 46.5 32.5" stroke="#8a5f14" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <circle cx="32" cy="52" r="4.4" fill="url(#sb-gold)" stroke="#6e4a0d" stroke-width="1.2"/>
+    <ellipse cx="24" cy="20" rx="4.4" ry="7.5" fill="#fff" opacity="0.4" transform="rotate(14 24 20)"/>
+  </svg>`;
+}
+
+// Royals — jewelled metallic letterforms on emerald plates.
+function svgRoyal(glyph, gemColor, gemDark) {
+  const fs = glyph.length > 1 ? 24 : 31;
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="sr-plate" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#144a26"/><stop offset="1" stop-color="#04220f"/>
+      </linearGradient>
+      <linearGradient id="sr-gild" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff7d0"/><stop offset="0.45" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
+      </linearGradient>
+    </defs>
+    <rect x="7" y="6" width="50" height="52" rx="10" fill="url(#sr-plate)" stroke="#ffd24a" stroke-opacity="0.5" stroke-width="1.6"/>
+    <rect x="10.4" y="9.4" width="43.2" height="45.2" rx="7" fill="none" stroke="#ffd24a" stroke-opacity="0.2" stroke-width="1"/>
+    <path d="M12 12 q5 -3 10 0 M52 52 q-5 3 -10 0" stroke="#ffd24a" stroke-opacity="0.4" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <text x="32" y="41.5" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="900"
+          font-size="${fs}" fill="#1a0e02" opacity="0.6" transform="translate(0 1.6)">${glyph}</text>
+    <text x="32" y="41.5" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="900"
+          font-size="${fs}" fill="url(#sr-gild)" stroke="#5a3c0a" stroke-width="0.8">${glyph}</text>
+    <circle cx="32" cy="49.5" r="3" fill="${gemColor}" stroke="${gemDark}" stroke-width="0.9"/>
+    <circle cx="31" cy="48.6" r="0.9" fill="#fff" opacity="0.85"/>
+    <path d="M14 14 L50 10" stroke="#fff7d0" stroke-width="1.1" opacity="0.25" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// Dark socket shown on empty positions during the Charm Bonus.
+function svgSocket() {
+  return `
+  <svg viewBox="0 0 64 64" class="sym-svg" aria-hidden="true">
+    <circle cx="32" cy="32" r="20" fill="#060d05" stroke="#1e3512" stroke-width="1.4"/>
+    <circle cx="32" cy="32" r="15" fill="none" stroke="#1e3512" stroke-width="0.9" opacity="0.7"/>
+    <path fill="#16290f" transform="translate(32 28)" d="${SHAMROCK}"/>
+  </svg>`;
+}
+
+const SYMBOL_ART = {
+  lady: { kind: "lady-sym", svg: svgLady },
+  charm: { kind: "charm-sym", svg: svgCharm },
+  potofgold: { kind: "pic", svg: svgPotOfGold },
+  clover: { kind: "pic", svg: svgClover },
+  horseshoe: { kind: "pic", svg: svgHorseshoe },
+  bell: { kind: "pic", svg: svgBell },
+  ace: { kind: "royal", svg: () => svgRoyal("A", "#e8534a", "#7a1626") },
+  king: { kind: "royal", svg: () => svgRoyal("K", "#4f8fd4", "#1c3d6e") },
+  queen: { kind: "royal", svg: () => svgRoyal("Q", "#b98aff", "#4a2a7a") },
+  jack: { kind: "royal", svg: () => svgRoyal("J", "#2ecc71", "#0d5c30") },
+  ten: { kind: "royal", svg: () => svgRoyal("10", "#ffb63d", "#8a5510") },
+  __blank: { kind: "socket", svg: svgSocket },
+};
+
+// Idle "attract" layout shown before the first server state.
+const ATTRACT_GRID = [
+  ["horseshoe", "lady", "bell"],
+  ["clover", "charm", "potofgold"],
+  ["charm", "lady", "charm"],
+  ["potofgold", "charm", "clover"],
+  ["bell", "lady", "horseshoe"],
+];
+const FILLER_KEYS = ["lady", "charm", "potofgold", "clover", "horseshoe", "bell", "ace", "king", "queen", "jack", "ten"];
+const randKey = () => FILLER_KEYS[(Math.random() * FILLER_KEYS.length) | 0];
+
+// ============================================================
+// STATE
+// ============================================================
 
 let serverState = null;
 let lastRenderedVersion = -1;
-let selectedBet = null; // client-side: chosen total bet (decimal)
+let selectedBet = null; // chosen total bet (decimal)
 let busy = false; // a POST is in flight
-let spinning = false; // a full round (incl. free spins) is replaying
+let spinning = false; // a round (incl. bonus) is replaying
 let showResultBanner = false;
 let audioContext;
 
-// Spin-speed mode: "normal" | "fast" | "instant" (persisted in localStorage).
-let speedMode = "normal";
+let speedMode = "normal"; // "normal" | "fast" | "instant" (persisted)
 
-// Autospin sequence state.
 let autoActive = false;
-let autoRemaining = 0; // remaining paid spins; -1 === infinite/until-stop
-let autoSelectedCount = 10; // currently selected count button value
+let autoRemaining = 0; // -1 === infinite/until-stop
+let autoSelectedCount = 10;
 
-// Red/black gamble (double-or-nothing) UI state.
-let gambleOpen = false; // the gamble panel is showing
-let gambleBusy = false; // a gamble POST / reveal animation is in flight
+let gambleOpen = false;
+let gambleBusy = false;
 
 const ui = {
-  table: document.getElementById("table"),
+  game: document.getElementById("game"),
   gate: document.getElementById("gate"),
   gateMessage: document.getElementById("gate-message"),
   gateLink: document.getElementById("gate-link"),
   playerName: document.getElementById("player-name"),
   balance: document.getElementById("balance"),
-  totalBet: document.getElementById("total-bet"),
   spinsCount: document.getElementById("spins-count"),
   featureCount: document.getElementById("feature-count"),
   muteBtn: document.getElementById("mute-btn"),
+  jackpotMini: document.getElementById("jackpot-mini"),
+  jackpotMajor: document.getElementById("jackpot-major"),
+  jackpotGrand: document.getElementById("jackpot-grand"),
+  reelsFrame: document.getElementById("reels-frame"),
   reels: document.getElementById("reels"),
   paylineOverlay: document.getElementById("payline-overlay"),
-  freeBanner: document.getElementById("free-banner"),
-  freeBannerCount: document.getElementById("free-banner-count"),
-  reelsFrame: null, // set after build
+  bonusHud: document.getElementById("bonus-hud"),
+  respinCount: document.getElementById("respin-count"),
+  lockedCount: document.getElementById("locked-count"),
   winMeter: document.getElementById("win-meter"),
   winMeterValue: document.getElementById("win-meter-value"),
   status: document.getElementById("status"),
   roundResult: document.getElementById("round-result"),
-  betDisplay: document.getElementById("bet-display"),
   betValue: document.getElementById("bet-value"),
   betDown: document.getElementById("bet-down"),
   betUp: document.getElementById("bet-up"),
   betMin: document.getElementById("bet-min"),
   betMax: document.getElementById("bet-max"),
   spinBtn: document.getElementById("spin-btn"),
+  buyBtn: document.getElementById("buy-btn"),
+  buyCost: document.getElementById("buy-cost"),
+  buyConfirm: document.getElementById("buy-confirm"),
+  buyConfirmCost: document.getElementById("buy-confirm-cost"),
+  buyYes: document.getElementById("buy-yes"),
+  buyNo: document.getElementById("buy-no"),
   paytable: document.getElementById("paytable"),
   vfxLayer: document.getElementById("vfx-layer"),
-  // Speed control
-  speedControl: document.getElementById("speed-control"),
+  bannerLayer: document.getElementById("banner-layer"),
+  charLady: document.getElementById("char-lady"),
+  charLep: document.getElementById("char-lep"),
   speedModes: Array.from(document.querySelectorAll(".speed-mode")),
-  // Autospin
   autospin: document.getElementById("autospin"),
   autospinBtn: document.getElementById("autospin-btn"),
   autostopBtn: document.getElementById("autostop-btn"),
   autospinRemaining: document.getElementById("autospin-remaining"),
   autoCounts: Array.from(document.querySelectorAll(".auto-count")),
-  // Gamble (red/black)
   gamblePanel: document.getElementById("gamble-panel"),
   gambleStakeLabel: document.getElementById("gamble-stake-label"),
   gambleStakeValue: document.getElementById("gamble-stake-value"),
@@ -240,12 +332,12 @@ const ui = {
   gambleHistory: document.getElementById("gamble-history"),
 };
 
-// reelCells[reel][row] -> the .cell element currently visible in that position.
+// reelCells[reel][row] -> the .cell element visible at that position.
 const reelCells = [];
 
-// ============================================
+// ============================================================
 // REEL CONSTRUCTION
-// ============================================
+// ============================================================
 
 function symbolArt(key) {
   return SYMBOL_ART[key] || { kind: "pic", svg: () => `<span class="sym-fallback">${key}</span>` };
@@ -254,7 +346,7 @@ function symbolArt(key) {
 function paintPip(pip, key) {
   const art = symbolArt(key);
   pip.className = `pip ${art.kind}`;
-  pip.innerHTML = typeof art.svg === "function" ? art.svg() : art.svg || "";
+  pip.innerHTML = art.svg();
 }
 
 function makeCell(key) {
@@ -267,7 +359,7 @@ function makeCell(key) {
   return cell;
 }
 
-function buildReels(initialGrid) {
+function buildReels(grid) {
   ui.reels.innerHTML = "";
   reelCells.length = 0;
   for (let r = 0; r < REELS; r += 1) {
@@ -281,17 +373,15 @@ function buildReels(initialGrid) {
 
     const cells = [];
     for (let row = 0; row < ROWS; row += 1) {
-      const key = initialGrid ? initialGrid[r][row] : FALLBACK_KEYS[(r + row) % FALLBACK_KEYS.length];
-      const cell = makeCell(key);
+      const cell = makeCell(grid[r][row]);
       strip.appendChild(cell);
       cells.push(cell);
     }
     reelCells.push(cells);
   }
-  ui.reelsFrame = ui.reels.closest(".reels-frame");
 }
 
-buildReels(null);
+buildReels(ATTRACT_GRID);
 
 function setCellSymbol(cell, key) {
   cell.dataset.key = key;
@@ -306,18 +396,39 @@ function setReelGrid(grid) {
   }
 }
 
+const CELL_STATE_CLASSES = [
+  "win", "dim", "charm-lit", "locked", "just-locked", "blank", "respinning", "collecting",
+];
+
 function clearCellStates() {
   for (let r = 0; r < REELS; r += 1) {
     for (let row = 0; row < ROWS; row += 1) {
-      reelCells[r][row].classList.remove("win", "dim", "scatter-hit");
+      reelCells[r][row].classList.remove(...CELL_STATE_CLASSES);
     }
   }
   hidePaylines();
 }
 
-// ============================================
+// Value / jackpot plate on a landed Charm Ball.
+function labelCharm(cell, charm) {
+  const pip = cell.querySelector(".pip");
+  const old = pip.querySelector(".charm-value");
+  if (old) old.remove();
+  const plate = document.createElement("span");
+  plate.className = "charm-value";
+  if (charm.jackpot) {
+    plate.classList.add(`jp-${charm.jackpot}`);
+    plate.textContent = charm.jackpot.toUpperCase();
+  } else {
+    plate.textContent = formatMoney(charm.amount);
+  }
+  pip.appendChild(plate);
+  cell.classList.add("charm-lit");
+}
+
+// ============================================================
 // SERVER API LAYER (authenticated, singleplayer)
-// ============================================
+// ============================================================
 
 class HandledApiError extends Error {}
 
@@ -326,12 +437,12 @@ function showGate(message, linkHref, linkText) {
   ui.gateLink.href = linkHref;
   ui.gateLink.textContent = linkText;
   ui.gate.classList.remove("hidden");
-  ui.table.classList.add("hidden");
+  ui.game.classList.add("hidden");
 }
 
 function hideGate() {
   ui.gate.classList.add("hidden");
-  ui.table.classList.remove("hidden");
+  ui.game.classList.remove("hidden");
 }
 
 async function readErrorMessage(res, fallback) {
@@ -410,9 +521,9 @@ async function refreshState() {
   }
 }
 
-// ============================================
-// PLAYER ACTIONS
-// ============================================
+// ============================================================
+// BETS
+// ============================================================
 
 const BET_LADDER_FALLBACK = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
 
@@ -421,8 +532,6 @@ function allowedBets() {
   return (Array.isArray(list) && list.length ? list : BET_LADDER_FALLBACK).map(Number);
 }
 
-// Index of `value` in the allowed-bet ladder, with a cents-level tolerance so
-// decimal round-trips (e.g. 0.1) match reliably.
 function betIndex(value) {
   const bets = allowedBets();
   const v = Number(value);
@@ -432,6 +541,17 @@ function betIndex(value) {
     }
   }
   return -1;
+}
+
+function effectiveBet() {
+  const fromServer = Number(serverState?.selectedBet);
+  if (betIndex(fromServer) >= 0) {
+    return fromServer;
+  }
+  if (betIndex(selectedBet) >= 0) {
+    return Number(selectedBet);
+  }
+  return allowedBets()[0];
 }
 
 async function setBet(amount) {
@@ -444,7 +564,6 @@ async function setBet(amount) {
   busy = true;
   selectedBet = Number(amount);
   playSound("bet");
-  triggerActionFx("bet");
   renderBetSelector();
   try {
     applyServerState(await apiPost("bet", { amount: Number(amount) }));
@@ -459,7 +578,6 @@ async function setBet(amount) {
   }
 }
 
-// Walk the allowed-bet ladder by `dir` (−1/+1) from the current bet.
 function stepBet(dir) {
   const bets = allowedBets();
   let idx = betIndex(effectiveBet());
@@ -472,10 +590,55 @@ function stepBet(dir) {
   }
 }
 
-async function spin() {
-  if (busy || spinning || !serverState || !serverState.canSpin) {
+// ============================================================
+// SPEED PROFILES
+// ============================================================
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const SPEED_PROFILES = {
+  normal: {
+    spinUp: 240, sustain: 500, firstStop: 340, stagger: 165, settle: 320, anticip: 480,
+    winHold: 900, noWinHold: 420, smallWinHold: 550,
+    respinDur: 640, lockStagger: 260, stepHold: 380, collectStagger: 170, bannerHold: 1500,
+  },
+  fast: {
+    spinUp: 120, sustain: 230, firstStop: 170, stagger: 80, settle: 200, anticip: 250,
+    winHold: 500, noWinHold: 240, smallWinHold: 320,
+    respinDur: 320, lockStagger: 130, stepHold: 190, collectStagger: 85, bannerHold: 900,
+  },
+  instant: {
+    spinUp: 0, sustain: 0, firstStop: 0, stagger: 0, settle: 0, anticip: 0,
+    winHold: 340, noWinHold: 140, smallWinHold: 220,
+    respinDur: 90, lockStagger: 40, stepHold: 70, collectStagger: 30, bannerHold: 550,
+  },
+};
+
+function speed() {
+  return SPEED_PROFILES[speedMode] || SPEED_PROFILES.normal;
+}
+
+// ============================================================
+// ROUNDS — /spin and /buy share the same playback
+// ============================================================
+
+async function playPaidRound(endpoint) {
+  if (busy || spinning || !serverState) {
     return false;
   }
+  if (endpoint === "spin" && !serverState.canSpin) {
+    return false;
+  }
+  if (endpoint === "buy" && !serverState.canBuy) {
+    return false;
+  }
+
+  // A declined offer-stage gamble panel closes when a new round starts
+  // (the server voids the unused offer on the next spin anyway).
+  if (gambleOpen && !serverState.gamble?.active) {
+    closeGamblePanel();
+  }
+
   busy = true;
   spinning = true;
   updateControls();
@@ -485,11 +648,11 @@ async function spin() {
   ui.roundResult.className = "round-result hidden";
   playSound("spin");
   triggerActionFx("spin");
-  setStatus("Spinning…");
+  setStatus(endpoint === "buy" ? "Buying the Charm Bonus…" : "Spinning…");
 
   let result;
   try {
-    result = await apiPost("spin", {});
+    result = await apiPost(endpoint, {});
   } catch (error) {
     busy = false;
     spinning = false;
@@ -505,17 +668,17 @@ async function spin() {
   busy = false;
   const round = result.round;
 
-  if (!round || !Array.isArray(round.spins) || round.spins.length === 0) {
+  // Refused round (insufficient funds, open gamble, …): just sync state.
+  if (!round || !round.baseSpin) {
     spinning = false;
-    showResultBanner = true;
     applyServerState(result);
     updateControls();
-    return { ok: true, feature: false };
+    return false;
   }
 
   await playRound(round);
 
-  // Reveal the authoritative final state (real balance, counters) after playback.
+  // Reveal the authoritative final state after playback.
   spinning = false;
   showResultBanner = true;
   applyServerState(result);
@@ -524,12 +687,15 @@ async function spin() {
   if (round.result === "win") {
     playSound("win");
     triggerActionFx("win");
+    if (!round.bonus && Number(round.totalWin) >= Number(round.betAmount) * 15) {
+      celebrateCharacters(2200);
+      showBanner("Big Win", formatMoney(round.totalWin), "grand", speed().bannerHold);
+    }
   } else {
     playSound("lose");
   }
 
-  // Manual winning spins: offer the red/black gamble (never during autospin —
-  // autospin just keeps spinning and the next spin clears the offer).
+  // Manual winning rounds: offer the red/black gamble (never in autospin).
   const gamble = result.gamble;
   if (!autoActive && round.result === "win" && gamble && Number(gamble.offer) > 0) {
     openGambleOffer(gamble);
@@ -538,77 +704,25 @@ async function spin() {
   return { ok: true, feature: !!round.featureTriggered };
 }
 
-// ============================================
-// ROUND PLAYBACK (one-shot; the client replays the recorded spins)
-// ============================================
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Per-mode animation timings. Fast ≈ half of Normal; Instant skips travel.
-const SPEED_PROFILES = {
-  normal: { spinUp: 240, sustain: 520, firstStop: 360, stagger: 170, settle: 320, anticip: 460, betweenFree: 360, winHold: 950, noWinHold: 520 },
-  fast: { spinUp: 120, sustain: 240, firstStop: 180, stagger: 85, settle: 200, anticip: 240, betweenFree: 180, winHold: 520, noWinHold: 280 },
-  instant: { spinUp: 0, sustain: 0, firstStop: 0, stagger: 0, settle: 0, anticip: 0, betweenFree: 90, winHold: 360, noWinHold: 160 },
-};
-
-function speed() {
-  return SPEED_PROFILES[speedMode] || SPEED_PROFILES.normal;
-}
-
-const FX_KEYS = ["lady", "clover", "ladybug", "horseshoe", "coin", "ace", "king", "queen", "jack", "ten"];
-const randKey = () => FX_KEYS[(Math.random() * FX_KEYS.length) | 0];
-
 async function playRound(round) {
-  let runningWin = 0;
-  setReelsFeature(false);
-  hideFreeBanner();
+  const base = round.baseSpin;
+  const sp = speed();
 
-  // Base spin.
-  runningWin = await playSpin(round.spins[0], runningWin, { free: false });
+  await spinReelsTo(base.grid);
 
-  // Feature: replay the free spins with distinct presentation. The banner
-  // shows "Spin X / Y" where Y grows as retriggers land (freeSpinsAdded).
-  if (round.featureTriggered && round.spins.length > 1) {
-    const initialAward = Number(round.spins[0].freeSpinsAdded) || 15;
-    await announceFeature(initialAward);
-    setReelsFeature(true);
-    startFreeSpinMusic();
-    let totalAwarded = initialAward;
-    const freeSpins = round.spins.slice(1);
-    for (let i = 0; i < freeSpins.length; i += 1) {
-      showFreeBanner(i + 1, totalAwarded);
-      runningWin = await playSpin(freeSpins[i], runningWin, { free: true });
-      const added = Number(freeSpins[i].freeSpinsAdded) || 0;
-      if (added > 0) {
-        totalAwarded += added;
-        showFreeBanner(i + 1, totalAwarded);
-        await announceRetrigger(added);
-      }
-      await sleep(speed().betweenFree);
+  // Show the value / jackpot carried by every landed Charm Ball.
+  for (const charm of base.charms || []) {
+    const cell = reelCells[charm.reel]?.[charm.row];
+    if (cell) {
+      labelCharm(cell, charm);
     }
-    stopFreeSpinMusic();
-    hideFreeBanner();
-    setReelsFeature(false);
   }
-}
-
-async function playSpin(spin, runningWin, { free }) {
-  clearCellStates();
-  if (free) {
-    await starRevealTo(spin.grid);
-  } else {
-    await spinReelsTo(spin.grid);
-  }
-
-  // Highlight scatters (lucky ladies anywhere).
-  if (spin.scatterCount >= 3) {
-    flagScatters(spin.grid);
+  if ((base.scatterCount || 0) >= 3) {
     playSound("scatter");
-    triggerActionFx("scatter");
   }
 
-  // Line wins: draw paylines, light up winning cells, tally up.
-  const lineWins = spin.lineWins || [];
+  // Base-game line wins: draw paylines, light cells, count up.
+  const lineWins = base.lineWins || [];
   if (lineWins.length > 0) {
     dimAll();
     for (const w of lineWins) {
@@ -618,35 +732,28 @@ async function playSpin(spin, runningWin, { free }) {
     playSound("lineWin");
   }
 
-  const spinWin = Number(spin.spinWin || 0);
-  if (spinWin > 0) {
-    runningWin = await tallyWin(runningWin, runningWin + spinWin);
-    showWinMeter(runningWin);
+  const baseWin = Number(base.spinWin || 0);
+  if (baseWin > 0) {
+    await tallyWin(0, baseWin);
   }
 
-  setStatus(
-    free
-      ? `Free spin — won ${formatMoney(spinWin)} (round total ${formatMoney(runningWin)})`
-      : spinWin > 0
-        ? `Win ${formatMoney(spinWin)} on this spin!`
-        : "No win on this spin."
-  );
+  const smallWin = baseWin > 0 && baseWin < Number(round.betAmount) * 5;
+  await sleep(baseWin > 0 ? (smallWin ? sp.smallWinHold : sp.winHold) : sp.noWinHold);
 
-  const sp = speed();
-  await sleep(lineWins.length > 0 || spin.scatterCount >= 3 ? sp.winHold : sp.noWinHold);
-  return runningWin;
+  if (round.bonus) {
+    await playBonus(round.bonus, base, round.featureBought);
+  }
 }
 
-// Animate every reel like a real machine, with one continuous JS-driven
-// transform per strip: the strip keeps the CURRENTLY visible symbols in the
-// window on frame 1 (no spawn pop), accelerates, cruises with motion blur —
-// symbols falling DOWNWARD through the window like a physical reel — then the
-// reels stop left-to-right with a gentle overshoot-and-settle bounce onto the
-// final `grid`. The old version handed off between a looping CSS keyframe and
-// an inline transform, which snapped the strip to a cell boundary at the
-// moment of the handoff — that was the visible glitch.
-// Anticipation slows the remaining reels once 2 scatter Ladies have landed.
-const SETTLE_BACK = 1.2; // easeOutBack overshoot strength for the reel settle
+// ============================================================
+// REEL SPIN — one continuous JS transform per strip: keeps the
+// visible symbols on frame 1, accelerates, cruises with blur,
+// then stops left-to-right with an overshoot-and-settle bounce.
+// With 2 Charm Balls already down, later reels drag out their
+// stop under a golden anticipation glow.
+// ============================================================
+
+const SETTLE_BACK = 1.2;
 
 function easeOutBackGentle(t) {
   const c1 = SETTLE_BACK;
@@ -658,34 +765,29 @@ async function spinReelsTo(grid) {
   const reelEls = Array.from(ui.reels.querySelectorAll(".reel"));
   const sp = speed();
 
-  // Instant mode: no reel travel, just reveal the final grid.
   if (speedMode === "instant") {
     setReelGrid(grid);
-    reelEls.forEach((reel) => reelStopBounce(reel));
     playSound("reelStop");
     return;
   }
 
   const cellH = reelCells[0][0] ? reelCells[0][0].getBoundingClientRect().height : 0;
   if (!cellH) {
-    // Layout not measurable (hidden tab etc.) — just show the result.
     setReelGrid(grid);
     playSound("reelStop");
     return;
   }
 
-  spinReelWhir();
-
-  // Anticipation is known up front (the final grid is already decided):
-  // once 2 Ladies sit on earlier reels, later reels drag out their stop.
-  let ladies = 0;
+  // Anticipation is known up front (the grid is already decided): once two
+  // Charm Balls sit on earlier reels, the later reels stretch their stop.
+  let charms = 0;
   const anticipates = [];
   for (let r = 0; r < REELS; r += 1) {
-    anticipates.push(ladies >= 2 && r >= 2);
-    if (grid[r].includes("lady")) ladies += 1;
+    anticipates.push(charms >= 2 && r >= 2);
+    charms += grid[r].filter((k) => k === "charm").length;
   }
 
-  const msPerCell = speedMode === "fast" ? 42 : 58; // cruise pace per symbol
+  const msPerCell = speedMode === "fast" ? 42 : 58;
   let extraDelay = 0;
   const runs = [];
   for (let r = 0; r < REELS; r += 1) {
@@ -707,8 +809,6 @@ async function spinReelsTo(grid) {
   await Promise.all(runs);
 }
 
-// One reel: quadratic spin-up → linear cruise → easeOutBack settle, all as a
-// single translateY tween so velocity is continuous at every phase boundary.
 function spinOneReel(reelEl, column, cfg) {
   return new Promise((resolve) => {
     const { spinUp, cruise, settle, cellH, vmaxBase } = cfg;
@@ -716,8 +816,7 @@ function spinOneReel(reelEl, column, cfg) {
     const reelIdx = Number(reelEl.dataset.reelIndex);
     const currentKeys = reelCells[reelIdx].map((cell) => cell.dataset.key || randKey());
 
-    // Snap total travel to a whole number of cells so the final rows land
-    // exactly in the window, then derive the exact cruise velocity from it.
+    // Snap total travel to whole cells; derive an exact cruise velocity.
     const timeFactor = 0.5 * spinUp + cruise + settle / (SETTLE_BACK + 3);
     const cells = Math.max(6, Math.min(80, Math.round((vmaxBase * timeFactor) / cellH)));
     const travel = cells * cellH;
@@ -727,13 +826,10 @@ function spinOneReel(reelEl, column, cfg) {
     const cruiseDist = travel - distAccel - distSettle;
     const totalDur = spinUp + cruise + settle;
 
-    // Rebuild the strip for downward travel, top to bottom: one spare row (it
-    // peeks in during the settle overshoot), the final column, random filler,
-    // then the currently visible symbols — the window starts parked on those,
-    // so frame 1 is pixel-identical to the resting reel. The strip is
-    // absolutely positioned (see .reel-strip), so its length never stretches
-    // the reel window.
-    const startOffset = (cells + 1) * cellH; // window sits on the current symbols
+    // Rebuild the strip top-to-bottom: spare overshoot row, the final
+    // column, random filler, then the currently visible symbols — so
+    // frame 1 is pixel-identical to the resting reel.
+    const startOffset = (cells + 1) * cellH;
     strip.style.transition = "none";
     strip.innerHTML = "";
     strip.appendChild(makeCell(randKey()));
@@ -748,7 +844,10 @@ function spinOneReel(reelEl, column, cfg) {
 
     if (cfg.anticipating) {
       const glowAt = Math.max(0, totalDur - settle - cfg.anticipDur);
-      setTimeout(() => reelEl.classList.add("anticipate"), glowAt);
+      setTimeout(() => {
+        reelEl.classList.add("anticipate");
+        playSound("anticipate");
+      }, glowAt);
     }
 
     reelEl.classList.add("spinning");
@@ -791,31 +890,17 @@ function spinOneReel(reelEl, column, cfg) {
       } else {
         const s = (t - spinUp - cruise) / settle;
         y = distAccel + cruiseDist + distSettle * easeOutBackGentle(s);
-        // Drop the motion blur early in the settle so the symbols land readable.
         if (s > 0.12) {
           reelEl.classList.remove("spinning");
         }
       }
-      // y grows 0 → travel; mapping it against startOffset moves the strip
-      // downward from the current symbols onto the finals (which end at
-      // translateY(-cellH), the row right under the spare overshoot cell).
       strip.style.transform = `translateY(${y - startOffset}px)`;
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
-    // Safety net (rAF pauses in background tabs): never leave a reel hanging.
+    // Safety net (rAF pauses in background tabs).
     setTimeout(finish, totalDur + 400);
   });
-}
-
-function flagScatters(grid) {
-  for (let r = 0; r < REELS; r += 1) {
-    for (let row = 0; row < ROWS; row += 1) {
-      if (grid[r][row] === "lady") {
-        reelCells[r][row].classList.add("win", "scatter-hit");
-      }
-    }
-  }
 }
 
 function dimAll() {
@@ -827,7 +912,6 @@ function dimAll() {
 }
 
 function lightLineWin(w) {
-  // cells[] holds the winning row index per reel, length === count.
   (w.cells || []).forEach((row, reel) => {
     const cell = reelCells[reel]?.[row];
     if (cell) {
@@ -837,21 +921,194 @@ function lightLineWin(w) {
   });
 }
 
-// ============================================
-// PAYLINE OVERLAY (SVG polylines mapped to cell centres)
-// ============================================
+// ============================================================
+// CHARM BONUS — Hold & Win playback
+// ============================================================
+
+let bonusLocked = []; // bonusLocked[reel][row] -> charm or null
+
+function emptyLockedMap() {
+  return Array.from({ length: REELS }, () => Array(ROWS).fill(null));
+}
+
+function setRespinDisplay(value, isReset) {
+  ui.respinCount.textContent = String(value);
+  ui.respinCount.classList.remove("pop");
+  void ui.respinCount.offsetWidth;
+  if (isReset) {
+    ui.respinCount.classList.add("pop");
+  }
+}
+
+function setLockedDisplay(count) {
+  ui.lockedCount.textContent = `${count} / ${REELS * ROWS}`;
+}
+
+function lockCharmCell(charm, justLanded) {
+  const cell = reelCells[charm.reel]?.[charm.row];
+  if (!cell) {
+    return;
+  }
+  bonusLocked[charm.reel][charm.row] = charm;
+  cell.classList.remove("blank", "respinning", "dim", "win");
+  setCellSymbol(cell, "charm");
+  labelCharm(cell, charm);
+  cell.classList.add("locked");
+  if (justLanded) {
+    cell.classList.add("just-locked");
+    setTimeout(() => cell.classList.remove("just-locked"), 450);
+  }
+}
+
+function setUnlockedCellsRespinning(on) {
+  for (let r = 0; r < REELS; r += 1) {
+    for (let row = 0; row < ROWS; row += 1) {
+      if (!bonusLocked[r][row]) {
+        reelCells[r][row].classList.toggle("respinning", on);
+      }
+    }
+  }
+}
+
+async function playBonus(bonus, baseSpin, featureBought) {
+  const sp = speed();
+
+  celebrateCharacters(3000);
+  playSound("feature");
+  triggerActionFx("bonus");
+  startBonusMusic();
+  await showBanner(
+    "Charm Bonus",
+    featureBought ? "Feature bought — 3 respins" : "3 respins — every new charm locks",
+    "bonus",
+    sp.bannerHold
+  );
+
+  // Enter bonus mode: lock the triggering balls, empty everything else.
+  clearCellStates();
+  hidePaylines();
+  hideWinMeter();
+  ui.reelsFrame.classList.add("bonus");
+  ui.bonusHud.classList.remove("hidden");
+  bonusLocked = emptyLockedMap();
+
+  for (let r = 0; r < REELS; r += 1) {
+    for (let row = 0; row < ROWS; row += 1) {
+      const cell = reelCells[r][row];
+      setCellSymbol(cell, "__blank");
+      cell.classList.add("blank");
+    }
+  }
+  let lockedTotal = 0;
+  for (const charm of bonus.initialCharms || []) {
+    lockCharmCell(charm, true);
+    lockedTotal += 1;
+    playSound("charmLock");
+    await sleep(sp.lockStagger);
+  }
+  setRespinDisplay(3, true);
+  setLockedDisplay(lockedTotal);
+  setStatus("Charm Bonus — 3 respins. New charms lock and reset!");
+  await sleep(sp.stepHold);
+
+  // Play back each recorded respin.
+  for (const step of bonus.respins || []) {
+    setUnlockedCellsRespinning(true);
+    playSound("respin");
+    await sleep(sp.respinDur);
+    setUnlockedCellsRespinning(false);
+
+    const news = step.newCharms || [];
+    if (news.length > 0) {
+      for (const charm of news) {
+        lockCharmCell(charm, true);
+        lockedTotal += 1;
+        playSound("charmLock");
+        if (charm.jackpot) {
+          playSound("scatter");
+        }
+        setLockedDisplay(lockedTotal);
+        await sleep(sp.lockStagger);
+      }
+      setRespinDisplay(step.respinsLeft, true);
+      setStatus(`${news.length} new charm${news.length === 1 ? "" : "s"} locked — respins reset to ${step.respinsLeft}.`);
+    } else {
+      setRespinDisplay(step.respinsLeft, false);
+      setStatus(step.respinsLeft > 0 ? `No new charms — ${step.respinsLeft} respin${step.respinsLeft === 1 ? "" : "s"} left.` : "No new charms — collecting…");
+    }
+    await sleep(sp.stepHold);
+  }
+
+  if (bonus.fullGrid) {
+    playSound("jackpot");
+    triggerActionFx("jackpot");
+    celebrateCharacters(3000);
+    await showBanner("Full Grid", "COLLECT ALL — every charm pays", "grand", sp.bannerHold + 400);
+  }
+
+  await collectCharms(bonus);
+
+  // Exit bonus mode; restore the base-game grid underneath.
+  ui.reelsFrame.classList.remove("bonus");
+  ui.bonusHud.classList.add("hidden");
+  stopBonusMusic();
+  clearCellStates();
+  setReelGrid(baseSpin.grid);
+  for (const charm of baseSpin.charms || []) {
+    const cell = reelCells[charm.reel]?.[charm.row];
+    if (cell) {
+      labelCharm(cell, charm);
+    }
+  }
+}
+
+// Tally every locked ball into the win meter, jackpots with fanfare.
+async function collectCharms(bonus) {
+  const sp = speed();
+  showWinMeter(0);
+  let running = 0;
+
+  for (let r = 0; r < REELS; r += 1) {
+    for (let row = 0; row < ROWS; row += 1) {
+      const charm = bonusLocked[r][row];
+      if (!charm) {
+        continue;
+      }
+      const cell = reelCells[r][row];
+      cell.classList.remove("collecting");
+      void cell.offsetWidth;
+      cell.classList.add("collecting");
+
+      if (charm.jackpot) {
+        playSound("jackpot");
+        triggerActionFx("jackpot");
+        celebrateCharacters(2000);
+        await showBanner(`${charm.jackpot} Jackpot`, formatMoney(charm.amount), charm.jackpot, sp.bannerHold);
+      }
+
+      running += Number(charm.amount || 0);
+      showWinMeter(running);
+      playSound("coin");
+      await sleep(sp.collectStagger);
+    }
+  }
+
+  // The server total is authoritative — settle the meter on it exactly.
+  await tallyWin(running, Number(bonus.totalWin || 0));
+  playSound("win");
+  triggerActionFx("win");
+  setStatus(`Charm Bonus paid ${formatMoney(bonus.totalWin)}!`);
+  await sleep(sp.winHold);
+}
+
+// ============================================================
+// PAYLINE OVERLAY
+// ============================================================
 
 const PAYLINE_COLORS = [
-  "#70ff3a", "#ff53b8", "#ffd24a", "#4ecdc4", "#ff6b6b",
-  "#b06bff", "#c0ff5a", "#ff952a", "#6bd0ff", "#ff8ad1",
+  "#8bd450", "#ff53b8", "#ffd24a", "#4ecdc4", "#ff6b6b",
+  "#b98aff", "#c0ff5a", "#ff952a", "#6bd0ff", "#ff8ad1",
 ];
-
-function cellCenterPct(reel, row) {
-  // Coordinates in the overlay's own 0..100 viewBox space.
-  const x = ((reel + 0.5) / REELS) * 100;
-  const y = ((row + 0.5) / ROWS) * 100;
-  return [x, y];
-}
 
 function drawPayline(w) {
   const overlay = ui.paylineOverlay;
@@ -859,15 +1116,16 @@ function drawPayline(w) {
     overlay.setAttribute("viewBox", "0 0 100 100");
   }
   const color = PAYLINE_COLORS[((w.line || 1) - 1) % PAYLINE_COLORS.length];
-  const pts = (w.cells || []).map((row, reel) => cellCenterPct(reel, row).join(",")).join(" ");
+  const pts = (w.cells || [])
+    .map((row, reel) => `${(((reel + 0.5) / REELS) * 100).toFixed(2)},${(((row + 0.5) / ROWS) * 100).toFixed(2)}`)
+    .join(" ");
   const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
   poly.setAttribute("points", pts);
   poly.setAttribute("stroke", color);
   poly.setAttribute("stroke-dasharray", "600");
   poly.style.color = color;
   overlay.appendChild(poly);
-  // force reflow so the draw animation runs
-  void poly.getBBox();
+  void poly.getBBox(); // force reflow so the draw animation runs
   poly.classList.add("show");
 }
 
@@ -875,9 +1133,9 @@ function hidePaylines() {
   ui.paylineOverlay.innerHTML = "";
 }
 
-// ============================================
-// WIN METER + TALLY
-// ============================================
+// ============================================================
+// WIN METER
+// ============================================================
 
 function showWinMeter(value) {
   ui.winMeter.classList.remove("hidden");
@@ -889,10 +1147,14 @@ function hideWinMeter() {
   ui.winMeterValue.textContent = formatMoney(0);
 }
 
-// Count the meter up from `from` to `to`, with a coin-tinkle as it climbs.
 function tallyWin(from, to) {
   return new Promise((resolve) => {
-    const duration = 650;
+    if (Math.abs(to - from) < 0.005) {
+      showWinMeter(to);
+      resolve(to);
+      return;
+    }
+    const duration = speedMode === "instant" ? 300 : speedMode === "fast" ? 420 : 620;
     const start = performance.now();
     showWinMeter(from);
     let lastTick = 0;
@@ -901,7 +1163,7 @@ function tallyWin(from, to) {
       const eased = 1 - Math.pow(1 - t, 3);
       const value = from + (to - from) * eased;
       ui.winMeterValue.textContent = formatMoney(value);
-      if (now - lastTick > 60) {
+      if (now - lastTick > 65) {
         lastTick = now;
         playSound("coin");
       }
@@ -917,126 +1179,9 @@ function tallyWin(from, to) {
   });
 }
 
-// ============================================
-// FEATURE / FREE-SPINS PRESENTATION
-// ============================================
-
-function setReelsFeature(on) {
-  if (ui.reelsFrame) {
-    ui.reelsFrame.classList.toggle("feature", on);
-  }
-}
-
-// "Spin X / Y" — Y is the total awarded so far and grows on retriggers.
-function showFreeBanner(current, total) {
-  ui.freeBanner.classList.remove("hidden");
-  ui.freeBannerCount.textContent = `Spin ${current} / ${total}`;
-  animateFreeBannerTick();
-}
-
-function hideFreeBanner() {
-  ui.freeBanner.classList.add("hidden");
-}
-
-async function announceFeature(awarded) {
-  setStatus(`FEATURE! ${awarded} FREE SPINS`);
-  playSound("feature");
-  triggerActionFx("feature");
-  ui.roundResult.textContent = `${awarded} FREE SPINS`;
-  ui.roundResult.className = "round-result win";
-  animateRoundResult(ui.roundResult);
-  await sleep(1500);
-  ui.roundResult.textContent = "";
-  ui.roundResult.className = "round-result hidden";
-}
-
-// Celebratory "+1 / +2 / +15 FREE SPINS" pop when a free spin retriggers.
-async function announceRetrigger(added) {
-  playSound("feature");
-  triggerActionFx("scatter");
-  const pop = document.createElement("div");
-  pop.className = "retrigger-pop";
-  pop.textContent = `+${added} FREE SPIN${added === 1 ? "" : "S"}`;
-  (ui.reelsFrame || ui.reels).appendChild(pop);
-  const hold = speedMode === "instant" ? 420 : speedMode === "fast" ? 700 : 1150;
-  await sleep(hold);
-  pop.classList.add("out");
-  setTimeout(() => pop.remove(), 400);
-}
-
-// ============================================
-// STARRY FREE-SPIN REVEAL
-// In free spins the result appears under a twinkling star field: every cell
-// is covered, then the covers fade away one at a time — left-to-right by
-// column and bottom-to-top within each column — revealing the symbols.
-// ============================================
-
-function makeStarCover(cell) {
-  const cover = document.createElement("div");
-  cover.className = "star-cover";
-  for (let i = 0; i < 6; i += 1) {
-    const star = document.createElement("span");
-    star.className = "star";
-    star.style.left = `${8 + Math.random() * 78}%`;
-    star.style.top = `${8 + Math.random() * 78}%`;
-    star.style.animationDelay = `${(Math.random() * 1.2).toFixed(2)}s`;
-    star.style.animationDuration = `${(0.8 + Math.random() * 0.9).toFixed(2)}s`;
-    cover.appendChild(star);
-  }
-  cell.appendChild(cover);
-  return cover;
-}
-
-async function starRevealTo(grid) {
-  setReelGrid(grid);
-  // Instant mode: no reveal choreography, results show immediately.
-  if (speedMode === "instant") {
-    playSound("reelStop");
-    return;
-  }
-
-  const per = speedMode === "fast" ? 45 : 85; // gap between cell reveals
-  const lead = speedMode === "fast" ? 160 : 300; // shimmer before the first reveal
-  const covers = [];
-  for (let r = 0; r < REELS; r += 1) {
-    for (let row = 0; row < ROWS; row += 1) {
-      covers.push(makeStarCover(reelCells[r][row]));
-    }
-  }
-  void ui.reels.offsetWidth; // commit covers before any starts fading
-  playSound("sparkle");
-
-  const reveals = [];
-  let order = 0;
-  for (let r = 0; r < REELS; r += 1) {
-    for (let row = ROWS - 1; row >= 0; row -= 1) {
-      const cover = covers[r * ROWS + row];
-      const delay = lead + order * per;
-      order += 1;
-      reveals.push(
-        new Promise((res) => {
-          setTimeout(() => {
-            cover.classList.add("reveal");
-            playSound("coin");
-            setTimeout(() => {
-              cover.remove();
-              res();
-            }, 320);
-          }, delay);
-        })
-      );
-    }
-  }
-  await Promise.all(reveals);
-}
-
-// ============================================
+// ============================================================
 // GAMBLE — red/black double-or-nothing on the last win.
-// Styled and animated like the blackjack table (wwwroot/kocka): white playing
-// cards with a flip reveal, purple-striped card backs, felt panel. The first
-// pick moves the offer from the balance into the stake; each correct colour
-// doubles it, a wrong one loses everything; Collect banks the stake anytime.
-// ============================================
+// ============================================================
 
 const SUIT_GLYPHS = { hearts: "♥", diamonds: "♦", spades: "♠", clubs: "♣" };
 
@@ -1055,8 +1200,6 @@ function setGambleStake(amount, label) {
   ui.gambleStakeValue.textContent = formatMoney(amount);
 }
 
-// Return the card face-down without a visible reverse-flip; optionally play
-// the deal-in slide for a freshly drawn card.
 function resetGambleCard(deal) {
   ui.gambleCardInner.style.transition = "none";
   ui.gambleCard.classList.remove("flipped", "won", "lost");
@@ -1093,9 +1236,9 @@ function openGamblePanelBase() {
   gambleOpen = true;
   gambleBusy = false;
   ui.gamblePanel.classList.remove("hidden", "lost");
+  ui.gamblePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-// Fresh offer right after a winning manual spin (nothing staked yet).
 function openGambleOffer(gamble) {
   openGamblePanelBase();
   setGambleStake(Number(gamble.offer || 0), "Your win");
@@ -1106,7 +1249,6 @@ function openGambleOffer(gamble) {
   playSound("bet");
 }
 
-// Re-attach to a gamble already in progress (stake on the table).
 function openGambleActive(gamble) {
   openGamblePanelBase();
   setGambleStake(Number(gamble.stake || 0), "On the table");
@@ -1134,7 +1276,7 @@ async function pickGamble(choice) {
   }
   gambleBusy = true;
   updateGambleButtons();
-  resetGambleCard(true); // slide in a fresh face-down card
+  resetGambleCard(true);
   playSound("button");
 
   let state;
@@ -1153,22 +1295,21 @@ async function pickGamble(choice) {
   const gamble = state.gamble || {};
   const card = gamble.lastCard;
 
-  // The pick was refused (expired session, nothing to gamble, …): the server
-  // set a status message and drew no card — just sync state and close.
+  // Refused pick (expired session, nothing staked): sync and close.
   if (gamble.lastWon !== true && gamble.lastWon !== false) {
     applyServerState(state);
     closeGamblePanel();
     return;
   }
 
-  await sleep(380); // beat of suspense while the card sits face-down
+  await sleep(380);
   if (card) {
     showGambleCardFace(card);
-    playSound("reelStop"); // flip snap
+    playSound("reelStop");
     await sleep(520);
   }
   renderGambleHistory(gamble.history);
-  applyServerState(state); // balance / status / version sync
+  applyServerState(state);
 
   if (gamble.lastWon) {
     playSound("win");
@@ -1178,7 +1319,6 @@ async function pickGamble(choice) {
     gambleBusy = false;
     updateGambleButtons();
   } else {
-    // Wrong colour — the whole stake is gone.
     playSound("lose");
     ui.gambleCard.classList.add("lost");
     ui.gamblePanel.classList.add("lost");
@@ -1197,7 +1337,7 @@ async function collectGamble() {
   playSound("button");
   const active = !!(serverState && serverState.gamble && serverState.gamble.active);
   if (!active) {
-    // Offer stage: the win is already on the balance — just decline and close.
+    // Offer stage: the win is already on the balance — decline and close.
     closeGamblePanel();
     return;
   }
@@ -1232,9 +1372,9 @@ ui.gambleRed.addEventListener("click", () => pickGamble("red"));
 ui.gambleBlack.addEventListener("click", () => pickGamble("black"));
 ui.gambleCollect.addEventListener("click", () => collectGamble());
 
-// ============================================
+// ============================================================
 // RENDERING (version-gated)
-// ============================================
+// ============================================================
 
 function formatMoney(value) {
   const amount = Number(value ?? 0);
@@ -1244,24 +1384,8 @@ function formatMoney(value) {
 function setStatus(text, danger = false) {
   ui.status.textContent = text;
   ui.status.classList.toggle("danger", danger);
-  ui.status.classList.remove("pulse");
-  animateStatusPulse(ui.status);
-  void ui.status.offsetWidth;
-  ui.status.classList.add("pulse");
 }
 
-function effectiveBet() {
-  const fromServer = Number(serverState?.selectedBet);
-  if (betIndex(fromServer) >= 0) {
-    return fromServer;
-  }
-  if (betIndex(selectedBet) >= 0) {
-    return Number(selectedBet);
-  }
-  return allowedBets()[0];
-}
-
-// −/+ stepper that walks the allowed-bet ladder, with Min/Max shortcuts.
 function renderBetSelector() {
   const bets = allowedBets();
   const active = effectiveBet();
@@ -1282,17 +1406,50 @@ function updateControls() {
   renderBetSelector();
   const bet = effectiveBet();
   const insufficient = serverState ? Number(serverState.balance) < bet : false;
-  ui.spinBtn.disabled =
-    busy || spinning || autoActive || !serverState || !serverState.canSpin || insufficient;
+  const lockedOut = busy || spinning || autoActive || !serverState;
+
+  ui.spinBtn.disabled = lockedOut || !serverState?.canSpin || insufficient;
   ui.spinBtn.textContent = spinning ? "Spinning…" : insufficient ? "No Funds" : "Spin";
 
-  // Autospin start is unavailable while a spin/sequence runs or funds are short.
-  ui.autospinBtn.disabled =
-    busy || spinning || autoActive || !serverState || !serverState.canSpin || insufficient;
+  ui.buyBtn.disabled = lockedOut || !serverState?.canBuy;
+  if (ui.buyBtn.disabled && !ui.buyConfirm.classList.contains("hidden")) {
+    ui.buyConfirm.classList.add("hidden");
+  }
+
+  ui.autospinBtn.disabled = lockedOut || !serverState?.canSpin || insufficient;
   ui.autoCounts.forEach((b) => {
     b.disabled = autoActive;
     b.classList.toggle("active", Number(b.dataset.count) === autoSelectedCount);
   });
+}
+
+function bumpJackpot(el) {
+  const plate = el.closest(".jackpot");
+  if (!plate) {
+    return;
+  }
+  plate.classList.remove("bump");
+  void plate.offsetWidth;
+  plate.classList.add("bump");
+}
+
+function renderJackpots() {
+  const jp = serverState?.jackpots;
+  if (!jp) {
+    return;
+  }
+  const entries = [
+    [ui.jackpotMini, jp.mini],
+    [ui.jackpotMajor, jp.major],
+    [ui.jackpotGrand, jp.grand],
+  ];
+  for (const [el, value] of entries) {
+    const text = formatMoney(value);
+    if (el.textContent !== text) {
+      el.textContent = text;
+      bumpJackpot(el);
+    }
+  }
 }
 
 function render(force = false) {
@@ -1306,23 +1463,22 @@ function render(force = false) {
 
   ui.playerName.textContent = serverState.playerName || "—";
   ui.balance.textContent = `Balance: ${formatMoney(serverState.balance)}`;
-  ui.totalBet.textContent = `Bet: ${formatMoney(effectiveBet())}`;
   ui.spinsCount.textContent = `Spins: ${serverState.spins ?? 0}`;
-  ui.featureCount.textContent = `Features: ${serverState.featureHits ?? 0}`;
+  ui.featureCount.textContent = `Bonuses: ${serverState.featureHits ?? 0}`;
   animateBalanceChange(ui.balance);
 
   if (betIndex(Number(serverState.selectedBet)) >= 0) {
     selectedBet = Number(serverState.selectedBet);
   }
 
-  ui.betDisplay.textContent = `Total Bet: ${formatMoney(effectiveBet())} · Line Bet: ${formatMoney(effectiveBet() / 10)}`;
+  renderJackpots();
 
-  // Paint the resting grid only when not mid-spin (state syncs / focus refetch).
-  if (!spinning && serverState.lastGrid && Array.isArray(serverState.lastGrid)) {
-    setReelGrid(serverState.lastGrid);
-  }
+  const buyCost = formatMoney(serverState.featureBuyCost);
+  ui.buyCost.textContent = buyCost;
+  ui.buyConfirmCost.textContent = buyCost;
 
   updateControls();
+  renderPaytable();
 
   if (showResultBanner) {
     showResultBanner = false;
@@ -1330,30 +1486,27 @@ function render(force = false) {
     if (win > 0) {
       ui.roundResult.textContent = `WIN ${formatMoney(win)}`;
       ui.roundResult.className = "round-result win";
+      showWinMeter(win);
     } else {
       ui.roundResult.textContent = "NO WIN";
       ui.roundResult.className = "round-result loss";
     }
     animateRoundResult(ui.roundResult);
-    if (win > 0) {
-      showWinMeter(win);
-    }
   }
 
   if (serverState.status && !spinning) {
     setStatus(serverState.status);
   }
 
-  // Re-attach to an in-progress gamble (page reload / focus re-sync): the
-  // stake is still on the table server-side, so bring the panel back up.
+  // Re-attach to an in-progress gamble (page reload / focus re-sync).
   if (serverState.gamble && serverState.gamble.active && !gambleOpen && !spinning) {
     openGambleActive(serverState.gamble);
   }
 }
 
-// ============================================
+// ============================================================
 // PAYTABLE
-// ============================================
+// ============================================================
 
 function renderPaytable() {
   const symbols = serverState?.symbols;
@@ -1384,20 +1537,21 @@ function renderPaytable() {
     const name = document.createElement("span");
     name.className = "pay-name";
     name.textContent = sym.name || sym.key;
-    if (sym.isWild && sym.isScatter) {
+    if (sym.isWild || sym.isScatter) {
       const tag = document.createElement("span");
       tag.className = "tag";
-      tag.textContent = "WILD+SCATTER";
-      name.appendChild(tag);
-    } else if (sym.isWild) {
-      const tag = document.createElement("span");
-      tag.className = "tag";
-      tag.textContent = "WILD";
+      tag.textContent = sym.isWild ? "WILD" : "SCATTER";
       name.appendChild(tag);
     }
+
     const values = document.createElement("span");
-    values.className = "pay-values";
-    values.innerHTML = `3: <b>${sym.pay3}×</b> · 4: <b>${sym.pay4}×</b> · 5: <b>${sym.pay5}×</b>`;
+    if (sym.isScatter) {
+      values.className = "pay-scatter-note";
+      values.textContent = "Cash or jackpot on every ball · 3+ trigger the Charm Bonus";
+    } else {
+      values.className = "pay-values";
+      values.innerHTML = `3: <b>${sym.pay3}×</b> · 4: <b>${sym.pay4}×</b> · 5: <b>${sym.pay5}×</b>`;
+    }
 
     info.append(name, values);
     card.append(symBox, info);
@@ -1405,110 +1559,106 @@ function renderPaytable() {
   });
 }
 
-// ============================================
-// VFX (same flair as blackjack / roulette / threebody)
-// ============================================
+// ============================================================
+// BANNERS + CHARACTER REACTIONS + VFX
+// ============================================================
+
+function showBanner(title, sub, theme, holdMs) {
+  return new Promise((resolve) => {
+    const banner = document.createElement("div");
+    banner.className = `banner theme-${theme || "bonus"}`;
+    const t = document.createElement("span");
+    t.className = "banner-title";
+    t.textContent = title;
+    banner.appendChild(t);
+    if (sub) {
+      const s = document.createElement("span");
+      s.className = "banner-sub";
+      s.textContent = sub;
+      banner.appendChild(s);
+    }
+    ui.bannerLayer.appendChild(banner);
+    setTimeout(() => {
+      banner.classList.add("out");
+      setTimeout(() => {
+        banner.remove();
+        resolve();
+      }, 300);
+    }, Math.max(400, holdMs || 1200));
+  });
+}
+
+let celebrateTimer = null;
+function celebrateCharacters(ms) {
+  ui.charLady?.classList.add("celebrate");
+  ui.charLep?.classList.add("celebrate");
+  if (celebrateTimer) {
+    clearTimeout(celebrateTimer);
+  }
+  celebrateTimer = setTimeout(() => {
+    ui.charLady?.classList.remove("celebrate");
+    ui.charLep?.classList.remove("celebrate");
+    celebrateTimer = null;
+  }, ms || 2000);
+}
 
 function triggerActionFx(kind) {
   if (!ui.vfxLayer) {
     return;
   }
-
   const config = {
-    bet: { count: 50, color: "#b4ff66", spread: 240, flash: "flash-spin", waves: 1, words: ["BET", "LOCKED IN", "STAKE SET"] },
-    spin: { count: 120, color: "#9dff60", spread: 420, flash: "flash-spin", waves: 2, words: ["SPIN", "GOOD LUCK", "REELS GO"] },
-    scatter: { count: 130, color: "#ff53b8", spread: 460, flash: "flash-scatter", waves: 2, words: ["SCATTER", "LUCKY LADY", "3 LADIES"] },
-    feature: { count: 200, color: "#ffd24a", spread: 540, flash: "flash-feature", waves: 3, words: ["FREE SPINS", "FEATURE", "15 FREE"] },
-    win: { count: 200, color: "#70ff3a", spread: 540, flash: "flash-win", waves: 3, words: ["WINNER", "PAYOUT", "JACKPOT"] },
+    spin: { count: 26, color: "#c8e26a", spread: 220, flash: "flash-spin" },
+    win: { count: 90, color: "#ffd24a", spread: 420, flash: "flash-win" },
+    bonus: { count: 120, color: "#8bd450", spread: 480, flash: "flash-bonus" },
+    jackpot: { count: 160, color: "#ffe98f", spread: 560, flash: "flash-jackpot" },
   }[kind];
-
   if (!config) {
     return;
   }
 
   const rect = ui.vfxLayer.getBoundingClientRect();
-  const centerX = rect.width * (0.35 + Math.random() * 0.3);
-  const centerY = rect.height * (0.3 + Math.random() * 0.3);
+  const centerX = rect.width * (0.38 + Math.random() * 0.24);
+  const centerY = rect.height * (0.3 + Math.random() * 0.25);
 
-  const spawnBurst = (wave = 1) => {
-    const waveScale = 1 + wave * 0.2;
-    for (let i = 0; i < config.count; i += 1) {
-      const piece = document.createElement("span");
-      const angle = Math.random() * Math.PI * 2;
-      const speed = (95 + Math.random() * config.spread) * waveScale;
-      const size = 4 + Math.random() * 14;
-      piece.className = "fx-particle";
-      piece.style.setProperty("--fx-x", `${centerX}px`);
-      piece.style.setProperty("--fx-y", `${centerY}px`);
-      piece.style.setProperty("--fx-dx", `${Math.cos(angle) * speed}`);
-      piece.style.setProperty("--fx-dy", `${Math.sin(angle) * speed}`);
-      piece.style.setProperty("--fx-color", config.color);
-      piece.style.width = `${size}px`;
-      piece.style.height = `${size}px`;
-      piece.style.opacity = `${0.5 + Math.random() * 0.5}`;
-      ui.vfxLayer.appendChild(piece);
-      setTimeout(() => piece.remove(), 900);
-    }
+  for (let i = 0; i < config.count; i += 1) {
+    const piece = document.createElement("span");
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 80 + Math.random() * config.spread;
+    const size = 4 + Math.random() * 10;
+    piece.className = "fx-particle";
+    piece.style.setProperty("--fx-x", `${centerX}px`);
+    piece.style.setProperty("--fx-y", `${centerY}px`);
+    piece.style.setProperty("--fx-dx", `${Math.cos(angle) * dist}`);
+    piece.style.setProperty("--fx-dy", `${Math.sin(angle) * dist * 0.7}`);
+    piece.style.setProperty("--fx-color", config.color);
+    piece.style.width = `${size}px`;
+    piece.style.height = `${size}px`;
+    piece.style.opacity = `${0.5 + Math.random() * 0.5}`;
+    ui.vfxLayer.appendChild(piece);
+    setTimeout(() => piece.remove(), 950);
+  }
 
+  if (kind !== "spin") {
     const ring = document.createElement("span");
     ring.className = "fx-ring";
     ring.style.setProperty("--fx-x", `${centerX}px`);
     ring.style.setProperty("--fx-y", `${centerY}px`);
     ring.style.setProperty("--fx-color", config.color);
     ui.vfxLayer.appendChild(ring);
-    setTimeout(() => ring.remove(), 780);
-
-    const shardCount = 8 + wave * 4;
-    for (let i = 0; i < shardCount; i += 1) {
-      const shard = document.createElement("span");
-      const driftX = (Math.random() - 0.5) * 340;
-      const driftY = (Math.random() - 0.5) * 200;
-      shard.className = "fx-shard";
-      shard.style.setProperty("--fx-x", `${centerX}px`);
-      shard.style.setProperty("--fx-y", `${centerY}px`);
-      shard.style.setProperty("--fx-dx", `${driftX}`);
-      shard.style.setProperty("--fx-dy", `${driftY}`);
-      shard.style.setProperty("--fx-color", config.color);
-      shard.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
-      ui.vfxLayer.appendChild(shard);
-      setTimeout(() => shard.remove(), 860);
-    }
-  };
-
-  for (let wave = 0; wave < config.waves; wave += 1) {
-    setTimeout(() => spawnBurst(wave), wave * 90);
+    setTimeout(() => ring.remove(), 800);
   }
 
-  const word = document.createElement("span");
-  word.className = "fx-banner";
-  word.textContent = config.words[Math.floor(Math.random() * config.words.length)];
-  word.style.setProperty("--fx-color", config.color);
-  word.style.left = `${Math.max(16, centerX - 120)}px`;
-  word.style.top = `${Math.max(16, centerY - 28)}px`;
-  ui.vfxLayer.appendChild(word);
-  setTimeout(() => word.remove(), 720);
-
-  document.body.classList.remove("action-flash", "flash-spin", "flash-win", "flash-feature", "flash-scatter");
-  document.body.classList.remove("action-shake", "action-glitch", "action-overdrive", "action-strobe", "action-tilt");
+  document.body.classList.remove("action-flash", "flash-spin", "flash-win", "flash-bonus", "flash-jackpot");
   void document.body.offsetWidth;
-  const heavy = kind === "spin" || kind === "win" || kind === "feature" || kind === "scatter";
-  const classes = ["action-flash", config.flash, "action-glitch", "action-overdrive"];
-  if (heavy) {
-    classes.push("action-shake", "action-strobe", "action-tilt");
-  }
-  document.body.classList.add(...classes);
+  document.body.classList.add("action-flash", config.flash);
   setTimeout(() => {
-    document.body.classList.remove(...classes);
-  }, heavy ? 980 : 680);
+    document.body.classList.remove("action-flash", config.flash);
+  }, 650);
 }
 
-// ============================================
-// AUDIO — original Web Audio cues (no ripped game audio).
-//
-// Sound module: a small registry of named cues, each a function that schedules
-// oscillators. A developer can later swap any cue for a royalty-free sample by
-// replacing its entry in SOUND_CUES with one that plays an <audio>/AudioBuffer.
-// ============================================
+// ============================================================
+// AUDIO — original WebAudio cues (no ripped game audio).
+// ============================================================
 
 let muted = false;
 
@@ -1549,7 +1699,6 @@ function playTone(freq, duration, type = "sine", volume = 0.05, delay = 0) {
   osc.stop(endAt + 0.01);
 }
 
-// A short filtered-noise burst — used for the reel "whir".
 function playNoise(duration, volume = 0.04, freq = 1200) {
   const ctx = ensureAudioContext();
   if (!ctx) {
@@ -1574,7 +1723,6 @@ function playNoise(duration, volume = 0.04, freq = 1200) {
   src.start();
 }
 
-// Named cue registry. Swap any entry to drop in your own royalty-free sound.
 const SOUND_CUES = {
   bet: () => {
     playTone(430, 0.05, "triangle", 0.04);
@@ -1590,6 +1738,10 @@ const SOUND_CUES = {
     playTone(180, 0.05, "square", 0.05);
     playTone(90, 0.06, "triangle", 0.04, 0.01);
   },
+  anticipate: () => {
+    playTone(392, 0.3, "sine", 0.035);
+    playTone(466, 0.3, "sine", 0.03, 0.05);
+  },
   lineWin: () => {
     playTone(660, 0.08, "triangle", 0.05);
     playTone(880, 0.1, "triangle", 0.05, 0.07);
@@ -1600,12 +1752,27 @@ const SOUND_CUES = {
     playTone(784, 0.12, "triangle", 0.06, 0.08);
     playTone(1046, 0.16, "triangle", 0.06, 0.16);
   },
+  charmLock: () => {
+    // A weighty thud as a ball locks in.
+    playTone(72, 0.16, "sine", 0.09);
+    playTone(140, 0.07, "triangle", 0.05, 0.01);
+    playNoise(0.08, 0.05, 300);
+  },
+  respin: () => {
+    playNoise(0.18, 0.035, 1100);
+    playTone(220, 0.08, "square", 0.025, 0.02);
+  },
   feature: () => {
-    // Original ascending fanfare for the free-spins trigger.
     [523, 659, 784, 1046, 1318].forEach((f, i) => {
       playTone(f, 0.18, "triangle", 0.07, i * 0.12);
     });
     playNoise(0.5, 0.03, 2200);
+  },
+  jackpot: () => {
+    [392, 523, 659, 784, 1046, 1318, 1568].forEach((f, i) => {
+      playTone(f, 0.22, "triangle", 0.07, i * 0.1);
+    });
+    playNoise(0.7, 0.035, 2600);
   },
   win: () => {
     playTone(392, 0.12, "triangle", 0.06);
@@ -1617,11 +1784,6 @@ const SOUND_CUES = {
     playTone(220, 0.14, "sine", 0.05);
     playTone(160, 0.2, "triangle", 0.04, 0.12);
   },
-  sparkle: () => {
-    playTone(1568, 0.12, "triangle", 0.03);
-    playTone(2093, 0.14, "triangle", 0.025, 0.08);
-    playTone(2637, 0.18, "sine", 0.02, 0.16);
-  },
 };
 
 function playSound(kind) {
@@ -1631,31 +1793,23 @@ function playSound(kind) {
   }
 }
 
-// Convenience wrappers used during reel motion.
-function spinReelWhir() {
-  playSound("spin");
-}
-
-// ============================================
-// FLORAL FREE-SPINS MUSIC — a gentle pastoral melody loop synthesized with
-// WebAudio (no external audio files). Starts with the feature, stops after,
-// and respects the mute button: muting silences it instantly and stops the
-// scheduler; unmuting mid-feature picks the loop back up.
-// ============================================
+// ============================================================
+// BONUS MUSIC — a gentle pastoral jig loop synthesized with
+// WebAudio. Starts with the Charm Bonus, stops after; respects
+// the mute button (mute silences instantly, unmute resumes).
+// ============================================================
 
 const music = { active: false, timer: null, gain: null };
 const MUSIC_VOLUME = 0.9;
 
-// F-major pentatonic garden stroll, 32 gentle steps (~10 s per loop).
-const FLORAL_STEP = 0.32; // seconds per melody step
-const FLORAL_MELODY = [
+const JIG_STEP = 0.3; // seconds per melody step
+const JIG_MELODY = [
   349.23, 440.0, 523.25, 587.33, 523.25, 440.0, 392.0, 440.0,
   349.23, 440.0, 523.25, 698.46, 587.33, 523.25, 440.0, 392.0,
   293.66, 349.23, 440.0, 523.25, 440.0, 349.23, 329.63, 349.23,
   392.0, 440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0,
 ];
-// One soft pad root every 8 steps: F3, C3, D3, F3.
-const FLORAL_BASS = [174.61, 130.81, 146.83, 174.61];
+const JIG_BASS = [174.61, 130.81, 146.83, 174.61];
 
 function musicContext() {
   if (!window.AudioContext && !window.webkitAudioContext) {
@@ -1685,7 +1839,7 @@ function musicNote(ctx, freq, at, dur, type, vol) {
   osc.stop(at + dur + 0.05);
 }
 
-function scheduleFloralLoop() {
+function scheduleJigLoop() {
   if (!music.active || muted) {
     return;
   }
@@ -1700,41 +1854,38 @@ function scheduleFloralLoop() {
   }
 
   const t0 = ctx.currentTime + 0.05;
-  FLORAL_MELODY.forEach((freq, i) => {
-    const at = t0 + i * FLORAL_STEP;
-    musicNote(ctx, freq, at, FLORAL_STEP * 1.6, "triangle", 0.035);
-    // Airy octave echo on the off-beats — the "floral" shimmer.
+  JIG_MELODY.forEach((freq, i) => {
+    const at = t0 + i * JIG_STEP;
+    musicNote(ctx, freq, at, JIG_STEP * 1.6, "triangle", 0.035);
     if (i % 4 === 2) {
-      musicNote(ctx, freq * 2, at + FLORAL_STEP * 0.5, FLORAL_STEP * 0.9, "sine", 0.012);
+      musicNote(ctx, freq * 2, at + JIG_STEP * 0.5, JIG_STEP * 0.9, "sine", 0.012);
     }
-    // Soft pad: root + fifth held under each 8-step phrase.
     if (i % 8 === 0) {
-      const bass = FLORAL_BASS[(i / 8) % FLORAL_BASS.length];
-      musicNote(ctx, bass, at, FLORAL_STEP * 7.5, "sine", 0.03);
-      musicNote(ctx, bass * 1.5, at, FLORAL_STEP * 7.5, "sine", 0.016);
+      const bass = JIG_BASS[(i / 8) % JIG_BASS.length];
+      musicNote(ctx, bass, at, JIG_STEP * 7.5, "sine", 0.03);
+      musicNote(ctx, bass * 1.5, at, JIG_STEP * 7.5, "sine", 0.016);
     }
   });
 
-  const loopMs = FLORAL_MELODY.length * FLORAL_STEP * 1000;
-  music.timer = setTimeout(scheduleFloralLoop, loopMs - 120);
+  const loopMs = JIG_MELODY.length * JIG_STEP * 1000;
+  music.timer = setTimeout(scheduleJigLoop, loopMs - 120);
 }
 
-function startFreeSpinMusic() {
+function startBonusMusic() {
   if (music.active) {
     return;
   }
   music.active = true;
-  scheduleFloralLoop();
+  scheduleJigLoop();
 }
 
-function stopFreeSpinMusic() {
+function stopBonusMusic() {
   music.active = false;
   if (music.timer) {
     clearTimeout(music.timer);
     music.timer = null;
   }
   if (music.gain && audioContext) {
-    // Fade the tail out instead of cutting scheduled notes dead.
     const gainNode = music.gain;
     const now = audioContext.currentTime;
     gainNode.gain.cancelScheduledValues(now);
@@ -1757,7 +1908,6 @@ function setMuted(value) {
   ui.muteBtn.textContent = muted ? "🔇" : "🔊";
   ui.muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
 
-  // Free-spins music: silence instantly on mute, resume the loop on unmute.
   if (muted) {
     if (music.timer) {
       clearTimeout(music.timer);
@@ -1770,7 +1920,7 @@ function setMuted(value) {
     if (music.gain && audioContext) {
       music.gain.gain.setValueAtTime(MUSIC_VOLUME, audioContext.currentTime);
     }
-    scheduleFloralLoop();
+    scheduleJigLoop();
   }
 }
 
@@ -1781,17 +1931,16 @@ ui.muteBtn.addEventListener("click", () => {
   }
 });
 
-// ============================================
+// ============================================================
 // EVENT WIRING
-// ============================================
+// ============================================================
 
 ui.spinBtn.addEventListener("click", () => {
   animateButtonPress(ui.spinBtn);
-  animateButtonGlow(ui.spinBtn);
-  spin();
+  ui.buyConfirm.classList.add("hidden");
+  playPaidRound("spin");
 });
 
-// --- Bet stepper ---
 ui.betDown.addEventListener("click", () => stepBet(-1));
 ui.betUp.addEventListener("click", () => stepBet(1));
 ui.betMin.addEventListener("click", () => setBet(allowedBets()[0]));
@@ -1800,9 +1949,34 @@ ui.betMax.addEventListener("click", () => {
   setBet(bets[bets.length - 1]);
 });
 
-// ============================================
-// SPEED CONTROL (Normal / Fast / Instant, persisted)
-// ============================================
+// — Feature Buy (with confirm step) —
+
+ui.buyBtn.addEventListener("click", () => {
+  if (ui.buyBtn.disabled) {
+    return;
+  }
+  animateButtonPress(ui.buyBtn);
+  playSound("button");
+  ui.buyConfirm.classList.toggle("hidden");
+});
+
+ui.buyNo.addEventListener("click", () => {
+  playSound("button");
+  ui.buyConfirm.classList.add("hidden");
+});
+
+ui.buyYes.addEventListener("click", () => {
+  ui.buyConfirm.classList.add("hidden");
+  playPaidRound("buy");
+});
+
+document.addEventListener("click", (e) => {
+  if (!ui.buyConfirm.classList.contains("hidden") && !e.target.closest(".buy-wrap")) {
+    ui.buyConfirm.classList.add("hidden");
+  }
+});
+
+// — Speed control (persisted) —
 
 function setSpeed(mode) {
   speedMode = ["normal", "fast", "instant"].includes(mode) ? mode : "normal";
@@ -1831,9 +2005,7 @@ ui.speedModes.forEach((btn) => {
   setSpeed(saved);
 })();
 
-// ============================================
-// AUTOSPIN
-// ============================================
+// — Autospin —
 
 function updateAutospinUi() {
   ui.autospinBtn.classList.toggle("hidden", autoActive);
@@ -1855,7 +2027,7 @@ function stopAutospin(reason) {
   }
 }
 
-async function startAutospin() {
+function startAutospin() {
   if (autoActive || busy || spinning || !serverState || !serverState.canSpin) {
     return;
   }
@@ -1868,7 +2040,6 @@ async function startAutospin() {
 
 async function runAutospinLoop() {
   while (autoActive) {
-    // Stop if balance can't cover the next bet.
     const bet = effectiveBet();
     if (!serverState || Number(serverState.balance) < bet || !serverState.canSpin) {
       stopAutospin("Autospin stopped — insufficient funds.");
@@ -1880,9 +2051,8 @@ async function runAutospinLoop() {
     }
 
     updateAutospinUi();
-    const outcome = await spin(); // resolves after the whole round (incl. free spins) replays
+    const outcome = await playPaidRound("spin");
     if (!autoActive) {
-      // Stopped mid-spin by the user; let the in-flight round finish, then bail.
       return;
     }
     if (!outcome || !outcome.ok) {
@@ -1890,13 +2060,11 @@ async function runAutospinLoop() {
       return;
     }
 
-    // Count this paid spin (free spins inside the round are not charged).
     if (autoRemaining > 0) {
       autoRemaining -= 1;
     }
     updateAutospinUi();
 
-    // Brief breath between rounds (respecting speed).
     await sleep(speedMode === "instant" ? 120 : 260);
   }
 }
@@ -1921,68 +2089,45 @@ ui.autostopBtn.addEventListener("click", () => {
   stopAutospin("Autospin stopped.");
 });
 
-// Default selected autospin count highlight.
 ui.autoCounts.forEach((b) => b.classList.toggle("active", Number(b.dataset.count) === autoSelectedCount));
 
-// Singleplayer: fetch once on load and after each action; re-sync on focus.
+// ============================================================
+// INIT — fetch once on load and after each action; re-sync on focus.
+// ============================================================
+
 (async function init() {
   await refreshState();
-  if (serverState) {
-    renderPaytable();
-    if (serverState.lastGrid && Array.isArray(serverState.lastGrid)) {
-      setReelGrid(serverState.lastGrid);
-    }
-  }
+  renderPaytable();
 })();
+
 window.addEventListener("focus", async () => {
   await refreshState();
   renderPaytable();
 });
 
-// ============================================
-// ANIME.JS ANIMATION HELPERS
-// ============================================
+// ============================================================
+// ANIME.JS HELPERS (all optional — degrade gracefully)
+// ============================================================
 
 function animateButtonPress(el) {
   if (!window.anime) return;
   anime({ targets: el, scale: [1, 0.95, 1], duration: 200, easing: "easeOutQuad" });
 }
 
-function animateButtonGlow(el) {
-  if (!window.anime) return;
-  anime({
-    targets: el,
-    boxShadow: [
-      "0 0 16px rgba(112, 255, 58, 0.24)",
-      "0 0 32px rgba(112, 255, 58, 0.6)",
-      "0 0 16px rgba(112, 255, 58, 0.24)",
-    ],
-    duration: 800,
-    easing: "easeInOutQuad",
-  });
-}
-
-
-function animateStatusPulse(el) {
-  if (!window.anime) return;
-  anime({ targets: el, opacity: [1, 0.5, 1], scale: [1, 1.04, 1], duration: 600, easing: "easeInOutQuad" });
-}
-
 function animateBalanceChange(el) {
   if (!window.anime) return;
-  anime({ targets: el, scale: [1, 1.15, 1], duration: 400, easing: "easeOutQuad" });
+  anime({ targets: el, scale: [1, 1.12, 1], duration: 380, easing: "easeOutQuad" });
 }
 
 function animateRoundResult(el) {
   if (!window.anime) return;
-  anime.set(el, { scale: 0.5, opacity: 0, rotate: -180 });
+  anime.set(el, { scale: 0.6, opacity: 0 });
   anime({
     targets: el,
-    scale: [0.5, 1.15, 1],
+    scale: [0.6, 1.1, 1],
     opacity: 1,
-    rotate: 0,
-    duration: 700,
-    easing: "easeOutElastic(1, .7)",
+    duration: 550,
+    easing: "easeOutBack",
   });
 }
 
@@ -1990,18 +2135,13 @@ function reelStopBounce(reelEl) {
   if (!window.anime) return;
   anime({
     targets: reelEl,
-    translateY: [-10, 0],
-    duration: 320,
+    translateY: [-9, 0],
+    duration: 300,
     easing: "easeOutElastic(1, .6)",
   });
 }
 
 function animateWinMeterPop() {
   if (!window.anime) return;
-  anime({ targets: ui.winMeter, scale: [1, 1.12, 1], duration: 320, easing: "easeOutBack" });
-}
-
-function animateFreeBannerTick() {
-  if (!window.anime) return;
-  anime({ targets: ui.freeBannerCount, scale: [1.4, 1], duration: 280, easing: "easeOutBack" });
+  anime({ targets: ui.winMeter, scale: [1, 1.12, 1], duration: 300, easing: "easeOutBack" });
 }

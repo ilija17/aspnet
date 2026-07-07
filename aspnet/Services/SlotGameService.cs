@@ -7,36 +7,38 @@ using aspnet.Models.DTO;
 
 namespace aspnet.Services;
 
-// Singleplayer slot u stilu klasičnog 5×3 "charm" automata: 10 linija slijeva
-// nadesno, Lady je istovremeno wild (zamjenjuje sve osim sebe na liniji) i
-// scatter (3+ bilo gdje pokreće feature). Feature = 15 free spinova s istim
-// ulogom (besplatni), uz retrigger. Cijela runda se razriješi u jednom pozivu
-// na Spin; klijent reproducira snimljene spinove. RTP je namjerno ~120%
-// (dobrotvorni casino) — tune-an preko RtpScale, provjereno Monte-Carlo testom.
+// Singleplayer slot u stilu modernog "Hold & Win" automata: 5×3, 10 linija
+// slijeva nadesno. Lady je čisti wild (zamjenjuje sve osim Charm Ball kugle);
+// Charm Ball je scatter — svaka kugla nosi cash vrijednost ili Mini/Major/
+// Grand jackpot, a 3+ bilo gdje (ili Feature Buy) pokreće Hold & Win bonus:
+// okidačke kugle se zaključaju, kreće se s 3 respina, svaka nova kugla se
+// zaključa i resetira brojač na 3, puna mreža (15/15) kupi sve odjednom.
+// Cijela runda se razriješi u jednom pozivu na Spin/Buy; klijent reproducira
+// snimljene spinove. RTP je namjerno ~120% (dobrotvorni casino) — tune-an
+// preko RtpScale, provjereno Monte-Carlo testom.
 public class SlotGameService
 {
     public const int Reels = 5;
     public const int Rows = 3;
     public const int Lines = 10;
-    public const int FreeSpinsPerTrigger = 15;
+    public const int RespinsPerLock = 3;      // brojač respinova; svaka nova kugla ga resetira
     private const int ScatterTrigger = 3;
-    private const int MaxTotalFreeSpins = 300; // tvrdi limit protiv runaway retriggera
+    private const int GridCells = Reels * Rows;
 
-    // Retrigger tijekom free spinova: već 1 Lady dodaje spinove.
-    // 1 → +1, 2 → +2, 3+ → +15.
-    private static int RetriggerAward(int scatters) => scatters switch
-    {
-        1 => 1,
-        2 => 2,
-        >= ScatterTrigger => FreeSpinsPerTrigger,
-        _ => 0
-    };
+    // Množitelj linijskih dobitaka kojim se ukupni RTP namješta na ~120%.
+    // Bonus (Charm Ball) isplate su čisti višekratnici uloga i NE skaliraju se,
+    // da jackpoti i cash vrijednosti ostanu okrugli iznosi. Vrijednost
+    // potvrđena SlotRtpTests (ukupni RTP ostaje u [1.15, 1.25]).
+    public const decimal RtpScale = 1.32m;
 
-    // Globalni množitelj svih dobitaka kojim se RTP namješta na ~120%.
-    // Dobitci skaliraju linearno pa je: RtpScale = 1.20 / izmjereni_bazni_RTP.
-    // Vrijednost potvrđena SlotRtpTests (RTP ostaje u [1.15, 1.25]).
-    // Re-tunean nakon uvođenja retriggera 1→+1 / 2→+2 / 3+→+15.
-    public const decimal RtpScale = 1.2764m;
+    // Jackpoti su fiksni višekratnici ukupnog uloga.
+    public const decimal MiniJackpot = 20m;
+    public const decimal MajorJackpot = 100m;
+    public const decimal GrandJackpot = 1000m;
+
+    // Feature Buy: cijena u višekratnicima ukupnog uloga. Namještena tako da
+    // je RTP kupljenog bonusa (~3 početne kugle) blizu 120%, kao i osnovna igra.
+    public const decimal FeatureBuyMultiplier = 16m;
 
     private static readonly TimeSpan SessionTimeout = TimeSpan.FromMinutes(30);
 
@@ -46,29 +48,29 @@ public class SlotGameService
     private const decimal DefaultBet = 1m;
 
     // ── Simboli ───────────────────────────────────────────────────────────
-    // Indeks 0 = Lady (wild + scatter). Ostalo: 4 "charm" visoka simbola pa
-    // 5 niskih (kartaške vrijednosti). Isplate su višekratnici line-beta za
-    // 3/4/5 u nizu; scatter (Lady) plaća × ukupni ulog (ScatterPay niže).
+    // Indeks 0 = Lady (wild), indeks 1 = Charm Ball (scatter, ne plaća linije).
+    // Ostalo: 4 premium "charm" simbola pa 5 niskih (kartaške vrijednosti).
+    // Isplate su višekratnici line-beta za 3/4/5 u nizu. Težine su nagnute
+    // prema niskim simbolima da osnovna igra daje česte male dobitke.
     public sealed record SymbolDef(string Key, string Name, bool Wild, bool Scatter, int Weight, int Pay3, int Pay4, int Pay5);
 
     public static readonly SymbolDef[] Symbols =
     {
-        new("lady",      "Lucky Lady", Wild: true,  Scatter: true,  Weight: 2, Pay3: 200, Pay4: 1000, Pay5: 5000),
-        new("clover",    "Clover",     Wild: false, Scatter: false, Weight: 4, Pay3: 40,  Pay4: 100,  Pay5: 400),
-        new("ladybug",   "Ladybug",    Wild: false, Scatter: false, Weight: 4, Pay3: 40,  Pay4: 100,  Pay5: 400),
-        new("horseshoe", "Horseshoe",  Wild: false, Scatter: false, Weight: 5, Pay3: 20,  Pay4: 60,   Pay5: 200),
-        new("coin",      "Gold Coin",  Wild: false, Scatter: false, Weight: 5, Pay3: 20,  Pay4: 60,   Pay5: 200),
-        new("ace",       "Ace",        Wild: false, Scatter: false, Weight: 6, Pay3: 10,  Pay4: 30,   Pay5: 100),
-        new("king",      "King",       Wild: false, Scatter: false, Weight: 7, Pay3: 10,  Pay4: 30,   Pay5: 100),
-        new("queen",     "Queen",      Wild: false, Scatter: false, Weight: 7, Pay3: 5,   Pay4: 20,   Pay5: 75),
-        new("jack",      "Jack",       Wild: false, Scatter: false, Weight: 8, Pay3: 5,   Pay4: 20,   Pay5: 75),
-        new("ten",       "Ten",        Wild: false, Scatter: false, Weight: 8, Pay3: 5,   Pay4: 20,   Pay5: 75),
+        new("lady",      "Lucky Lady",  Wild: true,  Scatter: false, Weight: 4, Pay3: 100, Pay4: 500, Pay5: 2000),
+        new("charm",     "Charm Ball",  Wild: false, Scatter: true,  Weight: 3, Pay3: 0,   Pay4: 0,   Pay5: 0),
+        new("potofgold", "Pot of Gold", Wild: false, Scatter: false, Weight: 3, Pay3: 50,  Pay4: 150, Pay5: 500),
+        new("clover",    "Four-Leaf Clover", Wild: false, Scatter: false, Weight: 4, Pay3: 30, Pay4: 100, Pay5: 300),
+        new("horseshoe", "Horseshoe",   Wild: false, Scatter: false, Weight: 5, Pay3: 25,  Pay4: 75,  Pay5: 200),
+        new("bell",      "Golden Bell", Wild: false, Scatter: false, Weight: 5, Pay3: 20,  Pay4: 60,  Pay5: 150),
+        new("ace",       "Ace",         Wild: false, Scatter: false, Weight: 8, Pay3: 10,  Pay4: 25,  Pay5: 75),
+        new("king",      "King",        Wild: false, Scatter: false, Weight: 8, Pay3: 10,  Pay4: 25,  Pay5: 75),
+        new("queen",     "Queen",       Wild: false, Scatter: false, Weight: 10, Pay3: 5,  Pay4: 15,  Pay5: 50),
+        new("jack",      "Jack",        Wild: false, Scatter: false, Weight: 10, Pay3: 5,  Pay4: 15,  Pay5: 50),
+        new("ten",       "Ten",         Wild: false, Scatter: false, Weight: 11, Pay3: 5,  Pay4: 15,  Pay5: 50),
     };
 
     private const int LadyIndex = 0;
-
-    // Scatter (Lady, bilo gdje) plaća × ukupni ulog za 3/4/5 komada.
-    private static readonly int[] ScatterPay = { 2, 10, 50 }; // [0]=3 scatera, [1]=4, [2]=5
+    private const int CharmIndex = 1;
 
     // 10 linija: redak (0=gore,1=sredina,2=dolje) po svakom od 5 stupaca.
     // Oblici su čisto kozmetički — RTP ovisi samo o broju linija i strip/paytable.
@@ -98,6 +100,43 @@ public class SlotGameService
         return strip.ToArray();
     }
 
+    // ── Charm Ball vrijednosti ────────────────────────────────────────────
+    // Svaka kugla nosi cash (× ukupni ulog) ili jackpot. Težinska tablica;
+    // ista se koristi za kugle u osnovnoj igri (prikaz) i u bonusu (isplata).
+    private sealed record CharmPrize(decimal CashMultiplier, string? Jackpot, int Weight);
+
+    private static readonly CharmPrize[] CharmPrizes =
+    {
+        new(0.5m,  null,    500),
+        new(1m,    null,    500),
+        new(1.5m,  null,    300),
+        new(2m,    null,    240),
+        new(3m,    null,    160),
+        new(5m,    null,    100),
+        new(10m,   null,     40),
+        new(MiniJackpot,  "mini",  40),
+        new(MajorJackpot, "major", 10),
+        new(GrandJackpot, "grand",  1),
+    };
+
+    private static readonly int CharmPrizeTotalWeight = CharmPrizes.Sum(p => p.Weight);
+
+    // Vjerojatnost da tijekom bonusa prazna ćelija u jednom respinu dobije
+    // kuglu (po ćeliji, nezavisno). Određuje duljinu bonusa i šansu pune mreže.
+    private const double BonusCellHitChance = 0.045;
+
+    private static SlotCharmDTO DrawCharm(Random rng, int reel, int row, decimal totalBet)
+    {
+        var pick = rng.Next(CharmPrizeTotalWeight);
+        foreach (var prize in CharmPrizes)
+        {
+            pick -= prize.Weight;
+            if (pick < 0)
+                return new SlotCharmDTO(reel, row, Round2(prize.CashMultiplier * totalBet), prize.Jackpot);
+        }
+        throw new InvalidOperationException("Charm prize table exhausted."); // nedostižno
+    }
+
     // ── Čista logika spina/evaluacije (bez DB-a, koristi je i Monte-Carlo test) ──
 
     // Vrti mrežu: grid[reel][row] = indeks simbola.
@@ -115,9 +154,10 @@ public class SlotGameService
 
     public readonly record struct LineWin(int Line, int SymbolIndex, int Count, decimal Amount, int[] Cells);
 
-    // Evaluira jednu mrežu. lineBet = ukupni / 10. Vraća dobitke po liniji,
-    // scatter dobitak i broj scattera (za feature). RtpScale je već uračunat.
-    public static (List<LineWin> LineWins, decimal ScatterWin, int ScatterCount, decimal Total)
+    // Evaluira linijske dobitke jedne mreže. lineBet = ukupni / 10. Charm Ball
+    // ne sudjeluje u linijama (scatter); Lady mijenja sve ostale simbole.
+    // RtpScale je već uračunat u iznose.
+    public static (List<LineWin> LineWins, int ScatterCount, decimal Total)
         Evaluate(int[][] grid, decimal totalBet)
     {
         var lineBet = totalBet / Lines;
@@ -134,11 +174,12 @@ public class SlotGameService
             var bestSymbol = -1;
             var bestCount = 0;
 
-            // Za svaki ne-scatter simbol: koliko vodećih stupaca je taj simbol
+            // Za svaki plativi simbol: koliko vodećih stupaca je taj simbol
             // ILI Lady (wild). Lady kao vlastiti linijski simbol obrađen je
             // pod indeksom 0 (vodeći Lady), pa max pokriva i čisto-Lady liniju.
             for (var s = 0; s < Symbols.Length; s++)
             {
+                if (s == CharmIndex) continue;
                 var count = 0;
                 for (var r = 0; r < Reels; r++)
                 {
@@ -165,20 +206,13 @@ public class SlotGameService
             }
         }
 
-        // Scatter: broj Lady simbola bilo gdje u mreži.
+        // Scatter: broj Charm Ball kugli bilo gdje u mreži.
         var scatterCount = 0;
         for (var r = 0; r < Reels; r++)
             for (var row = 0; row < Rows; row++)
-                if (grid[r][row] == LadyIndex) scatterCount++;
+                if (grid[r][row] == CharmIndex) scatterCount++;
 
-        decimal scatterWin = 0;
-        if (scatterCount >= 3)
-        {
-            scatterWin = ScatterPay[Math.Min(scatterCount, 5) - 3] * totalBet * RtpScale;
-            total += scatterWin;
-        }
-
-        return (lineWins, scatterWin, scatterCount, total);
+        return (lineWins, scatterCount, total);
     }
 
     private static int PayFor(int symbol, int count) => count switch
@@ -189,46 +223,105 @@ public class SlotGameService
         _ => 0
     };
 
-    // Razriješi cijelu rundu: osnovni spin + svi free spinovi (s retriggerom).
-    // Vraća snimljene spinove i ukupni dobitak. Ne dira DB.
-    public static (List<SlotSpinDTO> Spins, int FreeAwarded, bool Triggered, decimal BaseWin, decimal FreeWin)
-        ResolveRound(Random rng, decimal totalBet)
+    // Razriješi cijelu rundu: osnovni spin + eventualni Hold & Win bonus.
+    // buyFeature forsira okidanje s točno 3 kugle (Feature Buy). Ne dira DB.
+    public static (SlotSpinDTO BaseSpin, SlotBonusDTO? Bonus, decimal BaseWin, decimal BonusWin)
+        ResolveRound(Random rng, decimal totalBet, bool buyFeature = false)
     {
-        var spins = new List<SlotSpinDTO>();
-
         var grid = SpinGrid(rng);
-        var (lineWins, scatterWin, scatterCount, baseTotal) = Evaluate(grid, totalBet);
 
-        var triggered = scatterCount >= ScatterTrigger;
-        var remaining = triggered ? FreeSpinsPerTrigger : 0;
-        var awarded = remaining;
-        decimal freeWin = 0;
-
-        spins.Add(BuildSpin(grid, lineWins, scatterWin, scatterCount, baseTotal, free: false, freeSpinsAdded: awarded));
-
-        while (remaining > 0 && awarded <= MaxTotalFreeSpins)
+        if (buyFeature)
         {
-            remaining--;
-            var fg = SpinGrid(rng);
-            var (fl, fsc, fScatter, fTotal) = Evaluate(fg, totalBet);
-            freeWin += fTotal;
+            // Očisti prirodne kugle pa usadi točno 3 na slučajne pozicije,
+            // da je EV kupljenog bonusa neovisan o sreći osnovnog spina.
+            for (var r = 0; r < Reels; r++)
+                for (var row = 0; row < Rows; row++)
+                    if (grid[r][row] == CharmIndex)
+                        grid[r][row] = ReelStripNonCharm(rng);
 
-            // Retrigger: svaka Lady tijekom free spina dodaje spinove
-            // (1→+1, 2→+2, 3+→+15), do tvrdog limita.
-            var add = Math.Min(RetriggerAward(fScatter), MaxTotalFreeSpins - awarded);
-            if (add > 0)
-            {
-                remaining += add;
-                awarded += add;
-            }
-
-            spins.Add(BuildSpin(fg, fl, fsc, fScatter, fTotal, free: true, freeSpinsAdded: add));
+            foreach (var cell in PickDistinctCells(rng, ScatterTrigger))
+                grid[cell / Rows][cell % Rows] = CharmIndex;
         }
 
-        return (spins, awarded, triggered, baseTotal, freeWin);
+        var (lineWins, scatterCount, baseTotal) = Evaluate(grid, totalBet);
+
+        // Svaka kugla u mreži dobije vrijednost/jackpot — kod <3 čista
+        // kozmetika, kod 3+ upravo te kugle ulaze u bonus kao zaključane.
+        var charms = new List<SlotCharmDTO>();
+        for (var r = 0; r < Reels; r++)
+            for (var row = 0; row < Rows; row++)
+                if (grid[r][row] == CharmIndex)
+                    charms.Add(DrawCharm(rng, r, row, totalBet));
+
+        var baseSpin = BuildSpin(grid, lineWins, scatterCount, charms, baseTotal);
+
+        SlotBonusDTO? bonus = null;
+        if (scatterCount >= ScatterTrigger)
+            bonus = ResolveBonus(rng, totalBet, charms);
+
+        return (baseSpin, bonus, baseTotal, bonus?.TotalWin ?? 0m);
     }
 
-    private static SlotSpinDTO BuildSpin(int[][] grid, List<LineWin> lineWins, decimal scatterWin, int scatterCount, decimal total, bool free, int freeSpinsAdded)
+    // Hold & Win: početne kugle su zaključane; 3 respina, svaka nova kugla
+    // (bilo koja ćelija, nezavisno BonusCellHitChance) se zaključa i resetira
+    // brojač na 3. Kraj kad brojač padne na 0 ili se popuni svih 15 ćelija.
+    // Isplata = zbroj svih kugli (puna mreža time "kupi sve" odjednom).
+    private static SlotBonusDTO ResolveBonus(Random rng, decimal totalBet, List<SlotCharmDTO> initial)
+    {
+        var locked = new SlotCharmDTO?[Reels, Rows];
+        foreach (var c in initial) locked[c.Reel, c.Row] = c;
+        var lockedCount = initial.Count;
+
+        var respins = new List<SlotRespinDTO>();
+        var remaining = RespinsPerLock;
+
+        while (remaining > 0 && lockedCount < GridCells)
+        {
+            remaining--;
+            var landed = new List<SlotCharmDTO>();
+            for (var r = 0; r < Reels; r++)
+                for (var row = 0; row < Rows; row++)
+                {
+                    if (locked[r, row] is not null) continue;
+                    if (rng.NextDouble() >= BonusCellHitChance) continue;
+                    var charm = DrawCharm(rng, r, row, totalBet);
+                    locked[r, row] = charm;
+                    landed.Add(charm);
+                }
+
+            lockedCount += landed.Count;
+            if (landed.Count > 0) remaining = RespinsPerLock;
+
+            respins.Add(new SlotRespinDTO(landed, remaining, lockedCount));
+        }
+
+        var all = new List<SlotCharmDTO>();
+        for (var r = 0; r < Reels; r++)
+            for (var row = 0; row < Rows; row++)
+                if (locked[r, row] is { } c)
+                    all.Add(c);
+
+        return new SlotBonusDTO(
+            InitialCharms: initial,
+            Respins: respins,
+            TotalWin: Round2(all.Sum(c => c.Amount)),
+            FullGrid: lockedCount == GridCells,
+            JackpotsWon: all.Where(c => c.Jackpot is not null).Select(c => c.Jackpot!).ToList());
+    }
+
+    // Slučajni ne-charm simbol sa stripa (za čišćenje mreže kod Feature Buya).
+    private static int ReelStripNonCharm(Random rng)
+    {
+        int s;
+        do s = ReelStrip[rng.Next(ReelStrip.Length)];
+        while (s == CharmIndex);
+        return s;
+    }
+
+    private static IEnumerable<int> PickDistinctCells(Random rng, int count)
+        => Enumerable.Range(0, GridCells).OrderBy(_ => rng.Next()).Take(count);
+
+    private static SlotSpinDTO BuildSpin(int[][] grid, List<LineWin> lineWins, int scatterCount, List<SlotCharmDTO> charms, decimal total)
     {
         var keyGrid = new string[Reels][];
         for (var r = 0; r < Reels; r++)
@@ -242,7 +335,7 @@ public class SlotGameService
             .Select(w => new SlotLineWinDTO(w.Line, Symbols[w.SymbolIndex].Key, w.Count, Round2(w.Amount), w.Cells))
             .ToList();
 
-        return new SlotSpinDTO(keyGrid, lineDtos, scatterCount, Round2(scatterWin), Round2(total), free, freeSpinsAdded);
+        return new SlotSpinDTO(keyGrid, lineDtos, scatterCount, charms, Round2(total));
     }
 
     private static decimal Round2(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
@@ -307,7 +400,13 @@ public class SlotGameService
                 : $"Bet set to ${amount:0.00}. Spin to play.";
         });
 
-    public SlotStateDTO Spin(int playerId)
+    public SlotStateDTO Spin(int playerId) => PlayRound(playerId, buyFeature: false);
+
+    // Feature Buy: plati FeatureBuyMultiplier × ulog i odmah pokreni bonus
+    // s 3 zajamčene Charm Ball kugle (linijski dobitci osnovnog spina vrijede).
+    public SlotStateDTO BuyFeature(int playerId) => PlayRound(playerId, buyFeature: true);
+
+    private SlotStateDTO PlayRound(int playerId, bool buyFeature)
     {
         SlotRoundDTO? round = null;
 
@@ -319,18 +418,22 @@ public class SlotGameService
                 return;
             }
 
-            if (s.SelectedBet > p.Balance)
+            var cost = buyFeature ? s.SelectedBet * FeatureBuyMultiplier : s.SelectedBet;
+            if (cost > p.Balance)
             {
-                s.Status = "Insufficient balance for this bet.";
+                s.Status = buyFeature
+                    ? "Insufficient balance for the Feature Buy."
+                    : "Insufficient balance for this bet.";
                 return;
             }
 
             s.ResetGamble(); // novi spin poništava neiskorištenu gamble ponudu
-            p.Balance -= s.SelectedBet;
-            AddTransaction(db, p.Id, TransactionType.Bet, s.SelectedBet);
+            p.Balance -= cost;
+            AddTransaction(db, p.Id, TransactionType.Bet, cost);
 
-            var (spins, awarded, triggered, baseWin, freeWin) = ResolveRound(_rng, s.SelectedBet);
-            var totalWin = Round2(baseWin + freeWin);
+            var (baseSpin, bonus, baseWin, bonusWin) = ResolveRound(_rng, s.SelectedBet, buyFeature);
+            var totalWin = Round2(baseWin + bonusWin);
+            var triggered = bonus is not null;
 
             if (totalWin > 0)
             {
@@ -343,18 +446,23 @@ public class SlotGameService
             s.LastWin = totalWin;
             s.GambleOffer = totalWin; // dobitak se može gambleati (red/black)
 
-            s.Status = triggered
-                ? $"Feature! {awarded} free spins paid ${totalWin:0.##}."
+            s.Status = bonus is not null
+                ? bonus.FullGrid
+                    ? $"FULL GRID! Every charm collected — ${totalWin:0.##}!"
+                    : bonus.JackpotsWon.Count > 0
+                        ? $"{string.Join(" + ", bonus.JackpotsWon.Select(Cap))} jackpot! Bonus paid ${totalWin:0.##}."
+                        : $"Charm Bonus! {bonus.InitialCharms.Count + bonus.Respins.Sum(r => r.NewCharms.Count)} charms paid ${totalWin:0.##}."
                 : totalWin > 0
                     ? $"You won ${totalWin:0.##}!"
                     : "No win this time. Spin again!";
 
             round = new SlotRoundDTO(
-                Spins: spins,
-                FreeSpinsAwarded: triggered ? awarded : 0,
+                BaseSpin: baseSpin,
+                Bonus: bonus,
                 FeatureTriggered: triggered,
+                FeatureBought: buyFeature,
                 BaseWin: Round2(baseWin),
-                FreeWin: Round2(freeWin),
+                BonusWin: Round2(bonusWin),
                 TotalWin: totalWin,
                 BetAmount: s.SelectedBet,
                 Result: totalWin > 0 ? "win" : "loss");
@@ -475,7 +583,9 @@ public class SlotGameService
     }
 
     private static SlotStateDTO BuildView(GameSession s, Player p)
-        => new(
+    {
+        var buyCost = Round2(s.SelectedBet * FeatureBuyMultiplier);
+        return new(
             Version: s.Version,
             Status: s.Status,
             PlayerName: $"{p.FirstName} {p.LastName}".Trim(),
@@ -489,6 +599,12 @@ public class SlotGameService
             Reels: Reels,
             Rows: Rows,
             Lines: Lines,
+            Jackpots: new SlotJackpotsDTO(
+                Mini: Round2(MiniJackpot * s.SelectedBet),
+                Major: Round2(MajorJackpot * s.SelectedBet),
+                Grand: Round2(GrandJackpot * s.SelectedBet)),
+            FeatureBuyCost: buyCost,
+            CanBuy: buyCost <= p.Balance && !s.GambleActive,
             LastWin: s.LastWin,
             Spins: s.Spins,
             FeatureHits: s.FeatureHits,
@@ -503,6 +619,7 @@ public class SlotGameService
                 LastWon: s.GambleLastWon,
                 History: s.GambleHistory.ToList()),
             Round: null);
+    }
 
     private static void AddTransaction(CasinoDbContext db, int playerId, TransactionType type, decimal amount)
     {

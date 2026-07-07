@@ -78,7 +78,8 @@ public class EmployeeController : Controller
             firstName = e.FirstName,
             lastName = e.LastName,
             position = e.Position,
-            casino = e.Casino?.Name
+            casinoId = e.CasinoId,
+            casinoName = e.Casino?.Name
         });
         return Json(results);
     }

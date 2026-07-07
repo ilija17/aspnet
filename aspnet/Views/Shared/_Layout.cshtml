@@ -24,18 +24,25 @@
 </div>
 <canvas id="sparkle-canvas" aria-hidden="true"></canvas>
 
-<div class="sticky-banner">
-    🎉 Our $420M Series C was oversubscribed 14x — <a href="/#waitlist">Join the waitlist</a> ✨
+<div class="sticky-banner" id="stickyBanner">
+    <span class="banner-text">🎉 Our $420M Series C was oversubscribed 14x — <a href="/#waitlist">Join the waitlist</a> ✨</span>
+    <button class="banner-dismiss" type="button" aria-label="Dismiss banner" title="Dismiss">×</button>
 </div>
 
 @{
     var currentPath = Context.Request.Path.Value ?? "";
     string NavClass(string prefix) =>
         currentPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "nav-link active" : "nav-link";
-    var showcaseClass =
-        currentPath.StartsWith("/vision", StringComparison.OrdinalIgnoreCase) ||
-        currentPath.StartsWith("/playground", StringComparison.OrdinalIgnoreCase)
-            ? "nav-link active" : "nav-link";
+    var casinoClass = (currentPath.StartsWith("/kasina", StringComparison.OrdinalIgnoreCase) ||
+                       currentPath.StartsWith("/stolovi", StringComparison.OrdinalIgnoreCase))
+        ? "nav-link active" : "nav-link";
+    var moreClass = (currentPath.StartsWith("/igraci", StringComparison.OrdinalIgnoreCase) ||
+                     currentPath.StartsWith("/djelatnici", StringComparison.OrdinalIgnoreCase) ||
+                     currentPath.StartsWith("/rezervacije", StringComparison.OrdinalIgnoreCase) ||
+                     currentPath.StartsWith("/transakcije", StringComparison.OrdinalIgnoreCase) ||
+                     currentPath.StartsWith("/vision", StringComparison.OrdinalIgnoreCase) ||
+                     currentPath.StartsWith("/playground", StringComparison.OrdinalIgnoreCase))
+        ? "nav-link active" : "nav-link";
 }
 <div class="app-shell">
   <nav class="top-bar">
@@ -43,10 +50,19 @@
       <a class="brand" asp-controller="Home" asp-action="Index">CMS✨</a>
       <span class="status-dot-wrap" title="All systems agentic"><span class="status-dot"></span></span>
     </div>
+    <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-bar"></span>
+      <span class="nav-toggle-bar"></span>
+      <span class="nav-toggle-bar"></span>
+    </button>
     <ul class="nav-links">
-      <li><a class="@NavClass("/kasina")" href="/kasina">Casinos</a></li>
-      <li><a class="@NavClass("/igraci")" href="/igraci">Players</a></li>
-      <li><a class="@NavClass("/stolovi")" href="/stolovi">Tables</a></li>
+      <li class="nav-dropdown">
+        <a class="@casinoClass nav-dropdown-trigger" href="/kasina" aria-haspopup="true">Casinos <span class="nav-caret" aria-hidden="true">▾</span></a>
+        <ul class="nav-dropdown-menu" aria-label="Casinos">
+          <li><a class="nav-dropdown-item" href="/kasina">All Casinos</a></li>
+          <li><a class="nav-dropdown-item" href="/stolovi">Tables</a></li>
+        </ul>
+      </li>
       <li class="nav-dropdown">
         <a class="@NavClass("/igre") nav-dropdown-trigger" href="/igre" aria-haspopup="true">Games <span class="nav-caret" aria-hidden="true">▾</span></a>
         <ul class="nav-dropdown-menu" aria-label="Games">
@@ -57,18 +73,33 @@
           <li><a class="nav-dropdown-item nav-dropdown-item-game" href="/slot/index.html" target="_blank" rel="noopener">Slots ↗</a></li>
         </ul>
       </li>
-      <li><a class="@NavClass("/djelatnici")" href="/djelatnici">Employees</a></li>
-      <li><a class="@NavClass("/rezervacije")" href="/rezervacije">Reservations</a></li>
-      <li><a class="@NavClass("/transakcije")" href="/transakcije">Transactions</a></li>
       <li class="nav-dropdown">
-        <a class="@showcaseClass nav-dropdown-trigger" href="/vision" aria-haspopup="true">Showcase ✨ <span class="nav-caret" aria-hidden="true">▾</span></a>
-        <ul class="nav-dropdown-menu" aria-label="Showcase">
+        <a class="@moreClass nav-dropdown-trigger" href="#" onclick="event.preventDefault()" aria-haspopup="true">More <span class="nav-caret" aria-hidden="true">▾</span></a>
+        <ul class="nav-dropdown-menu" aria-label="More">
+          <li><a class="nav-dropdown-item" href="/igraci">Players</a></li>
+          <li><a class="nav-dropdown-item" href="/djelatnici">Employees</a></li>
+          <li><a class="nav-dropdown-item" href="/rezervacije">Reservations</a></li>
+          <li><a class="nav-dropdown-item" href="/transakcije">Transactions</a></li>
+          <li><hr class="nav-dropdown-sep" /></li>
           <li><a class="nav-dropdown-item" href="/vision">The Vision</a></li>
           <li><a class="nav-dropdown-item" href="/playground">Playground</a></li>
         </ul>
       </li>
+      <li class="nav-auth-item">
+        <partial name="_LoginPartial" />
+      </li>
     </ul>
-    <partial name="_LoginPartial" />
+    <div class="global-search-wrapper" role="search">
+      <span class="global-search-icon" aria-hidden="true">🔍</span>
+      <input
+        type="search"
+        class="global-search-input"
+        placeholder="Pretraži sve…"
+        autocomplete="off"
+        aria-label="Globalna pretraga"
+      />
+      <div class="global-search-dropdown" role="listbox" aria-label="Rezultati pretrage"></div>
+    </div>
   </nav>
   <main class="page-content">
     @RenderBody()

@@ -1,4 +1,3 @@
-@* Lists all employees in a table with name, position, casino link, search, and CRUD actions. *@
 @model List<aspnet.Models.Employee>
 @{
     ViewData["Title"] = "Employees";
@@ -20,69 +19,64 @@
     <input type="text" id="searchInput" class="form-input" placeholder="Pretraga djelatnika..." autocomplete="off" />
 </div>
 
-<div class="panel">
-    <table class="data-table" id="employeeTable">
-        <thead>
-            <tr>
-                <th>#ID</th>
-                <th>Ime i prezime</th>
-                <th>Pozicija</th>
-                <th>Casino</th>
-                <th>Akcije</th>
-            </tr>
-        </thead>
-        <tbody id="employeeBody">
-            @foreach (var employee in Model)
-            {
-                <tr>
-                    <td><span class="mono">@employee.Id</span></td>
-                    <td>@employee.FirstName @employee.LastName</td>
-                    <td><span class="badge badge-purple">@employee.Position</span></td>
-                    <td>
-                        <a href="/kasina/@employee.Casino.Id" style="color:var(--purple-hi);text-decoration:none;">@employee.Casino.Name</a>
-                    </td>
-                    <td style="white-space:nowrap;">
-                        <a class="btn btn-sm" href="/djelatnici/@employee.Id">Detalji</a>
-                        <a class="btn btn-sm btn-accent" href="/djelatnici/@employee.Id/uredi">Uredi</a>
-                        <form method="post" action="/djelatnici/@employee.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovog djelatnika?')">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="entity-grid" id="entityGrid">
+    @foreach (var employee in Model)
+    {
+        <div class="entity-card-wrap">
+            <a class="entity-card" href="/djelatnici/@employee.Id">
+                <div class="card-header">
+                    <span class="card-title">@employee.FirstName @employee.LastName</span>
+                    <span class="badge badge-purple">@employee.Position</span>
+                </div>
+                <div class="card-meta">
+                    <div><span class="mono">#@employee.Id</span></div>
+                    <div>Casino: <a href="/kasina/@employee.Casino.Id" style="color:var(--violet-hi);text-decoration:none;">@employee.Casino.Name</a></div>
+                </div>
+            </a>
+            <div class="card-actions">
+                <a class="btn btn-sm" href="/djelatnici/@employee.Id">Detalji</a>
+                <a class="btn btn-sm btn-accent" href="/djelatnici/@employee.Id/uredi">Uredi</a>
+                <form method="post" action="/djelatnici/@employee.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovog djelatnika?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                </form>
+            </div>
+        </div>
+    }
 </div>
 
 @section Scripts {
 <script>
 $(function () {
     var debounceTimer;
-    var $body = $('#employeeBody');
+    var $grid = $('#entityGrid');
     var antiForgeryToken = $('input[name="__RequestVerificationToken"]').first().val();
 
     function renderEmployees(employees) {
         if (!employees || employees.length === 0) {
-            $body.html('<tr><td colspan="5" class="empty-state" style="padding:1rem;">Nema rezultata.</td></tr>');
+            $grid.html('<p class="empty-state">Nema rezultata.</p>');
             return;
         }
         var html = '';
         $.each(employees, function (i, e) {
-            html += '<tr>' +
-                '<td><span class="mono">' + e.id + '</span></td>' +
-                '<td>' + e.firstName + ' ' + e.lastName + '</td>' +
-                '<td><span class="badge badge-purple">' + (e.position || '') + '</span></td>' +
-                '<td><a href="/kasina/' + (e.casinoId || '') + '" style="color:var(--purple-hi);text-decoration:none;">' + (e.casinoName || '') + '</a></td>' +
-                '<td style="white-space:nowrap;">' +
+            html += '<div class="entity-card-wrap">' +
+                '<a class="entity-card" href="/djelatnici/' + e.id + '">' +
+                '<div class="card-header"><span class="card-title">' + e.firstName + ' ' + e.lastName + '</span>' +
+                '<span class="badge badge-purple">' + (e.position || '') + '</span></div>' +
+                '<div class="card-meta">' +
+                '<div><span class="mono">#' + e.id + '</span></div>' +
+                '<div>Casino: <a href="/kasina/' + (e.casinoId || '') + '" style="color:var(--violet-hi);text-decoration:none;">' + (e.casinoName || '') + '</a></div>' +
+                '</div>' +
+                '</a>' +
+                '<div class="card-actions">' +
                 '<a class="btn btn-sm" href="/djelatnici/' + e.id + '">Detalji</a> ' +
                 '<a class="btn btn-sm btn-accent" href="/djelatnici/' + e.id + '/uredi">Uredi</a> ' +
                 '<form method="post" action="/djelatnici/' + e.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
                 '<input name="__RequestVerificationToken" type="hidden" value="' + antiForgeryToken + '" />' +
                 '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
-                '</form></td></tr>';
+                '</form></div></div>';
         });
-        $body.html(html);
+        $grid.html(html);
     }
 
     $('#searchInput').on('input', function () {

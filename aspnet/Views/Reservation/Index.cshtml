@@ -1,4 +1,3 @@
-@* Lists all reservations in a table with player, casino, game, table number, timestamp, search, and CRUD actions. *@
 @model List<aspnet.Models.Reservation>
 @{
     ViewData["Title"] = "Reservations";
@@ -20,75 +19,66 @@
     <input type="text" id="searchInput" class="form-input" placeholder="Pretraga rezervacija..." autocomplete="off" />
 </div>
 
-<div class="panel">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>#ID</th>
-                <th>Igrač</th>
-                <th>Casino</th>
-                <th>Igra</th>
-                <th>Stol #</th>
-                <th>Datum</th>
-                <th>Akcije</th>
-            </tr>
-        </thead>
-        <tbody id="reservationBody">
-            @foreach (var reservation in Model)
-            {
-                <tr>
-                    <td><span class="mono">@reservation.Id</span></td>
-                    <td>
-                        <a href="/igraci/@reservation.Player.Id" style="color:var(--purple-hi);text-decoration:none;">
-                            @reservation.Player.FirstName @reservation.Player.LastName
-                        </a>
-                    </td>
-                    <td>@reservation.Table.Casino.Name</td>
-                    <td>@reservation.Table.Game.Name</td>
-                    <td><span class="mono">@reservation.Table.TableNumber</span></td>
-                    <td><span class="mono">@reservation.ReservedAt.ToString("dd MMM yyyy HH:mm")</span></td>
-                    <td style="white-space:nowrap;">
-                        <a class="btn btn-sm" href="/rezervacije/@reservation.Id">Detalji</a>
-                        <form method="post" action="/rezervacije/@reservation.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovu rezervaciju?')">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="entity-grid" id="entityGrid">
+    @foreach (var reservation in Model)
+    {
+        <div class="entity-card-wrap">
+            <a class="entity-card" href="/rezervacije/@reservation.Id">
+                <div class="card-header">
+                    <span class="card-title">@reservation.Player.FirstName @reservation.Player.LastName</span>
+                    <span class="mono" style="font-size:0.75rem;color:var(--muted);">#@reservation.Id</span>
+                </div>
+                <div class="card-meta">
+                    <div>Casino: @reservation.Table.Casino.Name</div>
+                    <div>Igra: @reservation.Table.Game.Name</div>
+                    <div>Stol: <span class="mono">@reservation.Table.TableNumber</span></div>
+                    <div>Datum: <span class="mono">@reservation.ReservedAt.ToString("dd MMM yyyy HH:mm")</span></div>
+                </div>
+            </a>
+            <div class="card-actions">
+                <a class="btn btn-sm" href="/rezervacije/@reservation.Id">Detalji</a>
+                <form method="post" action="/rezervacije/@reservation.Id/obrisi" class="d-inline" onsubmit="return confirm('Jesi li siguran da želiš obrisati ovu rezervaciju?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>
+                </form>
+            </div>
+        </div>
+    }
 </div>
 
 @section Scripts {
 <script>
 $(function () {
     var debounceTimer;
-    var $body = $('#reservationBody');
+    var $grid = $('#entityGrid');
     var antiForgeryToken = $('input[name="__RequestVerificationToken"]').first().val();
 
     function renderReservations(reservations) {
         if (!reservations || reservations.length === 0) {
-            $body.html('<tr><td colspan="7" class="empty-state" style="padding:1rem;">Nema rezultata.</td></tr>');
+            $grid.html('<p class="empty-state">Nema rezultata.</p>');
             return;
         }
         var html = '';
         $.each(reservations, function (i, r) {
-            html += '<tr>' +
-                '<td><span class="mono">' + r.id + '</span></td>' +
-                '<td><a href="/igraci/' + (r.playerId || '') + '" style="color:var(--purple-hi);text-decoration:none;">' + (r.playerName || '') + '</a></td>' +
-                '<td>' + (r.casinoName || '') + '</td>' +
-                '<td>' + (r.gameName || '') + '</td>' +
-                '<td><span class="mono">' + (r.tableNumber || '') + '</span></td>' +
-                '<td><span class="mono">' + (r.reservedAt || '') + '</span></td>' +
-                '<td style="white-space:nowrap;">' +
+            html += '<div class="entity-card-wrap">' +
+                '<a class="entity-card" href="/rezervacije/' + r.id + '">' +
+                '<div class="card-header"><span class="card-title">' + (r.playerName || '') + '</span>' +
+                '<span class="mono" style="font-size:0.75rem;color:var(--muted);">#' + r.id + '</span></div>' +
+                '<div class="card-meta">' +
+                '<div>Casino: ' + (r.casinoName || '') + '</div>' +
+                '<div>Igra: ' + (r.gameName || '') + '</div>' +
+                '<div>Stol: <span class="mono">' + (r.tableNumber || '') + '</span></div>' +
+                '<div>Datum: <span class="mono">' + (r.reservedAt || '') + '</span></div>' +
+                '</div>' +
+                '</a>' +
+                '<div class="card-actions">' +
                 '<a class="btn btn-sm" href="/rezervacije/' + r.id + '">Detalji</a> ' +
                 '<form method="post" action="/rezervacije/' + r.id + '/obrisi" class="d-inline" onsubmit="return confirm(\'Jesi li siguran?\')">' +
                 '<input name="__RequestVerificationToken" type="hidden" value="' + antiForgeryToken + '" />' +
                 '<button type="submit" class="btn btn-sm" style="border-color:rgba(255,90,127,0.5);color:var(--danger)">Obriši</button>' +
-                '</form></td></tr>';
+                '</form></div></div>';
         });
-        $body.html(html);
+        $grid.html(html);
     }
 
     $('#searchInput').on('input', function () {

@@ -3,143 +3,525 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lucky Lady Slots</title>
+    <title>Lucky Lady's Charm Ball</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <!-- ======================================================= -->
+    <!-- AMBIENT IRISH SCENE — sky, drifting clouds, hills, lake -->
+    <!-- ======================================================= -->
+    <div class="scene" aria-hidden="true">
+      <div class="scene-sky"></div>
+      <div class="cloud cloud-a"></div>
+      <div class="cloud cloud-b"></div>
+      <div class="cloud cloud-c"></div>
+
+      <svg class="scene-art" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <radialGradient id="sc-sun" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#fffbe6" stop-opacity="0.95"/>
+            <stop offset="0.4" stop-color="#fff3bd" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#fff3bd" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="sc-hill-far" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7fae6b"/>
+            <stop offset="1" stop-color="#557f46"/>
+          </linearGradient>
+          <linearGradient id="sc-hill-mid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6da457"/>
+            <stop offset="1" stop-color="#47763a"/>
+          </linearGradient>
+          <linearGradient id="sc-lake" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#bfe3ef"/>
+            <stop offset="0.5" stop-color="#7ab8d4"/>
+            <stop offset="1" stop-color="#4f8fb4"/>
+          </linearGradient>
+          <linearGradient id="sc-meadow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#4f8f3c"/>
+            <stop offset="0.5" stop-color="#3a7230"/>
+            <stop offset="1" stop-color="#24501f"/>
+          </linearGradient>
+          <linearGradient id="sc-meadow-glow" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#8bd450" stop-opacity="0"/>
+            <stop offset="0.5" stop-color="#a9e26a" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#8bd450" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- sun glow, top-right -->
+        <circle cx="1280" cy="130" r="190" fill="url(#sc-sun)"/>
+        <circle cx="1280" cy="130" r="58" fill="#fff8d9" opacity="0.9"/>
+
+        <!-- far rolling hills -->
+        <path d="M0 470 C180 400 340 420 520 456 C720 496 880 430 1080 444 C1280 458 1440 420 1600 452 L1600 560 L0 560 Z" fill="url(#sc-hill-far)"/>
+        <!-- tiny distant trees -->
+        <g fill="#3f6d33" opacity="0.8">
+          <ellipse cx="300" cy="446" rx="16" ry="20"/><rect x="297" y="458" width="6" height="12" fill="#5a3c22"/>
+          <ellipse cx="1180" cy="440" rx="14" ry="18"/><rect x="1177" y="452" width="6" height="10" fill="#5a3c22"/>
+          <ellipse cx="1380" cy="450" rx="18" ry="22"/><rect x="1377" y="464" width="6" height="12" fill="#5a3c22"/>
+        </g>
+
+        <!-- the lake -->
+        <path d="M0 540 C260 508 560 506 820 522 C1100 540 1360 512 1600 528 L1600 660 C1300 680 900 686 560 672 C340 664 140 668 0 656 Z" fill="url(#sc-lake)"/>
+        <g class="lake-glints" stroke="#eafaff" stroke-linecap="round" opacity="0.7">
+          <line x1="260" y1="576" x2="420" y2="576" stroke-width="3"/>
+          <line x1="620" y1="604" x2="840" y2="604" stroke-width="4"/>
+          <line x1="980" y1="566" x2="1120" y2="566" stroke-width="3"/>
+          <line x1="1180" y1="620" x2="1400" y2="620" stroke-width="4"/>
+          <line x1="420" y1="636" x2="560" y2="636" stroke-width="3"/>
+        </g>
+        <!-- sun reflection on the water -->
+        <ellipse cx="1250" cy="590" rx="120" ry="16" fill="#fff3bd" opacity="0.35"/>
+
+        <!-- mid bank -->
+        <path d="M0 640 C300 610 620 620 900 646 C1160 668 1400 640 1600 652 L1600 720 L0 720 Z" fill="url(#sc-hill-mid)"/>
+
+        <!-- near meadow -->
+        <path d="M0 700 C320 668 660 676 980 700 C1240 718 1440 700 1600 706 L1600 900 L0 900 Z" fill="url(#sc-meadow)"/>
+        <rect x="0" y="760" width="1600" height="140" fill="url(#sc-meadow-glow)" opacity="0.5"/>
+
+        <!-- little white daisies + shamrocks in the grass -->
+        <g class="meadow-flowers">
+          <g transform="translate(180 780)"><circle r="4" fill="#fff"/><circle r="1.6" fill="#ffd24a"/></g>
+          <g transform="translate(420 830)"><circle r="5" fill="#fff"/><circle r="2" fill="#ffd24a"/></g>
+          <g transform="translate(1300 800)"><circle r="4" fill="#fff"/><circle r="1.6" fill="#ffd24a"/></g>
+          <g transform="translate(1480 850)"><circle r="5" fill="#fff"/><circle r="2" fill="#ffd24a"/></g>
+          <g transform="translate(90 860)"><circle r="4" fill="#fff"/><circle r="1.6" fill="#ffd24a"/></g>
+          <g fill="#2f8a35" opacity="0.9">
+            <path transform="translate(640 810) scale(0.9)" d="M0 0c-2-5-9-3-7 2 1 3 5 3 7-2zm0 0c5-2 3-9-2-7-3 1-3 5 2 7zm0 0c2 5 9 3 7-2-1-3-5-3-7 2zm0 0c-5 2-3 9 2 7 3-1 3-5-2-7z"/>
+            <path transform="translate(1100 850) scale(1.1)" d="M0 0c-2-5-9-3-7 2 1 3 5 3 7-2zm0 0c5-2 3-9-2-7-3 1-3 5 2 7zm0 0c2 5 9 3 7-2-1-3-5-3-7 2zm0 0c-5 2-3 9 2 7 3-1 3-5-2-7z"/>
+          </g>
+        </g>
+
+        <!-- swaying grass tufts along the bottom edge -->
+        <g class="grass-tuft" transform="translate(70 900)">
+          <path d="M0 0 C-6 -34 -14 -52 -22 -66 C-10 -54 -4 -34 2 0 Z" fill="#2f7a2a"/>
+          <path d="M6 0 C6 -40 2 -60 -2 -78 C8 -60 12 -38 12 0 Z" fill="#3f9435"/>
+          <path d="M14 0 C18 -30 26 -46 34 -58 C24 -44 18 -26 20 0 Z" fill="#2a6b26"/>
+        </g>
+        <g class="grass-tuft slow" transform="translate(360 900)">
+          <path d="M0 0 C-4 -28 -12 -44 -18 -54 C-8 -44 -2 -26 4 0 Z" fill="#35852e"/>
+          <path d="M8 0 C8 -34 4 -52 0 -64 C10 -50 14 -32 14 0 Z" fill="#2a6b26"/>
+        </g>
+        <g class="grass-tuft" transform="translate(1250 900)">
+          <path d="M0 0 C-6 -30 -14 -48 -20 -60 C-10 -48 -4 -30 2 0 Z" fill="#3f9435"/>
+          <path d="M8 0 C8 -38 4 -58 0 -72 C10 -56 14 -36 14 0 Z" fill="#2f7a2a"/>
+          <path d="M16 0 C20 -26 28 -40 34 -50 C26 -38 20 -22 22 0 Z" fill="#2a6b26"/>
+        </g>
+        <g class="grass-tuft slow" transform="translate(1520 900)">
+          <path d="M0 0 C-4 -30 -10 -46 -16 -58 C-6 -46 0 -28 6 0 Z" fill="#35852e"/>
+          <path d="M8 0 C10 -34 6 -50 2 -62 C12 -48 16 -30 16 0 Z" fill="#3f9435"/>
+        </g>
+      </svg>
+
+      <div class="scene-vignette"></div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- APPLICATION                                             -->
+    <!-- ======================================================= -->
     <main class="app-shell">
-      <section class="top-bar">
-        <h1>Lucky Lady Slots</h1>
+      <header class="top-bar">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+            <defs>
+              <radialGradient id="bm-ball" cx="0.35" cy="0.3" r="0.85">
+                <stop offset="0" stop-color="#fff7d0"/><stop offset="0.55" stop-color="#ffcf3f"/><stop offset="1" stop-color="#8f6112"/>
+              </radialGradient>
+            </defs>
+            <circle cx="20" cy="20" r="15" fill="url(#bm-ball)" stroke="#6e4a0d" stroke-width="1.4"/>
+            <path fill="#1c6b2c" d="M20 20c-3-7-12-4-9 3 2 4 7 4 9-3zm0 0c7-3 4-12-3-9-4 2-4 7 3 9zm0 0c3 7 12 4 9-3-2-4-7-4-9 3zm0 0c-7 3-4 12 3 9 4-2 4-7-3-9z"/>
+            <ellipse cx="14" cy="13" rx="4.5" ry="2.8" fill="#fff" opacity="0.55" transform="rotate(-24 14 13)"/>
+          </svg>
+          <h1>Lucky Lady's <em>Charm Ball</em></h1>
+        </div>
         <div class="player-info" aria-live="polite">
           <span id="player-name" class="player-name">—</span>
           <span id="balance" class="balance">Balance: —</span>
-          <span id="total-bet" class="total-bet">Bet: —</span>
         </div>
         <div class="scoreboard" aria-live="polite">
           <span id="spins-count">Spins: 0</span>
-          <span id="feature-count">Features: 0</span>
+          <span id="feature-count">Bonuses: 0</span>
           <button id="mute-btn" class="mute-btn" type="button" aria-pressed="false" title="Mute / unmute">🔊</button>
         </div>
-      </section>
+      </header>
 
       <section id="gate" class="gate-panel hidden" aria-live="polite">
         <p id="gate-message"></p>
         <a id="gate-link" class="btn btn-primary" href="#"></a>
       </section>
 
-      <section id="table" class="table" aria-label="Slot machine">
-        <div class="table-rail"></div>
-        <div class="table-inner">
-          <div class="warning-strip" aria-hidden="true">Lucky Lady // 5 Reels · 10 Lines · 3+ from the Left // Good Luck</div>
-          <div class="hud-grid" aria-hidden="true"></div>
-          <div id="vfx-layer" aria-hidden="true"></div>
+      <section id="game" class="game" aria-label="Lucky Lady's Charm Ball slot machine">
+        <div class="stage">
 
-          <section class="cabinet" aria-label="Reels">
-            <div id="free-banner" class="free-banner hidden" aria-live="polite">
-              <span class="free-banner-title">FREE SPINS</span>
-              <span id="free-banner-count" class="free-banner-count">Spin 1 / 15</span>
+          <!-- ============ THE LUCKY LADY ============ -->
+          <div id="char-lady" class="character character-lady" aria-hidden="true">
+            <svg class="character-svg" viewBox="0 0 240 560">
+              <defs>
+                <linearGradient id="ll-skin" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#f9ddc2"/><stop offset="1" stop-color="#e8b48e"/>
+                </linearGradient>
+                <linearGradient id="ll-hair" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#b8481a"/><stop offset="0.55" stop-color="#93300d"/><stop offset="1" stop-color="#5e1d07"/>
+                </linearGradient>
+                <linearGradient id="ll-dress" x1="0.2" y1="0" x2="0.8" y2="1">
+                  <stop offset="0" stop-color="#28a35f"/><stop offset="0.45" stop-color="#14713c"/><stop offset="1" stop-color="#063a1e"/>
+                </linearGradient>
+                <linearGradient id="ll-gold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
+                </linearGradient>
+                <radialGradient id="ll-orb" cx="0.35" cy="0.3" r="0.9">
+                  <stop offset="0" stop-color="#fff7d0"/><stop offset="0.55" stop-color="#ffcf3f"/><stop offset="1" stop-color="#8f6112"/>
+                </radialGradient>
+                <radialGradient id="ll-orbglow" cx="0.5" cy="0.5" r="0.5">
+                  <stop offset="0" stop-color="#fff3bd" stop-opacity="0.85"/><stop offset="1" stop-color="#fff3bd" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+
+              <ellipse cx="120" cy="540" rx="82" ry="12" fill="#08210f" opacity="0.35"/>
+
+              <!-- flowing hair, behind the body -->
+              <path d="M120 36 C72 40 55 88 62 140 C54 214 68 276 92 312 C102 308 106 298 103 288 C90 244 88 176 96 132 L144 132 C152 176 150 244 137 288 C134 298 138 308 148 312 C172 276 186 214 178 140 C185 88 168 40 120 36 Z" fill="url(#ll-hair)"/>
+              <path d="M78 150 C74 210 80 258 92 292" stroke="#d96a2c" stroke-width="3" fill="none" opacity="0.5" stroke-linecap="round"/>
+              <path d="M162 150 C166 210 160 258 148 292" stroke="#d96a2c" stroke-width="3" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+              <!-- neck + face -->
+              <path d="M111 102 L129 102 L128 126 C128 132 112 132 112 126 Z" fill="#e8b48e"/>
+              <ellipse cx="120" cy="84" rx="25" ry="28" fill="url(#ll-skin)"/>
+              <!-- fringe -->
+              <path d="M94 78 C94 52 146 50 146 78 C138 62 130 60 120 62 C108 60 98 64 94 78 Z" fill="url(#ll-hair)"/>
+              <path d="M94 78 C90 92 92 104 96 112 C92 96 94 86 98 78 Z" fill="url(#ll-hair)"/>
+              <path d="M146 78 C150 92 148 104 144 112 C148 96 146 86 142 78 Z" fill="url(#ll-hair)"/>
+              <!-- tiara -->
+              <path d="M102 56 L109 45 L117 54 L120 40 L123 54 L131 45 L138 56 C127 51 113 51 102 56 Z" fill="url(#ll-gold)" stroke="#7a5410" stroke-width="0.8"/>
+              <circle cx="120" cy="50" r="3" fill="#2ecc71" stroke="#0d5c33" stroke-width="0.8"/>
+              <!-- eyes -->
+              <path d="M104 76 C107 72 113 72 116 75" stroke="#5e1d07" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+              <path d="M124 75 C127 72 133 72 136 76" stroke="#5e1d07" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+              <ellipse cx="110" cy="82" rx="4.4" ry="2.9" fill="#fff"/>
+              <ellipse cx="130" cy="82" rx="4.4" ry="2.9" fill="#fff"/>
+              <circle cx="110.5" cy="82" r="2" fill="#2e8b57"/><circle cx="110.5" cy="82" r="0.9" fill="#10240f"/>
+              <circle cx="129.5" cy="82" r="2" fill="#2e8b57"/><circle cx="129.5" cy="82" r="0.9" fill="#10240f"/>
+              <path d="M105 80.5 C108 78.5 113 78.6 115.5 80.5" stroke="#3a1608" stroke-width="1.1" fill="none"/>
+              <path d="M124.5 80.5 C127 78.6 132 78.5 135 80.5" stroke="#3a1608" stroke-width="1.1" fill="none"/>
+              <!-- nose + lips + blush -->
+              <path d="M120 86 q-2 5 1 6.5" stroke="#d69a70" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+              <path d="M112 98.5 q8 6.5 16 0 q-8 3.6 -16 0 Z" fill="#c93a52"/>
+              <ellipse cx="103" cy="91" rx="4.5" ry="2.5" fill="#f2a4a4" opacity="0.45"/>
+              <ellipse cx="137" cy="91" rx="4.5" ry="2.5" fill="#f2a4a4" opacity="0.45"/>
+              <!-- earrings -->
+              <circle cx="95" cy="93" r="2" fill="url(#ll-gold)"/><circle cx="95" cy="99" r="3" fill="#2ecc71" stroke="#0d5c33" stroke-width="0.7"/>
+              <circle cx="145" cy="93" r="2" fill="url(#ll-gold)"/><circle cx="145" cy="99" r="3" fill="#2ecc71" stroke="#0d5c33" stroke-width="0.7"/>
+
+              <!-- gown -->
+              <path d="M86 140 C96 128 144 128 154 140 C158 170 146 198 142 224 C170 306 188 424 179 522 L61 522 C52 424 70 306 98 224 C94 198 82 170 86 140 Z" fill="url(#ll-dress)"/>
+              <!-- décolletage -->
+              <path d="M103 132 L137 132 L120 156 Z" fill="url(#ll-skin)"/>
+              <path d="M103 132 C108 143 132 143 137 132 L133 141 C127 147 113 147 107 141 Z" fill="#052c17" opacity="0.7"/>
+              <!-- satin sheen + fold shading -->
+              <path d="M97 232 C82 320 72 420 70 508 C80 430 92 330 108 240 Z" fill="#ffffff" opacity="0.14"/>
+              <path d="M141 236 C158 320 170 420 172 512 C168 416 154 316 132 240 Z" fill="#02130a" opacity="0.4"/>
+              <path d="M120 250 C118 340 118 430 121 516" stroke="#02130a" stroke-width="4" opacity="0.25" fill="none"/>
+              <!-- belt -->
+              <rect x="99" y="219" width="42" height="11" rx="5.5" fill="url(#ll-gold)" stroke="#7a5410" stroke-width="0.8"/>
+              <circle cx="120" cy="224.5" r="4.4" fill="#2ecc71" stroke="#0d5c33" stroke-width="0.9"/>
+              <!-- gown sparkles -->
+              <g class="twinkle" fill="#ffe9a3">
+                <path d="M96 300 l1.8 4.4 4.4 1.8 -4.4 1.8 -1.8 4.4 -1.8 -4.4 -4.4 -1.8 4.4 -1.8 Z"/>
+                <path d="M148 372 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6 Z"/>
+                <path d="M108 452 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6 Z"/>
+              </g>
+
+              <!-- right arm resting on hip -->
+              <path d="M89 142 C68 162 62 198 74 234 C78 243 89 240 87 231 C79 202 83 172 99 152 Z" fill="url(#ll-skin)"/>
+              <ellipse cx="82" cy="235" rx="7.5" ry="6" fill="url(#ll-skin)"/>
+              <!-- left arm raised, holding the charm ball -->
+              <path d="M147 144 C168 136 184 140 194 152 C200 160 192 169 184 163 C173 153 162 154 152 160 Z" fill="url(#ll-skin)"/>
+              <ellipse cx="192" cy="163" rx="8" ry="6.5" fill="url(#ll-skin)"/>
+              <!-- the glowing charm ball -->
+              <g class="orb-group">
+                <circle cx="196" cy="140" r="30" fill="url(#ll-orbglow)" class="orb-halo"/>
+                <circle cx="196" cy="140" r="15" fill="url(#ll-orb)" stroke="#6e4a0d" stroke-width="1.2"/>
+                <path fill="#1c6b2c" d="M196 140c-2.4-5.5-9.5-3.2-7 2.4 1.5 3.1 5.4 3.1 7-2.4zm0 0c5.5-2.4 3.2-9.5-2.4-7-3.1 1.5-3.1 5.4 2.4 7zm0 0c2.4 5.5 9.5 3.2 7-2.4-1.5-3.1-5.4-3.1-7 2.4zm0 0c-5.5 2.4-3.2 9.5 2.4 7 3.1-1.5 3.1-5.4-2.4-7z"/>
+                <ellipse cx="190" cy="133" rx="4.6" ry="2.8" fill="#fff" opacity="0.6" transform="rotate(-24 190 133)"/>
+              </g>
+              <!-- necklace -->
+              <path d="M108 128 C114 138 126 138 132 128" stroke="url(#ll-gold)" stroke-width="2" fill="none"/>
+              <circle cx="120" cy="137" r="2.6" fill="#2ecc71" stroke="#0d5c33" stroke-width="0.7"/>
+            </svg>
+          </div>
+
+          <!-- ============ THE CABINET ============ -->
+          <div class="cabinet">
+            <div class="topper">
+              <div class="topper-arch" aria-hidden="true"></div>
+              <div class="jackpot-row" aria-label="Jackpots">
+                <div class="jackpot jackpot-mini">
+                  <span class="jackpot-label">Mini</span>
+                  <span id="jackpot-mini" class="jackpot-value">$—</span>
+                </div>
+                <div class="jackpot jackpot-grand">
+                  <svg class="jackpot-crown" viewBox="0 0 48 22" aria-hidden="true">
+                    <path d="M4 20 L2 5 L13 12 L24 2 L35 12 L46 5 L44 20 Z" fill="#ffd24a" stroke="#7a5410" stroke-width="1.4"/>
+                    <circle cx="24" cy="2.5" r="2.2" fill="#ff5a6e"/><circle cx="2.5" cy="5" r="2" fill="#2ecc71"/><circle cx="45.5" cy="5" r="2" fill="#2ecc71"/>
+                  </svg>
+                  <span class="jackpot-label">Grand</span>
+                  <span id="jackpot-grand" class="jackpot-value">$—</span>
+                </div>
+                <div class="jackpot jackpot-major">
+                  <span class="jackpot-label">Major</span>
+                  <span id="jackpot-major" class="jackpot-value">$—</span>
+                </div>
+              </div>
+              <div class="marquee">☘ 5 Reels · 10 Lines · Hold &amp; Win ☘</div>
             </div>
 
-            <div class="reels-frame">
+            <div class="reels-frame" id="reels-frame">
               <div id="reels" class="reels" aria-label="Reel grid"></div>
               <svg id="payline-overlay" class="payline-overlay" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="glass" aria-hidden="true"></div>
+
+              <div id="bonus-hud" class="bonus-hud hidden" aria-live="polite">
+                <span class="bonus-hud-title">Charm Bonus</span>
+                <span class="respin-label">Respins</span>
+                <span id="respin-count" class="respin-count">3</span>
+                <span id="locked-count" class="locked-count">3 / 15</span>
+              </div>
+
               <div id="win-meter" class="win-meter hidden" aria-live="polite">
                 <span class="win-meter-label">WIN</span>
                 <span id="win-meter-value" class="win-meter-value">$0.00</span>
               </div>
             </div>
-          </section>
 
-          <article class="status-panel">
-            <p id="status">Connecting…</p>
-            <p id="round-result" class="round-result hidden" aria-live="polite"></p>
-          </article>
-
-          <section class="bankroll-panel">
-            <p id="bet-display" class="bet">Total Bet: —</p>
-
-            <div class="bet-selector" id="bet-selector" role="group" aria-label="Bet amount">
-              <button id="bet-min" class="bet-step bet-step-text" type="button" title="Minimum bet">Min</button>
-              <button id="bet-down" class="bet-step" type="button" aria-label="Lower bet">−</button>
-              <span id="bet-value" class="bet-value" aria-live="polite">$0.00</span>
-              <button id="bet-up" class="bet-step" type="button" aria-label="Raise bet">+</button>
-              <button id="bet-max" class="bet-step bet-step-text" type="button" title="Maximum bet">Max</button>
-            </div>
-
-            <div class="actions">
-              <div class="autospin" id="autospin">
-                <div class="autospin-counts" id="autospin-counts" role="group" aria-label="Autospin count">
-                  <button class="auto-count" type="button" data-count="10">10</button>
-                  <button class="auto-count" type="button" data-count="25">25</button>
-                  <button class="auto-count" type="button" data-count="50">50</button>
-                  <button class="auto-count" type="button" data-count="100">100</button>
-                  <button class="auto-count" type="button" data-count="-1" title="Until stopped">∞</button>
+            <div class="deck">
+              <div class="deck-row">
+                <div class="bet-selector" id="bet-selector" role="group" aria-label="Bet amount">
+                  <button id="bet-min" class="bet-step bet-step-text" type="button" title="Minimum bet">Min</button>
+                  <button id="bet-down" class="bet-step" type="button" aria-label="Lower bet">−</button>
+                  <span class="bet-readout">
+                    <span class="bet-readout-label">Total bet</span>
+                    <span id="bet-value" class="bet-value" aria-live="polite">$0.00</span>
+                  </span>
+                  <button id="bet-up" class="bet-step" type="button" aria-label="Raise bet">+</button>
+                  <button id="bet-max" class="bet-step bet-step-text" type="button" title="Maximum bet">Max</button>
                 </div>
-                <button id="autospin-btn" class="btn btn-accent" type="button">Autospin</button>
-                <button id="autostop-btn" class="btn btn-stop hidden" type="button">
-                  Stop <span id="autospin-remaining" class="auto-remaining">0</span>
-                </button>
-              </div>
-              <button id="spin-btn" class="btn btn-primary">Spin</button>
-            </div>
-          </section>
 
-          <section class="paytable-panel" aria-label="Paytable">
-            <header class="paytable-header">
-              <h2>Paytable</h2>
-              <span class="paytable-note">Pays are line-bet multiples · Line bet = Total ÷ 10</span>
-            </header>
-            <div id="paytable" class="paytable"></div>
-            <p class="paytable-rules">
-              <strong>Lucky Lady</strong> is <strong>wild</strong> (substitutes for any symbol on a line)
-              <em>and</em> <strong>scatter</strong>: land 3+ anywhere to win the
-              <strong>Feature — 15 Free Spins</strong> at the triggering bet.
-              During free spins <em>every</em> Lady retriggers: <strong>1 Lady → +1 spin</strong>,
-              <strong>2 Ladies → +2</strong>, <strong>3+ Ladies → +15</strong> (up to 300 free spins total).
-              After any winning spin you can <strong>gamble</strong> the win on <em>Red or Black</em>:
-              a correct card colour <strong>doubles</strong> the amount — keep doubling or collect at any
-              time — a wrong colour loses it all.
-            </p>
-          </section>
+                <button id="spin-btn" class="btn btn-spin" type="button">Spin</button>
 
-          <section id="gamble-panel" class="gamble-panel hidden" aria-label="Gamble — red or black" aria-live="polite">
-            <div class="gamble-table">
-              <header class="gamble-head">
-                <h2>Red or Black?</h2>
-                <p class="gamble-sub">Guess the next card's colour to double your money</p>
-              </header>
-
-              <div class="gamble-stake">
-                <span id="gamble-stake-label" class="gamble-stake-label">Your win</span>
-                <span id="gamble-stake-value" class="gamble-stake-value">$0.00</span>
-              </div>
-
-              <div class="gamble-card-zone">
-                <div id="gamble-card" class="gamble-card">
-                  <div class="gamble-card-inner">
-                    <div class="gamble-face gamble-back" aria-hidden="true"><span>?</span></div>
-                    <div id="gamble-card-front" class="gamble-face gamble-front">
-                      <span id="gamble-card-rank" class="rank"></span>
-                      <span id="gamble-card-suit" class="suit"></span>
+                <div class="buy-wrap">
+                  <button id="buy-btn" class="btn btn-buy" type="button">
+                    <span class="buy-title">Buy Bonus</span>
+                    <span id="buy-cost" class="buy-cost">$—</span>
+                  </button>
+                  <div id="buy-confirm" class="buy-confirm hidden" role="dialog" aria-label="Confirm feature buy">
+                    <p>Trigger the <strong>Charm Bonus</strong> for <b id="buy-confirm-cost">$—</b>?</p>
+                    <div class="buy-confirm-actions">
+                      <button id="buy-yes" class="btn btn-primary" type="button">Buy It</button>
+                      <button id="buy-no" class="btn btn-ghost" type="button">Cancel</button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p id="gamble-msg" class="gamble-msg"></p>
-
-              <div class="gamble-actions">
-                <button id="gamble-red" class="btn gamble-red-btn" type="button">Red ♥</button>
-                <button id="gamble-black" class="btn gamble-black-btn" type="button">Black ♠</button>
-                <button id="gamble-collect" class="btn btn-primary" type="button">Keep Win</button>
+              <div class="deck-row deck-row-auto">
+                <div class="autospin" id="autospin">
+                  <div class="autospin-counts" id="autospin-counts" role="group" aria-label="Autospin count">
+                    <button class="auto-count" type="button" data-count="10">10</button>
+                    <button class="auto-count" type="button" data-count="25">25</button>
+                    <button class="auto-count" type="button" data-count="50">50</button>
+                    <button class="auto-count" type="button" data-count="100">100</button>
+                    <button class="auto-count" type="button" data-count="-1" title="Until stopped">∞</button>
+                  </div>
+                  <button id="autospin-btn" class="btn btn-accent" type="button">Autospin</button>
+                  <button id="autostop-btn" class="btn btn-stop hidden" type="button">
+                    Stop <span id="autospin-remaining" class="auto-remaining">0</span>
+                  </button>
+                </div>
+                <p id="status" class="status-line">Connecting…</p>
               </div>
-
-              <div id="gamble-history" class="gamble-history" aria-label="Cards drawn this round"></div>
             </div>
-          </section>
+
+            <div class="cabinet-base" aria-hidden="true"></div>
+          </div>
+
+          <!-- ============ THE LEPRECHAUN ============ -->
+          <div id="char-lep" class="character character-lep" aria-hidden="true">
+            <svg class="character-svg" viewBox="0 0 260 560">
+              <defs>
+                <linearGradient id="lp-coat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#2f9440"/><stop offset="0.55" stop-color="#1b6b2c"/><stop offset="1" stop-color="#0b3b16"/>
+                </linearGradient>
+                <linearGradient id="lp-hat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#27833a"/><stop offset="1" stop-color="#0d4419"/>
+                </linearGradient>
+                <linearGradient id="lp-beard" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#e07223"/><stop offset="1" stop-color="#8a3608"/>
+                </linearGradient>
+                <linearGradient id="lp-skin" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#f8d3ae"/><stop offset="1" stop-color="#e2a878"/>
+                </linearGradient>
+                <linearGradient id="lp-gold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#fff3c4"/><stop offset="0.5" stop-color="#ffd24a"/><stop offset="1" stop-color="#a8761c"/>
+                </linearGradient>
+                <radialGradient id="lp-pot" cx="0.4" cy="0.3" r="0.9">
+                  <stop offset="0" stop-color="#4a4a58"/><stop offset="1" stop-color="#141419"/>
+                </radialGradient>
+              </defs>
+
+              <ellipse cx="120" cy="540" rx="88" ry="12" fill="#08210f" opacity="0.35"/>
+
+              <!-- pot of gold at his feet -->
+              <g transform="translate(206 486)">
+                <ellipse cx="0" cy="46" rx="40" ry="7" fill="#08210f" opacity="0.35"/>
+                <path d="M-34 2 C-40 34 40 34 34 2 C42 -4 -42 -4 -34 2 Z" fill="url(#lp-pot)"/>
+                <ellipse cx="0" cy="-1" rx="36" ry="8" fill="#26262e"/>
+                <g fill="url(#lp-gold)" stroke="#7a5410" stroke-width="0.7">
+                  <circle cx="-16" cy="-6" r="7"/><circle cx="2" cy="-10" r="8"/><circle cx="19" cy="-5" r="7"/>
+                  <circle cx="-4" cy="-2" r="7"/><circle cx="11" cy="-12" r="6"/>
+                </g>
+                <path class="twinkle" d="M18 -22 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#fff7d0"/>
+              </g>
+
+              <!-- boots + stockings -->
+              <path d="M84 500 C82 516 84 522 96 522 L120 522 L120 496 L88 494 Z" fill="#3a2312"/>
+              <path d="M176 500 C178 516 176 522 164 522 L140 522 L140 496 L172 494 Z" fill="#3a2312"/>
+              <rect x="92" y="462" width="28" height="38" fill="#2f8a35"/>
+              <rect x="140" y="462" width="28" height="38" fill="#2f8a35"/>
+              <rect x="92" y="470" width="28" height="6" fill="#c8e26a" opacity="0.7"/>
+              <rect x="140" y="470" width="28" height="6" fill="#c8e26a" opacity="0.7"/>
+              <rect x="96" y="504" width="16" height="10" rx="2" fill="url(#lp-gold)"/>
+              <rect x="148" y="504" width="16" height="10" rx="2" fill="url(#lp-gold)"/>
+
+              <!-- breeches -->
+              <path d="M88 408 L172 408 L176 466 L140 466 L138 436 L122 436 L120 466 L84 466 Z" fill="#6b3a1c"/>
+
+              <!-- tailcoat -->
+              <path d="M85 272 C73 344 66 414 74 458 L112 452 L108 400 L152 400 L148 452 L186 458 C194 414 187 344 175 272 C148 252 112 252 85 272 Z" fill="url(#lp-coat)"/>
+              <path d="M130 400 L130 452" stroke="#052c12" stroke-width="3" opacity="0.5"/>
+              <!-- waistcoat + shirt + buttons -->
+              <path d="M108 274 C103 322 103 366 110 404 L150 404 C157 366 157 322 152 274 C138 264 122 264 108 274 Z" fill="#e8c34a"/>
+              <path d="M116 268 L130 288 L144 268 C136 262 124 262 116 268 Z" fill="#f6f2e4"/>
+              <path d="M124 284 L136 284 L133 296 L127 296 Z" fill="#c93a24"/>
+              <g fill="#5e3a10">
+                <circle cx="130" cy="310" r="3.4"/><circle cx="130" cy="336" r="3.4"/><circle cx="130" cy="362" r="3.4"/><circle cx="130" cy="388" r="3.4"/>
+              </g>
+              <!-- lapels -->
+              <path d="M108 272 L96 316 L110 306 Z" fill="#0d4419"/>
+              <path d="M152 272 L164 316 L150 306 Z" fill="#0d4419"/>
+              <!-- coat belt -->
+              <rect x="72" y="356" width="116" height="16" fill="#2a1708"/>
+              <rect x="120" y="352" width="20" height="24" rx="3" fill="url(#lp-gold)" stroke="#7a5410"/>
+              <rect x="126" y="358" width="8" height="12" rx="2" fill="#2a1708"/>
+
+              <!-- left arm on belly -->
+              <path d="M90 284 C74 306 72 330 84 350 C96 362 112 360 110 348 C100 340 96 318 104 296 Z" fill="url(#lp-coat)"/>
+              <circle cx="108" cy="352" r="9" fill="url(#lp-skin)"/>
+              <!-- right arm raised, waving a shamrock -->
+              <path d="M170 284 C190 268 202 248 208 226 C212 212 198 206 192 218 C186 236 176 254 160 268 Z" fill="url(#lp-coat)"/>
+              <circle cx="202" cy="216" r="9" fill="url(#lp-skin)"/>
+              <g transform="translate(210 192)">
+                <path d="M0 22 C1 14 2 8 2 2" stroke="#2f8a35" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+                <path fill="#3f9435" stroke="#1c5c22" stroke-width="0.8" d="M2 2c-3-8-13-5-10 3 1.6 4.4 7.4 4.4 10-3zm0 0c8-3 5-13-3-10-4.4 1.6-4.4 7.4 3 10zm0 0c3 8 13 5 10-3-1.6-4.4-7.4-4.4-10 3z"/>
+              </g>
+
+              <!-- head -->
+              <circle cx="130" cy="198" r="34" fill="url(#lp-skin)"/>
+              <circle cx="94" cy="202" r="7" fill="url(#lp-skin)"/>
+              <circle cx="166" cy="202" r="7" fill="url(#lp-skin)"/>
+              <!-- beard -->
+              <path d="M96 196 C88 252 106 278 130 278 C154 278 172 252 164 196 C160 234 146 244 130 244 C114 244 100 234 96 196 Z" fill="url(#lp-beard)"/>
+              <path d="M104 244 C110 258 122 264 130 264 C138 264 150 258 156 244" stroke="#8a3608" stroke-width="2" fill="none" opacity="0.6"/>
+              <!-- mustache + mouth -->
+              <path d="M112 219 C118 212 126 212 130 217 C134 212 142 212 148 219 C144 226 134 226 130 222 C126 226 116 226 112 219 Z" fill="#c05512"/>
+              <path d="M122 228 C126 232 134 232 138 228" stroke="#5e2408" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+              <!-- nose + cheeks -->
+              <ellipse cx="130" cy="210" rx="8" ry="6" fill="#eaa26f" stroke="#c07b48" stroke-width="0.8"/>
+              <ellipse cx="106" cy="208" rx="6" ry="4" fill="#f2a4a4" opacity="0.5"/>
+              <ellipse cx="154" cy="208" rx="6" ry="4" fill="#f2a4a4" opacity="0.5"/>
+              <!-- eyes + brows -->
+              <circle cx="116" cy="194" r="3.4" fill="#2f2013"/><circle cx="117.2" cy="192.8" r="1.1" fill="#fff"/>
+              <circle cx="144" cy="194" r="3.4" fill="#2f2013"/><circle cx="145.2" cy="192.8" r="1.1" fill="#fff"/>
+              <path d="M108 185 C112 181 120 181 124 184" stroke="#c05512" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <path d="M136 184 C140 181 148 181 152 185" stroke="#c05512" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <!-- hair tufts under the brim -->
+              <path d="M96 176 C92 168 90 160 92 152 L104 168 Z" fill="url(#lp-beard)"/>
+              <path d="M164 176 C168 168 170 160 168 152 L156 168 Z" fill="url(#lp-beard)"/>
+
+              <!-- top hat -->
+              <ellipse cx="130" cy="150" rx="58" ry="13" fill="#0b3b16"/>
+              <path d="M90 148 C86 100 92 72 100 62 C120 54 140 54 160 62 C168 72 174 100 170 148 Z" fill="url(#lp-hat)"/>
+              <rect x="88" y="122" width="84" height="18" fill="#1a1208"/>
+              <rect x="121" y="118" width="18" height="26" rx="3" fill="url(#lp-gold)" stroke="#7a5410"/>
+              <rect x="126" y="124" width="8" height="14" rx="2" fill="#1a1208"/>
+              <path d="M100 66 C112 60 148 60 160 66" stroke="#4fae5f" stroke-width="3" fill="none" opacity="0.5"/>
+            </svg>
+          </div>
         </div>
+
+        <article class="status-panel">
+          <p id="round-result" class="round-result hidden" aria-live="polite"></p>
+        </article>
+
+        <section class="paytable-panel" aria-label="Paytable">
+          <header class="paytable-header">
+            <h2>Paytable</h2>
+            <span class="paytable-note">Pays are line-bet multiples · Line bet = Total ÷ 10</span>
+          </header>
+          <div id="paytable" class="paytable"></div>
+          <p class="paytable-rules">
+            The <strong>Lucky Lady</strong> is <strong>WILD</strong> — she substitutes for every paying
+            symbol and is the top prize herself. The glowing <strong>Charm Ball</strong> is the
+            <strong>SCATTER</strong>: every ball carries a cash value or the <strong>Mini</strong>,
+            <strong>Major</strong> or <strong>Grand</strong> jackpot. Land <strong>3 or more Charm
+            Balls</strong> anywhere (or use the <strong>Feature Buy</strong>) to trigger the
+            <strong>Charm Bonus</strong>: the balls lock in place and you get <strong>3 respins</strong> —
+            every new ball locks and resets the respins to 3. Fill all <strong>15 positions</strong> to
+            collect every value and every jackpot at once. Any win can be gambled on
+            <strong>Red or Black</strong>: a correct colour doubles it, a wrong one loses it all.
+          </p>
+        </section>
+
+        <section id="gamble-panel" class="gamble-panel hidden" aria-label="Gamble — red or black" aria-live="polite">
+          <div class="gamble-table">
+            <header class="gamble-head">
+              <h2>Red or Black?</h2>
+              <p class="gamble-sub">Guess the next card's colour to double your money</p>
+            </header>
+
+            <div class="gamble-stake">
+              <span id="gamble-stake-label" class="gamble-stake-label">Your win</span>
+              <span id="gamble-stake-value" class="gamble-stake-value">$0.00</span>
+            </div>
+
+            <div class="gamble-card-zone">
+              <div id="gamble-card" class="gamble-card">
+                <div class="gamble-card-inner">
+                  <div class="gamble-face gamble-back" aria-hidden="true"><span>☘</span></div>
+                  <div id="gamble-card-front" class="gamble-face gamble-front">
+                    <span id="gamble-card-rank" class="rank"></span>
+                    <span id="gamble-card-suit" class="suit"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p id="gamble-msg" class="gamble-msg"></p>
+
+            <div class="gamble-actions">
+              <button id="gamble-red" class="btn gamble-red-btn" type="button">Red ♥</button>
+              <button id="gamble-black" class="btn gamble-black-btn" type="button">Black ♠</button>
+              <button id="gamble-collect" class="btn btn-primary" type="button">Keep Win</button>
+            </div>
+
+            <div id="gamble-history" class="gamble-history" aria-label="Cards drawn this round"></div>
+          </div>
+        </section>
       </section>
     </main>
+
+    <div id="vfx-layer" aria-hidden="true"></div>
+    <div id="banner-layer" class="banner-layer" aria-live="polite"></div>
 
     <div id="speed-control" class="speed-control" role="group" aria-label="Spin speed">
       <span class="speed-label">Speed</span>

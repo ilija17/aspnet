@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 
 # Lokalni DataProtection ključevi (generiraju se pri pokretanju)
 aspnet/keys/
+
+# local agent activity log (too large for GitHub)
+.github/hooks/labos2/agent_log.txt
